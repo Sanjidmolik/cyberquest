@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CyberQuest — Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'games/css/games.css' %}">
+</head>
+<body>
+
+<nav class="navbar cq-navbar px-4">
+    <a href="{% url 'dashboard:home' %}" class="navbar-brand cq-brand">← CyberQuest</a>
+</nav>
+
+<div class="container py-5" style="max-width: 750px;">
+    <h1 class="cq-game-title mb-2">Results</h1>
+
+    <div class="cq-score-banner mb-4">
+        <span class="cq-score-big">{{ score }} / {{ total }}</span>
+        <span class="cq-score-label">correct</span>
+        {% if xp_awarded %}
+            <span class="cq-xp-pill">+{{ xp_awarded }} XP</span>
+        {% elif already_completed %}
+            <span class="cq-xp-pill cq-xp-pill-muted">Already completed — no XP awarded</span>
+        {% endif %}
+    </div>
+
+    {% for r in results %}
+    <div class="cq-result-card mb-3 {% if r.correct %}cq-result-correct{% else %}cq-result-wrong{% endif %}">
+        <div class="d-flex justify-content-between">
+            <strong>{{ r.subject }}</strong>
+            <span>{% if r.correct %}✅ Correct{% else %}❌ Incorrect{% endif %}</span>
+        </div>
+        <p class="small mb-2 mt-1">
+            Correct answer: {% if r.is_phishing %}🚩 Phishing{% else %}✅ Legitimate{% endif %}
+        </p>
+        <ul class="cq-flag-list small mb-0">
+            {% for flag in r.red_flags %}
+                <li>{{ flag }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+
+    <div class="d-flex gap-3 mt-4">
+        <a href="{% url 'games:phishing_simulator' %}" class="btn cq-btn-outline">Try Again</a>
+        <a href="{% url 'dashboard:home' %}" class="btn cq-btn">Back to Dashboard</a>
+    </div>
+</div>
+
+</body>
+</html>

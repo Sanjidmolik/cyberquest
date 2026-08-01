@@ -1,0 +1,119 @@
+{% load static %}
+<!--
+  dashboard/templates/dashboard/dashboard.html
+  ------------------------------------------------
+  Professional profile-style dashboard. Shows everything captured at
+  signup (username, class/role, skill level) plus gamification stats
+  (XP, level). Only reachable by authenticated users.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CyberQuest — Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+</head>
+<body>
+
+<nav class="navbar cq-navbar px-4">
+    <span class="navbar-brand cq-brand">CyberQuest</span>
+    <div class="d-flex align-items-center gap-3">
+        <span class="cq-user-email">{{ user_email }}</span>
+        <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm cq-logout-btn">Logout</button>
+        </form>
+    </div>
+</nav>
+
+<div class="container py-5">
+
+    <!-- ================= PROFILE HEADER ================= -->
+    <div class="cq-profile-card mb-5">
+        <div class="cq-avatar">{{ display_name|slice:":1"|upper }}</div>
+
+        <div class="cq-profile-info">
+            <h1 class="cq-heading mb-1">{{ display_name }}</h1>
+            <p class="cq-profile-sub mb-0">{{ user_email }}</p>
+        </div>
+
+        <div class="cq-level-badge">
+            <span class="cq-level-number">LVL {{ level }}</span>
+            <span class="cq-level-label">{{ skill_level_label }}</span>
+        </div>
+    </div>
+
+    <!-- ================= STATS ROW ================= -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3 col-6">
+            <div class="cq-stat-card">
+                <span class="cq-stat-label">Username</span>
+                <span class="cq-stat-value">{{ username|default:"—" }}</span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="cq-stat-card">
+                <span class="cq-stat-label">Cyber Class</span>
+                <span class="cq-stat-value">{{ cyber_class_label }}</span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="cq-stat-card">
+                <span class="cq-stat-label">Skill Level</span>
+                <span class="cq-stat-value">{{ skill_level_label }}</span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="cq-stat-card">
+                <span class="cq-stat-label">Member Since</span>
+                <span class="cq-stat-value">{{ date_joined|date:"M Y" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= XP PROGRESS ================= -->
+    <div class="cq-xp-card mb-5">
+        <div class="d-flex justify-content-between mb-2">
+            <span class="cq-xp-label">Experience Points</span>
+            <span class="cq-xp-value">{{ xp }} XP</span>
+        </div>
+        <div class="cq-xp-bar-track">
+            <div class="cq-xp-bar-fill" style="width: {{ xp_progress_percent }}%;"></div>
+        </div>
+        <p class="cq-xp-hint mt-2 mb-0">{{ xp_progress_percent }}% to Level {{ level|add:"1" }}</p>
+    </div>
+
+    <!-- ================= TRAINING MODULES ================= -->
+    <h2 class="cq-section-title mb-4">Training Modules</h2>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <a href="{% url 'games:phishing_simulator' %}" class="cq-card-link">
+                <div class="cq-card cq-card-playable p-4">
+                    <h5>📧 Phishing Simulator</h5>
+                    <p class="text-muted small">Spot the fake emails before they get you.</p>
+                    <span class="badge cq-badge-play">▶ Play Now</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{% url 'games:password_cracker' %}" class="cq-card-link">
+                <div class="cq-card cq-card-playable p-4">
+                    <h5>🔑 Password Cracker Challenge</h5>
+                    <p class="text-muted small">Learn why weak passwords fail instantly.</p>
+                    <span class="badge cq-badge-play">▶ Play Now</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <div class="cq-card p-4">
+                <h5>Network Defense</h5>
+                <p class="text-muted small">Block intrusions in a live simulation.</p>
+                <span class="badge cq-badge">Coming soon</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

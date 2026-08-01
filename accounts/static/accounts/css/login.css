@@ -1,0 +1,188 @@
+/*
+  accounts/static/accounts/css/login.css
+  -----------------------------------------
+  NEON theme. Isolated to the login page only.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Share+Tech+Mono&display=swap');
+
+:root {
+    --neon-bg: #06030a;
+    --neon-pink: #ff2ec4;
+    --neon-cyan: #00f6ff;
+    --neon-green: #39ff88;
+    --neon-purple: #9b5cff;
+    --neon-text: #eafcff;
+}
+
+body {
+    background: radial-gradient(circle at 50% 20%, #150a2e 0%, #06030a 70%);
+    font-family: 'Share Tech Mono', monospace;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+.cq-login-wrapper {
+    height: 100vh;
+}
+
+.cq-login-card {
+    background-color: rgba(10, 6, 20, 0.85);
+    border: 1px solid var(--neon-cyan);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 420px;
+    backdrop-filter: blur(6px);
+    box-shadow:
+        0 0 8px var(--neon-cyan),
+        0 0 24px rgba(0, 246, 255, 0.35),
+        0 0 60px rgba(155, 92, 255, 0.25),
+        inset 0 0 20px rgba(0, 246, 255, 0.05);
+    animation: card-pulse 4s ease-in-out infinite;
+}
+
+@keyframes card-pulse {
+    0%, 100% { box-shadow: 0 0 8px var(--neon-cyan), 0 0 24px rgba(0,246,255,0.35), 0 0 60px rgba(155,92,255,0.25); }
+    50%      { box-shadow: 0 0 14px var(--neon-pink), 0 0 34px rgba(255,46,196,0.45), 0 0 80px rgba(155,92,255,0.35); }
+}
+
+.cq-title {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 2.2rem;
+    letter-spacing: 3px;
+    color: var(--neon-cyan);
+    text-shadow:
+        0 0 6px var(--neon-cyan),
+        0 0 18px var(--neon-cyan),
+        0 0 40px var(--neon-purple);
+}
+
+.cq-login-card > p.text-muted {
+    color: #9db3c2 !important;
+}
+
+.cq-input {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--neon-purple);
+    color: var(--neon-text);
+    border-radius: 8px;
+    padding: 10px 14px;
+    width: 100%;
+    transition: 0.2s ease;
+}
+
+.cq-input::placeholder {
+    color: #6b7c8c;
+}
+
+.cq-input:focus {
+    outline: none;
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 10px var(--neon-cyan), 0 0 22px rgba(0, 246, 255, 0.4);
+    background-color: rgba(0, 246, 255, 0.04);
+}
+
+.form-label {
+    color: var(--neon-pink);
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.cq-btn {
+    background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple), var(--neon-cyan));
+    background-size: 200% auto;
+    color: #06030a;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border: none;
+    padding: 11px;
+    border-radius: 8px;
+    transition: 0.4s ease;
+    text-transform: uppercase;
+}
+
+.cq-btn:hover {
+    background-position: right center;
+    box-shadow: 0 0 18px var(--neon-cyan), 0 0 30px var(--neon-pink);
+}
+
+.cq-signup-link {
+    color: var(--neon-green);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.cq-signup-link:hover {
+    text-shadow: 0 0 8px var(--neon-green);
+    text-decoration: underline;
+}
+
+/* Alerts (Django messages) restyled to match the neon theme */
+.alert {
+    background-color: rgba(0, 246, 255, 0.06);
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-text);
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+.alert-error, .alert-danger {
+    border-color: var(--neon-pink);
+    background-color: rgba(255, 46, 196, 0.06);
+}
+
+/* ---------- Cyber Class selectable cards ---------- */
+.cq-class-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.cq-class-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--neon-purple);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    color: var(--neon-text);
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.cq-class-card:has(input:checked) {
+    border-color: var(--neon-cyan);
+    background-color: rgba(0, 246, 255, 0.08);
+    box-shadow: 0 0 10px rgba(0, 246, 255, 0.3);
+}
+
+.cq-class-card input {
+    accent-color: var(--neon-cyan);
+}
+
+/* ---------- Skill level pills ---------- */
+.cq-radio-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--neon-purple);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    color: var(--neon-text);
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.cq-radio-pill:has(input:checked) {
+    border-color: var(--neon-green);
+    background-color: rgba(57, 255, 136, 0.08);
+    box-shadow: 0 0 8px rgba(57, 255, 136, 0.3);
+}
+
+.cq-radio-pill input {
+    accent-color: var(--neon-green);
+}

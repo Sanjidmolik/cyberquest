@@ -1,0 +1,71 @@
+{% load static %}
+<!--
+  courses/templates/courses/course_detail.html
+  --------------------------------------------------
+  Shows ONE course's full content (written by an admin via /admin/) with
+  the same read-timer pattern used before, scoped to this single course.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CyberQuest :: {{ course.code }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'courses/css/intro.css' %}">
+</head>
+<body>
+
+<div class="crt-overlay"></div>
+
+<div class="terminal-screen">
+    <div class="terminal-topbar">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="terminal-path">root@cyberquest:~/courses/{{ course.code|lower }}$</span>
+    </div>
+
+    <div class="terminal-body">
+
+        {% if messages %}
+            {% for message in messages %}
+                <p class="cq-flash-{{ message.tags }}">&gt; {{ message }}</p>
+            {% endfor %}
+        {% endif %}
+
+        <p class="module-code mb-2">[{{ course.code }}]</p>
+        <h1 class="glitch" data-text="{{ course.title }}" style="font-size: 2.6rem;">{{ course.title }}</h1>
+
+        <!-- Admin-authored lesson content. linebreaks preserves the
+             paragraph structure the admin typed in the admin panel. -->
+        <div class="course-content-body">
+            {{ course.content|linebreaks }}
+        </div>
+
+        <form method="post" class="cta-row">
+            {% csrf_token %}
+            {% if already_done %}
+                <button type="submit" class="cq-terminal-btn">
+                    &gt; MARKED COMPLETE -- BACK TO COURSES
+                </button>
+            {% else %}
+                <button type="submit" id="continue-btn" class="cq-terminal-btn" disabled>
+                    &gt; PLEASE READ ABOVE (<span id="countdown">{{ minimum_read_seconds }}</span>s)
+                </button>
+            {% endif %}
+        </form>
+
+        <p class="text-center mt-3">
+            <a href="{% url 'courses:intro' %}" class="cq-back-link">&larr; Back to all courses</a>
+        </p>
+
+    </div>
+</div>
+
+<script>
+    const CQ_MINIMUM_READ_SECONDS = {{ minimum_read_seconds }};
+    const CQ_ALREADY_COMPLETED = {{ already_done|yesno:"true,false" }};
+</script>
+<script src="{% static 'courses/js/detail.js' %}"></script>
+</body>
+</html>

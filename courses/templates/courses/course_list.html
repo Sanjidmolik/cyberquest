@@ -1,0 +1,89 @@
+{% load static %}
+<!--
+  courses/templates/courses/course_list.html
+  ------------------------------------------------
+  Lists all admin-managed courses. Each card links to that course's
+  own reading page (course_detail.html). "Continue to Dashboard" only
+  works once every course shows as completed.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CyberQuest :: Courses</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'courses/css/intro.css' %}">
+</head>
+<body>
+
+<div class="crt-overlay"></div>
+
+<div class="terminal-screen">
+    <div class="terminal-topbar">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="terminal-path">root@cyberquest:~/courses$</span>
+    </div>
+
+    <div class="terminal-body">
+
+        {% if messages %}
+            {% for message in messages %}
+                <p class="cq-flash-{{ message.tags }}">&gt; {{ message }}</p>
+            {% endfor %}
+        {% endif %}
+
+        <pre id="boot-sequence" class="boot-sequence"></pre>
+
+        <div id="main-content" class="main-content hidden">
+
+            <h1 class="glitch" data-text="CYBERQUEST">CYBERQUEST</h1>
+            <p class="subtitle">// Gamified Cybersecurity Training Simulator</p>
+
+            <p class="intro-text">
+                Complete all {{ total_count }} training modules below before games unlock.
+                Each one must be read in full ({{ done_count }} of {{ total_count }} complete).
+            </p>
+
+            <div class="module-grid">
+                {% for course in courses %}
+                <a href="{% url 'courses:detail' course.code %}" class="module-card-link">
+                    <div class="module-card {% if course.is_done %}module-card-done{% endif %}">
+                        <span class="module-code">[{{ course.code }}]</span>
+                        <h3>{{ course.title }}</h3>
+                        <p>{{ course.short_description }}</p>
+                        {% if course.is_done %}
+                            <span class="status-tag status-tag-done">✔ COMPLETED</span>
+                        {% else %}
+                            <span class="status-tag">STATUS: UNREAD</span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+
+            <form method="post" class="cta-row">
+                {% csrf_token %}
+                {% if all_done %}
+                    <button type="submit" class="cq-terminal-btn">
+                        &gt; CONTINUE_TO_DASHBOARD.EXE
+                    </button>
+                {% else %}
+                    <button type="submit" class="cq-terminal-btn" disabled>
+                        &gt; COMPLETE ALL COURSES FIRST ({{ done_count }}/{{ total_count }})
+                    </button>
+                {% endif %}
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const CQ_MINIMUM_READ_SECONDS = 0;
+    const CQ_ALREADY_COMPLETED = true; // this page has no per-page timer, only the boot sequence
+</script>
+<script src="{% static 'courses/js/intro.js' %}"></script>
+</body>
+</html>
