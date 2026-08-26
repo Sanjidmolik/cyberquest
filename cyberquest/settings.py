@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-wl908#^e)12ktl$&l&3zepdx2n_+vy85o_u#(6_%d8s80bu(0p'
+SECRET_KEY = 'django-insecure-0vv&%2y(c^1%h@)s@si27wsu=0g=g0b(&u2=+jp_iryl5tz!d-'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -38,34 +42,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # --- Our custom feature apps (each one is fully separate/removable) ---
-    'accounts',        # handles login, logout, custom user model
-    'dashboard',       # handles the post-login home screen
-    'courses',         # handles the cyber course intro / retro landing page
-    'games',           # handles playable training simulations
+    'accounts',
+    'dashboard',
+    'courses',
+    'games',
+    'achievements',
+    'pages',
+    'notifications',
+    'leaderboard',
+    'certificates',
 ]
-
-# Tell Django to use OUR custom User model (email-based) instead of the
-# default username-based one. This points to the model we'll create in
-# accounts/models.py
-AUTH_USER_MODEL = 'accounts.CustomUser'
-
-# Tell Django to use OUR custom authentication backend (checks email domain
-# rules etc.) instead of only the default one. Defined in accounts/backends.py
-AUTHENTICATION_BACKENDS = [
-    'accounts.backends.EmailAuthBackend',
-    'django.contrib.auth.backends.ModelBackend',  # fallback (e.g. for admin)
-]
-
-# Where Django sends a user after a successful login
-LOGIN_REDIRECT_URL = '/dashboard/'
-
-# Where Django sends a user if they try to access a @login_required page
-# without being logged in
-LOGIN_URL = '/accounts/login/'
-
-# Where Django sends a user after logout
-LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -102,15 +88,8 @@ WSGI_APPLICATION = 'cyberquest.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'cyberquest_db',        # the MySQL database you'll create
-        'USER': 'root',                  # your MySQL username
-        'PASSWORD': '7726@San',                  # your MySQL password (blank if none set)
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',        # supports emojis / all unicode safely
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -151,8 +130,33 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# Django automatically looks inside each installed app's own "static/" folder
-# (e.g. accounts/static/accounts/css/login.css) thanks to 'django.contrib.staticfiles'
-# and APP_DIRS=True on templates. This is what lets us keep every page's CSS
-# in its own separate folder instead of one global stylesheet.
-STATICFILES_DIRS = []  # (only needed if you add a project-level "static/" folder later)
+# ---- User-uploaded files (profile pictures, etc.) ----
+# Different from STATIC_URL/STATIC_ROOT above: those are OUR css/js files,
+# these are files USERS upload at runtime (e.g. profile pictures).
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
+# ---- Custom auth ----
+AUTH_USER_MODEL = 'accounts.CustomUser'
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.EmailAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+LOGIN_URL = '/accounts/login/'
+
+# ---- Email (development: prints to terminal instead of really sending) ----
+# To send REAL emails later (e.g. via Gmail SMTP), change EMAIL_BACKEND to
+# 'django.core.mail.backends.smtp.EmailBackend' and set EMAIL_HOST,
+# EMAIL_HOST_USER, EMAIL_HOST_PASSWORD (use a Gmail "App Password", not your
+# real password) -- keep those in a .env file, never hardcoded here.
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL_ADDRESS')
+
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')

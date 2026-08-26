@@ -1,21 +1,25 @@
 """
 accounts/routing.py
 ----------------------
-ONE JOB: decide which URL name a user should land on next, based on
-where they are in the required learning path:
+ONE JOB: decide which URL name a user should land on next.
 
-    login/signup -> course intro (if not read yet) -> dashboard -> games
+    login/signup -> [profile incomplete?] -> complete_profile
+                  -> [courses unread?]     -> courses:intro
+                  -> otherwise             -> dashboard:home
 
-Keeping this in one function means the "what's the next step" rule is
-never duplicated across login_view, signup_view, and the course view.
+The ethical-agreement check comes FIRST because it's a hard requirement
+for using ANY part of the platform (including reading courses) -- most
+users satisfy it at signup, but Google sign-in creates accounts where
+it hasn't been confirmed yet.
 """
 
 
 def next_step_url_name(user):
-    """Return the url name (not the path) the user should be sent to next."""
-    from courses.progress import has_completed_all_courses  # local import avoids a
-                                                              # circular import between
-                                                              # accounts <-> courses
+    if not user.ethical_agreement:
+        return "accounts:complete_profile"
+
+    from courses.progress import has_completed_all_courses
     if not has_completed_all_courses(user):
         return "courses:intro"
+
     return "dashboard:home"

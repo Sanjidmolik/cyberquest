@@ -1,83 +1,124 @@
 """
 courses/views.py
 -------------------
-Two views now, instead of one:
-
-  course_list()    -- shows all 5 (admin-managed) courses with per-user
-                       completion status. This is the required first
-                       stop after login/signup (see accounts/routing.py).
-  course_detail()  -- shows ONE course's full content with the reading
-                       timer. Marks that single course as complete.
-
-Course CONTENT itself lives entirely in the database (models.py),
-managed by admins -- nothing here is hardcoded course text anymore.
+course_list()      -- shows all published courses with per-user completion status.
+course_detail()    -- the actual book-style reader. Content comes from
+                       EITHER an admin-uploaded PDF or plain text (see
+                       models.py) -- this view just tells the template
+                       which one to render; the flip-page mechanics live
+                       entirely in reader.js.
+save_reading_progress() -- tiny AJAX endpoint the reader calls after each
+                       page flip, so a user can resume where they left off.
+mark_course_complete()  -- called by the reader ONLY once the user has
+                       actually flipped through to the final page (not a
+                       blind timer anymore -- see the design note below).
 """
-
-import time
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+import json
 
-from .models import Course, CourseProgress
+from .models import Course, CourseProgress, ReadingProgress
 from .progress import has_completed_all_courses, completed_course_count
-
-MINIMUM_READ_SECONDS = 45
 
 
 @login_required(login_url="/accounts/login/")
 def course_list(request):
-    """Show every published course with a locked/completed badge per user."""
-
     completed_codes = set(
         CourseProgress.objects.filter(user=request.user).values_list("course__code", flat=True)
     )
-
     courses = Course.objects.filter(is_published=True)
     for course in courses:
-        course.is_done = course.code in completed_codes  # attached for the template only
+        course.is_done = course.code in completed_codes
 
     done_count, total_count = completed_course_count(request.user)
     all_done = has_completed_all_courses(request.user)
 
     if request.method == "POST" and all_done:
-        # The "Continue to Dashboard" button only submits successfully
-        # once every course is marked complete (checked again here,
-        # server-side, not just trusted from the template).
         return redirect("dashboard:home")
 
     return render(request, "courses/course_list.html", {
-        "courses": courses,
-        "done_count": done_count,
-        "total_count": total_count,
-        "all_done": all_done,
+        "courses": courses, "done_count": done_count,
+        "total_count": total_count, "all_done": all_done,
     })
 
 
 @login_required(login_url="/accounts/login/")
 def course_detail(request, code):
-    """Show one course's content, gated by the same read-timer pattern as before."""
+    """
+    Shows the book-style reader for one course.
 
+    DESIGN NOTE (replacing the old 45-second countdown-timer gate):
+    Completion is no longer "wait N seconds while a button is disabled."
+    Instead, the reader (reader.js) tracks which page the user is on, and
+    only enables "Mark as Complete" once they've genuinely flipped to the
+    LAST page. This is enforced server-side too, in mark_course_complete()
+    below -- the client tells us the page count and the page reached, and
+    we simply don't accept completion unless reached >= total. A person
+    can still flip through quickly, but they can no longer complete a
+    course without at least having every page pass in front of them,
+    which is a much better experience than staring at a countdown.
+    """
     course = get_object_or_404(Course, code=code, is_published=True)
     already_done = CourseProgress.objects.filter(user=request.user, course=course).exists()
 
-    session_key = f"course_shown_at_{course.code}"
+    reading_state, _ = ReadingProgress.objects.get_or_create(
+        user=request.user, course=course, defaults={"last_page_index": 0}
+    )
 
-    if request.method == "POST":
-        shown_at = request.session.get(session_key)
-        elapsed = time.time() - shown_at if shown_at else 0
-
-        if elapsed < MINIMUM_READ_SECONDS and not already_done:
-            messages.error(request, "Please finish reading before continuing.")
-        else:
-            CourseProgress.objects.get_or_create(user=request.user, course=course)
-            messages.success(request, f"{course.title} complete!")
-            return redirect("courses:intro")
-    else:
-        request.session[session_key] = time.time()
-
-    return render(request, "courses/course_detail.html", {
+    return render(request, "courses/course_reader.html", {
         "course": course,
         "already_done": already_done,
-        "minimum_read_seconds": MINIMUM_READ_SECONDS,
+        "resume_page_index": reading_state.last_page_index,
+        "uses_pdf": course.uses_pdf(),
     })
+
+
+@login_required(login_url="/accounts/login/")
+@require_POST
+def save_reading_progress(request, code):
+    """Called by reader.js after every page flip. Fire-and-forget -- never blocks reading."""
+    course = get_object_or_404(Course, code=code, is_published=True)
+    try:
+        page_index = int(json.loads(request.body).get("page_index", 0))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        page_index = 0
+
+    ReadingProgress.objects.update_or_create(
+        user=request.user, course=course, defaults={"last_page_index": max(page_index, 0)},
+    )
+    return JsonResponse({"saved": True})
+
+
+@login_required(login_url="/accounts/login/")
+@require_POST
+def mark_course_complete(request, code):
+    """
+    Called by reader.js ONLY when the user has reached the final page.
+    Still re-validated here server-side (never trust the client alone) --
+    see the design note on course_detail() above.
+    """
+    course = get_object_or_404(Course, code=code, is_published=True)
+
+    try:
+        data = json.loads(request.body)
+        pages_reached = int(data.get("pages_reached", -1))
+        total_pages = int(data.get("total_pages", -1))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        pages_reached, total_pages = -1, -1
+
+    if total_pages <= 0 or pages_reached < total_pages - 1:
+        # -1 index of the last page is (total_pages - 1) -- they haven't
+        # actually reached the end yet, so we refuse to mark it complete.
+        return JsonResponse({"error": "You need to read through to the last page first."}, status=400)
+
+    CourseProgress.objects.get_or_create(user=request.user, course=course)
+    messages.success(request, f"{course.title} complete!")
+
+    from achievements.checks import check_and_award_badges
+    new_badges = [b.name for b in check_and_award_badges(request.user)]
+
+    return JsonResponse({"completed": True, "new_badges": new_badges})

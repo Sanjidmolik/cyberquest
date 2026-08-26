@@ -1,0 +1,18 @@
+body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
+.cq-navbar { background: #161b22; border-bottom: 1px solid #30363d; }
+.cq-brand { color: #39ff88; text-decoration: none; font-weight: 700; }
+.cq-nav-link { color: #9aa4b2; text-decoration: none; }
+.cq-nav-link:hover { color: #39ff88; }
+.cq-heading { font-weight: 700; }
+.cq-body { color: #c9d1d9; line-height: 1.7; margin-bottom: 16px; }
+.cq-input {
+    background: #0d1117; border: 1px solid #30363d; color: #e6edf3;
+    border-radius: 6px; padding: 10px 12px; width: 100%;
+}
+.cq-btn { background: #39ff88; color: #0d1117; font-weight: 700; border: none; padding: 10px; border-radius: 8px; }
+.cq-search-result {
+    display: block; text-decoration: none; color: #e6edf3;
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 8px;
+}
+.cq-search-result:hover { border-color: #39ff88; }

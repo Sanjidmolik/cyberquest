@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact — CyberQuest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'pages/css/pages.css' %}">
+</head>
+<body>
+<nav class="navbar cq-navbar px-4">
+    <a href="{% url 'accounts:login' %}" class="navbar-brand cq-brand">CyberQuest</a>
+    <div class="d-flex gap-3">
+        <a href="{% url 'pages:about' %}" class="cq-nav-link">About</a>
+        <a href="{% url 'pages:contact' %}" class="cq-nav-link">Contact</a>
+    </div>
+</nav>
+
+<div class="container py-5" style="max-width: 550px;">
+    <h1 class="cq-heading mb-4">Contact Us</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" class="cq-form">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input type="text" name="name" class="cq-input" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="cq-input" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Message</label>
+            <textarea name="message" class="cq-input" rows="5" required></textarea>
+        </div>
+        <button type="submit" class="btn cq-btn w-100">Send Message</button>
+    </form>
+</div>
+</body>
+</html>

@@ -1,89 +1,67 @@
 {% load static %}
-<!--
-  courses/templates/courses/course_list.html
-  ------------------------------------------------
-  Lists all admin-managed courses. Each card links to that course's
-  own reading page (course_detail.html). "Continue to Dashboard" only
-  works once every course shows as completed.
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CyberQuest :: Courses</title>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'courses/css/intro.css' %}">
+    <title>CyberQuest — Courses</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
+        .cq-navbar { background: #161b22; border-bottom: 1px solid #30363d; }
+        .cq-brand { color: #39ff88; text-decoration: none; font-weight: 700; }
+        .cq-heading { font-weight: 700; }
+        .course-card {
+            display: block; text-decoration: none; color: #e6edf3;
+            background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+            padding: 18px 20px; margin-bottom: 14px; transition: 0.2s ease;
+        }
+        .course-card:hover { border-color: #39ff88; color: #e6edf3; }
+        .course-done { border-color: #39ff88; background: rgba(57,255,136,0.06); }
+        .status-tag { font-size: 0.75rem; letter-spacing: 1px; }
+        .status-done { color: #39ff88; }
+        .status-unread { color: #8b949e; }
+        .cq-continue-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    </style>
 </head>
 <body>
 
-<div class="crt-overlay"></div>
+<nav class="navbar cq-navbar px-4">
+    <span class="navbar-brand cq-brand">CyberQuest</span>
+</nav>
 
-<div class="terminal-screen">
-    <div class="terminal-topbar">
-        <span class="dot dot-red"></span>
-        <span class="dot dot-yellow"></span>
-        <span class="dot dot-green"></span>
-        <span class="terminal-path">root@cyberquest:~/courses$</span>
-    </div>
+<div class="container py-5" style="max-width: 750px;">
+    <h1 class="cq-heading mb-2">Training Courses</h1>
+    <p class="text-muted mb-4">
+        Complete all {{ total_count }} courses before games unlock ({{ done_count }} of {{ total_count }} done).
+    </p>
 
-    <div class="terminal-body">
-
-        {% if messages %}
-            {% for message in messages %}
-                <p class="cq-flash-{{ message.tags }}">&gt; {{ message }}</p>
-            {% endfor %}
-        {% endif %}
-
-        <pre id="boot-sequence" class="boot-sequence"></pre>
-
-        <div id="main-content" class="main-content hidden">
-
-            <h1 class="glitch" data-text="CYBERQUEST">CYBERQUEST</h1>
-            <p class="subtitle">// Gamified Cybersecurity Training Simulator</p>
-
-            <p class="intro-text">
-                Complete all {{ total_count }} training modules below before games unlock.
-                Each one must be read in full ({{ done_count }} of {{ total_count }} complete).
-            </p>
-
-            <div class="module-grid">
-                {% for course in courses %}
-                <a href="{% url 'courses:detail' course.code %}" class="module-card-link">
-                    <div class="module-card {% if course.is_done %}module-card-done{% endif %}">
-                        <span class="module-code">[{{ course.code }}]</span>
-                        <h3>{{ course.title }}</h3>
-                        <p>{{ course.short_description }}</p>
-                        {% if course.is_done %}
-                            <span class="status-tag status-tag-done">✔ COMPLETED</span>
-                        {% else %}
-                            <span class="status-tag">STATUS: UNREAD</span>
-                        {% endif %}
-                    </div>
-                </a>
-                {% endfor %}
+    {% for course in courses %}
+        <a href="{% url 'courses:detail' course.code %}" class="course-card {% if course.is_done %}course-done{% endif %}">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>[{{ course.code }}] {{ course.title }}</strong>
+                    <p class="small text-muted mb-0 mt-1">{{ course.short_description }}</p>
+                </div>
+                <span class="status-tag {% if course.is_done %}status-done{% else %}status-unread{% endif %}">
+                    {% if course.is_done %}✔ DONE{% else %}UNREAD{% endif %}
+                </span>
             </div>
+        </a>
+    {% empty %}
+        <p class="text-muted">No courses published yet.</p>
+    {% endfor %}
 
-            <form method="post" class="cta-row">
-                {% csrf_token %}
-                {% if all_done %}
-                    <button type="submit" class="cq-terminal-btn">
-                        &gt; CONTINUE_TO_DASHBOARD.EXE
-                    </button>
-                {% else %}
-                    <button type="submit" class="cq-terminal-btn" disabled>
-                        &gt; COMPLETE ALL COURSES FIRST ({{ done_count }}/{{ total_count }})
-                    </button>
-                {% endif %}
-            </form>
-
-        </div>
-    </div>
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+        {% if all_done %}
+            <button type="submit" class="btn btn-success w-100">Continue to Dashboard →</button>
+        {% else %}
+            <button type="button" class="btn btn-secondary w-100 cq-continue-btn" disabled>
+                Complete all courses first ({{ done_count }}/{{ total_count }})
+            </button>
+        {% endif %}
+    </form>
 </div>
 
-<script>
-    const CQ_MINIMUM_READ_SECONDS = 0;
-    const CQ_ALREADY_COMPLETED = true; // this page has no per-page timer, only the boot sequence
-</script>
-<script src="{% static 'courses/js/intro.js' %}"></script>
 </body>
 </html>

@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Certificate — CyberQuest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
+        .cq-navbar { background: #161b22; border-bottom: 1px solid #30363d; padding: 14px 24px; }
+        .cq-brand { color: #39ff88; text-decoration: none; font-weight: 700; }
+        .cq-btn { background: #39ff88; color: #0d1117; font-weight: 700; border: none; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; }
+    </style>
+</head>
+<body>
+<nav class="cq-navbar"><a href="{% url 'dashboard:home' %}" class="cq-brand">← CyberQuest</a></nav>
+
+<div class="container py-5 text-center" style="max-width: 550px;">
+    <h1 class="mb-4">🎓 Certificate</h1>
+    {% if eligible %}
+        <p class="text-muted mb-4">Congratulations — you've completed the CyberQuest curriculum!</p>
+        <a href="{% url 'certificates:download' %}" class="cq-btn">Download Certificate (PDF)</a>
+    {% else %}
+        <p class="text-muted mb-4">Complete every course to unlock your certificate.</p>
+    {% endif %}
+</div>
+</body>
+</html>

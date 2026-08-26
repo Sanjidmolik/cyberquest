@@ -1,0 +1,10 @@
+[
+  {
+    "code": "MOD-01",
+    "title": "Phishing attack",
+    "short_description": "QUICK LEAARN",
+    "content": "What is a phishing attack?\r\n\u201cPhishing\u201d refers to an attempt to steal sensitive information, typically in the form of usernames, passwords, credit card numbers, bank account information, or other important data in order to utilize or sell the stolen information. By masquerading as a reputable source with an enticing request, an attacker lures in the victim in order to trick them, similar to how a fisherman uses bait to catch a fish.",
+    "order": 0,
+    "is_published": true
+  }
+]

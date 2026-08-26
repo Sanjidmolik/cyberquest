@@ -1,11 +1,4 @@
 {% load static %}
-<!--
-  dashboard/templates/dashboard/dashboard.html
-  ------------------------------------------------
-  Professional profile-style dashboard. Shows everything captured at
-  signup (username, class/role, skill level) plus gamification stats
-  (XP, level). Only reachable by authenticated users.
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,9 +9,23 @@
 </head>
 <body>
 
+<!-- Gamified animated background: moving grid floor + floating glow orbs -->
+<div class="cq-bg">
+    <div class="cq-bg-grid"></div>
+    <div class="cq-bg-orb cq-orb-1"></div>
+    <div class="cq-bg-orb cq-orb-2"></div>
+    <div class="cq-bg-orb cq-orb-3"></div>
+</div>
+
 <nav class="navbar cq-navbar px-4">
     <span class="navbar-brand cq-brand">CyberQuest</span>
     <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'achievements:list' %}" class="cq-nav-link">🏆 Badges</a>
+        <a href="{% url 'accounts:profile_settings' %}" class="cq-nav-link">⚙️ Settings</a>
+        <a href="{% url 'notifications:list' %}" class="cq-nav-link">🔔 Notifications</a>
+        <a href="{% url 'pages:search' %}" class="cq-nav-link">🔍 Search</a>
+        <a href="{% url 'leaderboard:list' %}" class="cq-nav-link">🏆 Leaderboard</a>
+        <a href="{% url 'certificates:page' %}" class="cq-nav-link">📜 Certificate</a>
         <span class="cq-user-email">{{ user_email }}</span>
         <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
             {% csrf_token %}
@@ -27,11 +34,15 @@
     </div>
 </nav>
 
-<div class="container py-5">
+<div class="container py-5 cq-content">
 
     <!-- ================= PROFILE HEADER ================= -->
     <div class="cq-profile-card mb-5">
-        <div class="cq-avatar">{{ display_name|slice:":1"|upper }}</div>
+        {% if profile_picture %}
+            <img src="{{ profile_picture.url }}" class="cq-avatar-img" alt="Profile picture">
+        {% else %}
+            <div class="cq-avatar">{{ display_name|slice:":1"|upper }}</div>
+        {% endif %}
 
         <div class="cq-profile-info">
             <h1 class="cq-heading mb-1">{{ display_name }}</h1>
@@ -106,12 +117,34 @@
             </a>
         </div>
         <div class="col-md-4">
-            <div class="cq-card p-4">
-                <h5>Network Defense</h5>
-                <p class="text-muted small">Block intrusions in a live simulation.</p>
-                <span class="badge cq-badge">Coming soon</span>
-            </div>
+            <a href="{% url 'games:network_defense' %}" class="cq-card-link">
+                <div class="cq-card cq-card-playable p-4">
+                    <h5>🛡️ Network Defense Drill</h5>
+                    <p class="text-muted small">Defend your network from simulated attacks.</p>
+                    <span class="badge cq-badge-play">▶ Play Now</span>
+                </div>
+            </a>
         </div>
+        <div class="col-md-4">
+            <a href="{% url 'games:cryptography' %}" class="cq-card-link">
+                <div class="cq-card cq-card-playable p-4">
+                    <h5>🔐 Cryptography Challenge</h5>
+                    <p class="text-muted small">Test your understanding of encryption, hashing, and classic ciphers.</p>
+                    <span class="badge cq-badge-play">▶ Play Now</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{% url 'games:osint' %}" class="cq-card-link">
+                <div class="cq-card cq-card-playable p-4">
+                    <h5>🕵️ OSINT Investigation</h5>
+                    <p class="text-muted small">Gather intelligence from open sources to solve real-world scenarios.</p>
+                    <span class="badge cq-badge-play">▶ Play Now</span>
+                </div>
+            </a>
+        </div>
+    </a>
+</div>
     </div>
 </div>
 

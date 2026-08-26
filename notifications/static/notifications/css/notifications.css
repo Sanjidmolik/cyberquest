@@ -1,0 +1,11 @@
+body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
+.cq-navbar { background: #161b22; border-bottom: 1px solid #30363d; }
+.cq-brand { color: #39ff88; text-decoration: none; font-weight: 700; }
+.cq-heading { font-weight: 700; }
+.cq-notif-link { text-decoration: none; }
+.cq-notif-card {
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 14px 18px; margin-bottom: 10px; color: #e6edf3;
+}
+.cq-notif-unread { border-left: 3px solid #39ff88; background: rgba(57,255,136,0.05); }
+.cq-notif-time { color: #6b7c8c; font-size: 0.8rem; }

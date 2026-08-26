@@ -1,0 +1,75 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ course.title }} — CyberQuest</title>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'courses/css/reader.css' %}">
+{% if uses_pdf %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+{% endif %}
+</head>
+<body>
+
+<div class="reader-topbar">
+    <a href="{% url 'courses:intro' %}" class="reader-back">&larr; All Courses</a>
+    <span class="reader-title">{{ course.title }}</span>
+
+    <div class="reader-controls">
+        <button id="font-decrease" class="reader-btn" title="Smaller text">A&minus;</button>
+        <button id="font-increase" class="reader-btn" title="Larger text">A+</button>
+        <div class="reader-theme-group">
+            <button class="reader-btn theme-btn" data-theme="light" title="Light theme">☀️</button>
+            <button class="reader-btn theme-btn" data-theme="sepia" title="Sepia theme">📜</button>
+            <button class="reader-btn theme-btn" data-theme="dark" title="Dark theme">🌙</button>
+        </div>
+    </div>
+</div>
+
+<!-- Progress bar -->
+<div class="reader-progress-track">
+    <div id="reader-progress-fill" class="reader-progress-fill"></div>
+</div>
+
+<div id="reader-stage" class="reader-stage">
+
+    <button id="prev-btn" class="flip-zone flip-zone-left" aria-label="Previous page">&#10094;</button>
+
+    <div id="book" class="book">
+        <div id="page-current" class="page page-current"></div>
+        <div id="page-incoming" class="page page-incoming"></div>
+    </div>
+
+    <button id="next-btn" class="flip-zone flip-zone-right" aria-label="Next page">&#10095;</button>
+
+</div>
+
+<div class="reader-footer">
+    <span id="page-indicator">Page 1 of 1</span>
+    <button id="complete-btn" class="reader-complete-btn" disabled>
+        {% if already_done %}✔ Already Completed{% else %}Reach the last page to unlock{% endif %}
+    </button>
+</div>
+
+<!-- Raw source content, hidden -- read by reader.js for text pagination.
+     Only used when the course has no PDF uploaded. -->
+{% if not uses_pdf %}
+<div id="raw-course-content" hidden>{{ course.content|linebreaks }}</div>
+{% endif %}
+
+<script>
+    const READER_CONFIG = {
+        courseCode: "{{ course.code }}",
+        usesPdf: {{ uses_pdf|yesno:"true,false" }},
+        pdfUrl: {% if uses_pdf %}"{{ course.pdf_file.url }}"{% else %}null{% endif %},
+        resumePageIndex: {{ resume_page_index }},
+        alreadyDone: {{ already_done|yesno:"true,false" }},
+        saveProgressUrl: "{% url 'courses:save_progress' course.code %}",
+        completeUrl: "{% url 'courses:mark_complete' course.code %}",
+        csrfToken: "{{ csrf_token }}",
+    };
+</script>
+<script src="{% static 'courses/js/reader.js' %}"></script>
+</body>
+</html>

@@ -1,31 +1,35 @@
-"""
-courses/admin.py
---------------------
-This is where an admin actually WRITES the course content -- via
-/admin/ -> Courses -> click a course -> edit the "Content" field.
-No code changes are needed to add, edit, or reorder lessons.
-"""
-
 from django.contrib import admin
-from .models import Course, CourseProgress
+from .models import Course, CourseProgress, ReadingProgress
 
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("code", "title", "order", "is_published")
-    list_editable = ("order", "is_published")  # quick reordering right from the list page
+    list_display = ("code", "title", "order", "is_published", "content_source")
+    list_editable = ("order", "is_published")
     ordering = ("order",)
     search_fields = ("code", "title")
     fieldsets = (
         (None, {"fields": ("code", "title", "short_description", "order", "is_published")}),
-        ("Lesson Content", {"fields": ("content",)}),
+        ("Content — choose ONE", {
+            "fields": ("pdf_file", "content"),
+            "description": "Upload a PDF e-book OR type plain text below. "
+                            "If a PDF is uploaded, it takes priority and the plain text is ignored.",
+        }),
     )
+
+    @admin.display(description="Content type")
+    def content_source(self, obj):
+        return "📕 PDF e-book" if obj.uses_pdf() else "📝 Plain text"
 
 
 @admin.register(CourseProgress)
 class CourseProgressAdmin(admin.ModelAdmin):
-    """Read-only view of who has completed which course, and when."""
     list_display = ("user", "course", "completed_at")
     list_filter = ("course",)
     search_fields = ("user__email", "user__username")
-    ordering = ("-completed_at",)
+
+
+@admin.register(ReadingProgress)
+class ReadingProgressAdmin(admin.ModelAdmin):
+    list_display = ("user", "course", "last_page_index", "updated_at")
+    search_fields = ("user__email",)

@@ -1,184 +1,20 @@
-/*
-  games/static/games/css/games.css
-  ------------------------------------
-  Styling for ALL game pages. Isolated from accounts/dashboard/courses CSS.
-*/
-
-body {
-    background-color: #0d1117;
-    color: #e6edf3;
-    font-family: 'Segoe UI', sans-serif;
-    margin: 0;
+body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
+.cq-navbar { background: #161b22; border-bottom: 1px solid #30363d; }
+.cq-brand { color: #39ff88; text-decoration: none; font-weight: 700; }
+.cq-game-title { font-weight: 700; }
+.cq-btn { background: #39ff88; color: #0d1117; font-weight: 700; border: none; padding: 12px; border-radius: 8px; }
+.cq-quiz-card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; }
+.cq-quiz-prompt { font-weight: 600; margin-bottom: 12px; }
+.cq-quiz-option {
+    display: block; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+    padding: 8px 12px; margin-bottom: 8px; cursor: pointer;
 }
-
-.cq-navbar {
-    background-color: #161b22;
-    border-bottom: 1px solid #30363d;
-    height: 64px;
-    display: flex;
-    align-items: center;
-}
-
-.cq-brand {
-    color: #39ff88;
-    font-weight: 700;
-    text-decoration: none;
-    letter-spacing: 1px;
-}
-
-.cq-game-title {
-    color: #e6edf3;
-    font-weight: 800;
-}
-
-/* ---------- Email card (quiz question) ---------- */
-.cq-email-card {
-    background-color: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 10px;
-    padding: 20px 22px;
-}
-
-.cq-email-header {
-    font-size: 0.85rem;
-    color: #8b949e;
-    margin-bottom: 4px;
-}
-
-.cq-email-label {
-    color: #58a6ff;
-    font-weight: 600;
-}
-
-.cq-email-body {
-    color: #d7ffe0;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin-top: 12px;
-    margin-bottom: 0;
-}
-
-.cq-choice-pill {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border: 1px solid #30363d;
-    border-radius: 20px;
-    padding: 8px 16px;
-    cursor: pointer;
-    transition: 0.2s ease;
-    flex: 1;
-    justify-content: center;
-}
-
-.cq-choice-pill:has(input:checked) {
-    border-color: #39ff88;
-    background-color: rgba(57, 255, 136, 0.08);
-}
-
-.cq-choice-danger:has(input:checked) {
-    border-color: #f85149;
-    background-color: rgba(248, 81, 73, 0.08);
-}
-
-.cq-choice-medium:has(input:checked) {
-    border-color: #ffd23f;
-    background-color: rgba(255, 210, 63, 0.08);
-}
-
-/* ---------- Password Cracker: monospace password display ---------- */
-.cq-password-display {
-    font-family: 'Courier New', monospace;
-    font-size: 1.4rem;
-    letter-spacing: 1px;
-    color: #39ff88;
-    background-color: #0d1117;
-    border: 1px solid #30363d;
-    border-radius: 6px;
-    padding: 14px 18px;
-    text-align: center;
-    word-break: break-all;
-}
-
-.cq-btn {
-    background-color: #39ff88;
-    color: #0d1117;
-    font-weight: 700;
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    text-decoration: none;
-    display: inline-block;
-    text-align: center;
-    flex: 1;
-    transition: 0.2s ease;
-}
-.cq-btn:hover { background-color: #2fe376; color: #0d1117; }
-
-.cq-btn-outline {
-    background-color: transparent;
-    color: #39ff88;
-    border: 1px solid #39ff88;
-    padding: 12px;
-    border-radius: 8px;
-    text-decoration: none;
-    text-align: center;
-    flex: 1;
-    transition: 0.2s ease;
-}
-.cq-btn-outline:hover { background-color: rgba(57,255,136,0.1); color: #39ff88; }
-
-/* ---------- Results page ---------- */
-.cq-score-banner {
-    background-color: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 12px;
-    padding: 24px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.cq-score-big {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #39ff88;
-}
-
-.cq-score-label {
-    color: #8b949e;
-}
-
-.cq-xp-pill {
-    margin-left: auto;
-    background-color: rgba(57, 255, 136, 0.1);
-    border: 1px solid #39ff88;
-    color: #39ff88;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 0.85rem;
-}
-
-.cq-xp-pill-muted {
-    color: #8b949e;
-    border-color: #30363d;
-    background-color: transparent;
-}
-
-.cq-result-card {
-    background-color: #161b22;
-    border: 1px solid #30363d;
-    border-left: 4px solid #30363d;
-    border-radius: 8px;
-    padding: 16px 20px;
-}
-
-.cq-result-correct { border-left-color: #39ff88; }
-.cq-result-wrong { border-left-color: #f85149; }
-
-.cq-flag-list {
-    color: #8b949e;
-    padding-left: 18px;
-}
+.cq-quiz-option:has(input:checked) { border-color: #39ff88; background: rgba(57,255,136,0.08); }
+.cq-score-banner { display: flex; align-items: center; gap: 16px; }
+.cq-score-big { font-size: 2rem; font-weight: 800; color: #39ff88; }
+.cq-score-label { color: #8b949e; }
+.cq-xp-pill { background: #39ff88; color: #0d1117; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; }
+.cq-xp-pill-muted { background: #30363d; color: #8b949e; }
+.cq-result-card { border-radius: 8px; padding: 14px 16px; }
+.cq-result-correct { background: rgba(57,255,136,0.06); border: 1px solid #1f9c53; }
+.cq-result-wrong { background: rgba(248,81,73,0.06); border: 1px solid #f85149; }

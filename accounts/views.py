@@ -1,120 +1,304 @@
 """
 accounts/views.py
 --------------------
-Handles WHAT HAPPENS on each request to the login/logout URLs.
+Google Sign-In flow, added alongside the existing email/password + 2FA
+flow:
 
-This file intentionally does NOT contain:
-  - email validation rules      -> validators.py
-  - the actual password check   -> backends.py
-  - form field definitions      -> forms.py
-It only wires those pieces together and decides what to show the user.
+  google_login_start()    -- redirects the user to Google's consent screen
+  google_login_callback() -- Google redirects back here with a `code`;
+                              we exchange it for the user's verified email,
+                              then log them in (creating an account on
+                              first sign-in).
+
+DESIGN DECISION: Google Sign-In does NOT also require our own 6-digit
+2FA code. Google's own sign-in already typically enforces its own
+2FA/verification on the user's Google account -- requiring a SECOND,
+separate 2FA step here would be redundant friction, not extra security.
 """
 
-from django.contrib.auth import authenticate, login, logout, get_user_model
+import secrets
+from django.contrib.auth import login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.urls import reverse
+from django.core.files.base import ContentFile
+import requests
 
-from .forms import LoginForm, SignupForm
+from .forms import LoginForm, SignupForm, ProfilePictureForm, CompleteProfileForm
 from .routing import next_step_url_name
+from .codes import generate_code, check_code
+from .emails import send_welcome_email, send_login_2fa_email, send_password_reset_email
+from .oauth import build_google_auth_url, exchange_code_for_token, fetch_google_userinfo
 
 UserModel = get_user_model()
 
+PENDING_LOGIN_SESSION_KEY = "pending_2fa_user_id"
+PENDING_RESET_SESSION_KEY = "pending_reset_user_id"
+GOOGLE_OAUTH_STATE_SESSION_KEY = "google_oauth_state"
+
 
 def signup_view(request):
-    """
-    Show the signup page (GET) and create the account (POST).
-    On success, logs the new user in immediately and sends them to the
-    dashboard -- no separate "verify your email" step for now.
-    """
-
     if request.user.is_authenticated:
         return redirect(next_step_url_name(request.user))
 
     if request.method == "POST":
         form = SignupForm(request.POST)
-
         if form.is_valid():
-            # form.is_valid() already confirmed: valid domain, email not
-            # taken, username not taken, passwords match, age >= 13
-            email = form.cleaned_data["email"]
-            username = form.cleaned_data["username"]
-            password = form.cleaned_data["password"]
-            date_of_birth = form.cleaned_data["date_of_birth"]
-            cyber_class = form.cleaned_data["cyber_class"]
-            skill_level = form.cleaned_data["skill_level"]
-            ethical_agreement = form.cleaned_data["ethical_agreement"]
-
-            # create_user() hashes the password for us (see models.py)
             user = UserModel.objects.create_user(
-                email=email,
-                password=password,
-                username=username,
-                date_of_birth=date_of_birth,
-                cyber_class=cyber_class,
-                skill_level=skill_level,
-                ethical_agreement=ethical_agreement,
+                email=form.cleaned_data["email"], password=form.cleaned_data["password"],
+                username=form.cleaned_data["username"], date_of_birth=form.cleaned_data["date_of_birth"],
+                cyber_class=form.cleaned_data["cyber_class"], skill_level=form.cleaned_data["skill_level"],
+                ethical_agreement=form.cleaned_data["ethical_agreement"],
             )
-
-            # We must specify which backend to use here, since settings.py
-            # configures TWO backends (our EmailAuthBackend + Django's
-            # default ModelBackend for /admin/). We didn't just come from
-            # authenticate(), so Django doesn't know which one applies.
+            send_welcome_email(user)
+            from notifications.utils import notify
+            notify(user, "Welcome to CyberQuest! Complete your first course to unlock the games.")
             login(request, user, backend="accounts.backends.EmailAuthBackend")
             messages.success(request, f"Welcome to CyberQuest, {user.display_name()}!")
-            # New accounts always start at the course intro -- course_intro_completed
-            # defaults to False, so next_step_url_name() sends them there first.
             return redirect(next_step_url_name(user))
-        # if invalid, form errors (bad domain, email taken, password
-        # mismatch, etc.) are shown automatically in the template
     else:
         form = SignupForm()
-
     return render(request, "accounts/signup.html", {"form": form})
 
 
 def login_view(request):
-    """
-    Show the login page (GET) and process the login attempt (POST).
-    """
-
-    # If the user is already logged in, send them to whatever step is next.
     if request.user.is_authenticated:
         return redirect(next_step_url_name(request.user))
 
     if request.method == "POST":
         form = LoginForm(request.POST)
-
         if form.is_valid():
-            # form.is_valid() ALSO ran our email-domain check (forms.py -> validators.py)
             email = form.cleaned_data["email"]
             password = form.cleaned_data["password"]
+            try:
+                user = UserModel.objects.get(email__iexact=email)
+            except UserModel.DoesNotExist:
+                user = None
 
-            # authenticate() calls OUR backend in backends.py behind the scenes
-            user = authenticate(request, email=email, password=password)
-
-            if user is not None:
-                login(request, user)  # creates the logged-in session
-                messages.success(request, f"Welcome back, {user.email}!")
-                # Enforced learning path: unread course -> course intro, else dashboard
-                return redirect(next_step_url_name(user))
-            else:
-                # Email format/domain was fine, but email+password didn't match
-                # any account. Keep the message generic for security.
+            if user is None or not user.has_usable_password() or not user.check_password(password):
                 messages.error(request, "Invalid email or password.")
-        # If form.is_valid() is False, Django automatically attaches the
-        # validator's error message (e.g. "Only Gmail, Hotmail... allowed")
-        # to the template via {{ form.email.errors }}
-
+            elif not user.is_active:
+                messages.error(request, "Your account has been suspended. Please contact support if you believe this is a mistake.")
+            else:
+                code = generate_code(user, purpose="login_2fa")
+                send_login_2fa_email(user, code.code)
+                request.session[PENDING_LOGIN_SESSION_KEY] = user.pk
+                return redirect("accounts:verify_login")
     else:
         form = LoginForm()
-
     return render(request, "accounts/login.html", {"form": form})
+
+
+def verify_login_pin(request):
+    pending_user_id = request.session.get(PENDING_LOGIN_SESSION_KEY)
+    if not pending_user_id:
+        messages.error(request, "Please log in first.")
+        return redirect("accounts:login")
+
+    user = UserModel.objects.filter(pk=pending_user_id).first()
+    if user is None:
+        del request.session[PENDING_LOGIN_SESSION_KEY]
+        return redirect("accounts:login")
+
+    if request.method == "POST":
+        if "resend" in request.POST:
+            code = generate_code(user, purpose="login_2fa")
+            send_login_2fa_email(user, code.code)
+            messages.success(request, "A new code has been sent to your email.")
+        else:
+            submitted_code = request.POST.get("code", "")
+            if check_code(user, purpose="login_2fa", submitted_code=submitted_code):
+                del request.session[PENDING_LOGIN_SESSION_KEY]
+                login(request, user, backend="accounts.backends.EmailAuthBackend")
+                messages.success(request, f"Welcome back, {user.email}!")
+                return redirect(next_step_url_name(user))
+            else:
+                messages.error(request, "Incorrect or expired code. Please try again.")
+
+    return render(request, "accounts/verify_login.html", {"email": user.email})
+
+
+def forgot_password_view(request):
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
+        user = UserModel.objects.filter(email__iexact=email).first()
+        if user is not None and user.has_usable_password():
+            code = generate_code(user, purpose="password_reset")
+            send_password_reset_email(user, code.code)
+            request.session[PENDING_RESET_SESSION_KEY] = user.pk
+        messages.success(request, "If that email is registered, a reset code has been sent.")
+        return redirect("accounts:reset_password")
+    return render(request, "accounts/forgot_password.html")
+
+
+def reset_password_view(request):
+    pending_user_id = request.session.get(PENDING_RESET_SESSION_KEY)
+    if not pending_user_id:
+        messages.error(request, "Please request a password reset code first.")
+        return redirect("accounts:forgot_password")
+
+    user = UserModel.objects.filter(pk=pending_user_id).first()
+
+    if request.method == "POST" and user is not None:
+        submitted_code = request.POST.get("code", "")
+        new_password = request.POST.get("new_password", "")
+        confirm_password = request.POST.get("confirm_password", "")
+
+        if not check_code(user, purpose="password_reset", submitted_code=submitted_code):
+            messages.error(request, "Incorrect or expired code.")
+        elif len(new_password) < 8:
+            messages.error(request, "Password must be at least 8 characters.")
+        elif new_password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+        else:
+            user.set_password(new_password)
+            user.save(update_fields=["password"])
+            del request.session[PENDING_RESET_SESSION_KEY]
+            messages.success(request, "Password reset successfully. Please log in.")
+            return redirect("accounts:login")
+
+    return render(request, "accounts/reset_password.html")
 
 
 @login_required(login_url="/accounts/login/")
 def logout_view(request):
-    """Log the current user out and send them back to the login page."""
     logout(request)
     messages.info(request, "You have been logged out.")
     return redirect("accounts:login")
+
+
+@login_required(login_url="/accounts/login/")
+def profile_settings(request):
+    if request.method == "POST":
+        form = ProfilePictureForm(request.POST, request.FILES)
+        if form.is_valid():
+            request.user.profile_picture = form.cleaned_data["profile_picture"]
+            request.user.save(update_fields=["profile_picture"])
+            messages.success(request, "Profile picture updated!")
+            return redirect("accounts:profile_settings")
+    else:
+        form = ProfilePictureForm()
+    return render(request, "accounts/profile_settings.html", {"form": form})
+
+
+# ============================================================
+# GOOGLE SIGN-IN
+# ============================================================
+
+def google_login_start(request):
+    """Step 1: send the user to Google's own consent screen."""
+    state = secrets.token_urlsafe(24)
+    request.session[GOOGLE_OAUTH_STATE_SESSION_KEY] = state
+    redirect_uri = request.build_absolute_uri(reverse("accounts:google_callback"))
+    return redirect(build_google_auth_url(state, redirect_uri))
+
+
+def google_login_callback(request):
+    """Step 2: Google redirects back here with a one-time code (or an error)."""
+
+    if request.GET.get("error"):
+        messages.error(request, "Google sign-in was cancelled.")
+        return redirect("accounts:login")
+
+    returned_state = request.GET.get("state")
+    expected_state = request.session.pop(GOOGLE_OAUTH_STATE_SESSION_KEY, None)
+    # Comparing against a value WE generated and stored server-side (not
+    # trusting anything the browser sends alone) -- this is what stops an
+    # attacker from tricking a user into completing someone else's OAuth flow.
+    if not returned_state or returned_state != expected_state:
+        messages.error(request, "Invalid sign-in attempt. Please try again.")
+        return redirect("accounts:login")
+
+    code = request.GET.get("code")
+    if not code:
+        messages.error(request, "Google sign-in failed. Please try again.")
+        return redirect("accounts:login")
+
+    redirect_uri = request.build_absolute_uri(reverse("accounts:google_callback"))
+    try:
+        token_data = exchange_code_for_token(code, redirect_uri)
+        userinfo = fetch_google_userinfo(token_data["access_token"])
+    except (requests.RequestException, KeyError):
+        messages.error(request, "Could not connect to Google. Please try again.")
+        return redirect("accounts:login")
+
+    if not userinfo.get("email_verified"):
+        messages.error(request, "Your Google email address is not verified.")
+        return redirect("accounts:login")
+
+    email = userinfo["email"]
+    user = UserModel.objects.filter(email__iexact=email).first()
+    created = False
+
+    if user is None:
+        created = True
+        base_username = email.split("@")[0]
+        username = base_username
+        suffix = 1
+        while UserModel.objects.filter(username__iexact=username).exists():
+            suffix += 1
+            username = f"{base_username}{suffix}"
+
+        user = UserModel.objects.create_user(
+            email=email, password=None,  # -> set_unusable_password() inside create_user
+            username=username, full_name=userinfo.get("name", ""), google_linked=True,
+        )
+
+        # Best-effort: pull their Google avatar in as a starting profile
+        # picture. Never blocks account creation if this fails.
+        picture_url = userinfo.get("picture")
+        if picture_url:
+            try:
+                img_response = requests.get(picture_url, timeout=10)
+                if img_response.status_code == 200:
+                    user.profile_picture.save(
+                        f"google_{user.pk}.jpg", ContentFile(img_response.content), save=True
+                    )
+            except requests.RequestException:
+                pass
+
+    if not user.is_active:
+        messages.error(request, "Your account has been suspended. Please contact support if you believe this is a mistake.")
+        return redirect("accounts:login")
+
+    login(request, user, backend="accounts.backends.EmailAuthBackend")
+
+    if created:
+        send_welcome_email(user)
+        from notifications.utils import notify
+        notify(user, "Welcome to CyberQuest! Please complete your profile to get started.")
+        messages.success(request, f"Welcome to CyberQuest, {user.display_name()}!")
+    else:
+        messages.success(request, f"Welcome back, {user.email}!")
+
+    return redirect(next_step_url_name(user))
+
+
+@login_required(login_url="/accounts/login/")
+def complete_profile_view(request):
+    """
+    Shown once to Google sign-ups (or anyone else missing the CyberQuest-
+    specific fields our normal signup form collects). Skipped entirely
+    for regular email/password users, since they already filled this in
+    at signup.
+    """
+    if request.user.ethical_agreement:
+        # Already complete -- nothing to do here, send them onward.
+        return redirect(next_step_url_name(request.user))
+
+    if request.method == "POST":
+        form = CompleteProfileForm(request.POST)
+        if form.is_valid():
+            user = request.user
+            user.date_of_birth = form.cleaned_data["date_of_birth"]
+            user.cyber_class = form.cleaned_data["cyber_class"]
+            user.skill_level = form.cleaned_data["skill_level"]
+            user.ethical_agreement = form.cleaned_data["ethical_agreement"]
+            user.save(update_fields=["date_of_birth", "cyber_class", "skill_level", "ethical_agreement"])
+            messages.success(request, "Profile complete!")
+            return redirect(next_step_url_name(user))
+    else:
+        form = CompleteProfileForm()
+
+    return render(request, "accounts/complete_profile.html", {"form": form})
