@@ -3,26 +3,888 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Certificate — CyberQuest</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberQuest Certificate</title>
+
+
     <style>
-        body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
-        .cq-navbar { background: #161b22; border-bottom: 1px solid #30363d; padding: 14px 24px; }
-        .cq-brand { color: #39ff88; text-decoration: none; font-weight: 700; }
-        .cq-btn { background: #39ff88; color: #0d1117; font-weight: 700; border: none; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; }
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #050d18;
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: #081628;
+        }
+
+        .top-nav {
+            padding: 14px 25px;
+            background: #071522;
+            border-bottom: 1px solid #16344a;
+        }
+
+        .top-nav a {
+            color: #31d8ce;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .certificate-wrapper {
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        .certificate {
+            width: 1500px;
+            min-height: 920px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: 330px 1fr 380px;
+            background: #f7f8f8;
+            border: 3px solid #d9a632;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 45px rgba(0, 0, 0, .5);
+        }
+
+        /* LEFT PANEL */
+
+        .left-panel {
+            padding: 30px 24px;
+            background:
+                linear-gradient(rgba(3,15,29,.96), rgba(3,15,29,.98)),
+                repeating-linear-gradient(
+                    45deg,
+                    transparent 0,
+                    transparent 20px,
+                    rgba(26,213,209,.04) 21px,
+                    rgba(26,213,209,.04) 22px
+                );
+
+            color: white;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .brand-logo {
+            width: 80px;
+            height: 80px;
+            margin: auto auto 12px;
+            border: 3px solid #21d5ce;
+            border-radius: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 35px;
+            font-weight: 900;
+            color: #23d9ce;
+        }
+
+        .brand h2 {
+            font-size: 28px;
+            letter-spacing: 1px;
+            margin: 0;
+            font-weight: 800;
+        }
+
+        .brand h2 span {
+            color: #27d9d1;
+        }
+
+        .brand small {
+            letter-spacing: 3px;
+            color: #c9d3db;
+        }
+
+        .panel-heading {
+            text-align: center;
+            color: #2bd8cf;
+            font-size: 19px;
+            font-weight: 800;
+            margin: 20px 0;
+        }
+
+        .course {
+            border: 1px solid #315066;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            background: rgba(255,255,255,.02);
+        }
+
+        .course-number {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: #172b3d;
+            color: #31ddd3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 800;
+        }
+
+        .course-icon {
+            font-size: 31px;
+        }
+
+        .course h4 {
+            margin: 0;
+            font-size: 16px;
+            color: white;
+            font-weight: 800;
+        }
+
+        .course p {
+            margin: 4px 0;
+            color: #bac6cf;
+            font-size: 12px;
+        }
+
+        .completed {
+            color: #2de595;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .mission-box {
+            margin-top: 22px;
+            border: 2px solid #d8a336;
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .mission-box h3 {
+            color: #26d8d0;
+            font-size: 19px;
+            font-weight: 800;
+        }
+
+        .mission-box p {
+            color: #e9edf0;
+            font-size: 13px;
+        }
+
+        /* CENTER */
+
+        .center-panel {
+            padding: 55px 50px 30px;
+            position: relative;
+            text-align: center;
+            background:
+                radial-gradient(circle at center, #ffffff 0%, #f8f8f7 65%, #edf2f2 100%);
+        }
+
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #071726;
+            color: #f7bd43;
+            padding: 12px 70px 18px;
+            border-radius: 0 0 40px 40px;
+            font-size: 24px;
+            border: 2px solid #d9a632;
+            border-top: none;
+        }
+
+        .certificate-title {
+            margin-top: 50px;
+            font-family: Georgia, serif;
+            font-size: 71px;
+            font-weight: 700;
+            letter-spacing: 6px;
+            color: #07182c;
+        }
+
+        .achievement {
+            font-size: 27px;
+            letter-spacing: 8px;
+            font-weight: 700;
+            color: #0f2940;
+        }
+
+        .presented {
+            display: inline-block;
+            background: #087b7b;
+            color: white;
+            margin-top: 35px;
+            padding: 8px 55px;
+            font-size: 19px;
+            letter-spacing: 3px;
+        }
+
+        .student-name {
+            margin-top: 35px;
+            font-family: "Brush Script MT", cursive;
+            font-size: 56px;
+            font-weight: 500;
+            color: #09172c;
+        }
+
+        .gold-divider {
+            width: 75%;
+            height: 2px;
+            margin: 20px auto;
+            background: linear-gradient(
+                to right,
+                transparent,
+                #d9a632,
+                #d9a632,
+                transparent
+            );
+        }
+
+        .completion-text {
+            font-size: 18px;
+            margin-bottom: 3px;
+        }
+
+        .journey {
+            color: #087576;
+            font-size: 27px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .description {
+            max-width: 650px;
+            margin: 10px auto 25px;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .achievement-row {
+            border-top: 1px solid #9ba4a7;
+            border-bottom: 1px solid #9ba4a7;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            padding: 18px 0;
+            margin-top: 22px;
+        }
+
+        .achievement-item {
+            padding: 0 8px;
+            border-right: 1px solid #ccd3d5;
+            font-size: 12px;
+        }
+
+        .achievement-item:last-child {
+            border-right: none;
+        }
+
+        .achievement-icon {
+            font-size: 28px;
+            margin-bottom: 6px;
+        }
+
+        /* SIGNATURE AREA */
+
+        .signature-section {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) 130px minmax(220px, 1fr);
+            gap: 32px;
+            width: 92%;
+            margin: 38px auto 0;
+            align-items: end;
+        }
+
+        .signature {
+            text-align: center;
+        }
+
+        .signature-space {
+            height: 82px;
+        }
+
+        .signature-line {
+            width: 100%;
+            border-top: 1.5px solid #1c2833;
+            margin-bottom: 9px;
+        }
+
+        .signature-name {
+            font-size: 15px;
+            font-weight: 800;
+            color: #07182c;
+            white-space: nowrap;
+        }
+
+        .signature-role {
+            color: #087576;
+            font-size: 13px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        /* CYBERQUEST SEAL */
+
+        .seal-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: end;
+            height: 138px;
+        }
+
+        .seal {
+            width: 116px;
+            height: 116px;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle, #f7dc88 0%, #d6a431 54%, #a86a0b 100%);
+            border: 7px double #f8e19a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow:
+                0 4px 10px rgba(0,0,0,.24),
+                inset 0 0 0 2px rgba(111,69,5,.35);
+        }
+
+        .seal-inner {
+            width: 84px;
+            height: 84px;
+            border: 2px solid #6f4505;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #17120a;
+            text-align: center;
+            line-height: 1.15;
+        }
+
+        .seal-mark {
+            font-size: 22px;
+            line-height: 1;
+            margin-bottom: 3px;
+        }
+
+        .seal-inner strong {
+            font-size: 10px;
+            letter-spacing: .4px;
+        }
+
+        .seal-inner span {
+            font-size: 8px;
+            font-weight: 900;
+            letter-spacing: .5px;
+        }
+
+        /* RIGHT */
+
+        .right-panel {
+            background: #071522;
+            padding: 30px 22px;
+            color: white;
+        }
+
+        .credential-box,
+        .score-card,
+        .quote-box {
+            border: 1px solid #1a9c9b;
+            border-radius: 13px;
+            padding: 20px;
+            margin-bottom: 24px;
+            background: linear-gradient(
+                145deg,
+                rgba(15,36,52,.95),
+                rgba(2,15,27,.95)
+            );
+        }
+
+        .right-title {
+            color: #24d4cd;
+            font-weight: 800;
+            font-size: 18px;
+            margin-bottom: 14px;
+        }
+
+        .credential-label {
+            color: #22d5ce;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .credential-value {
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .skill {
+            margin-bottom: 17px;
+        }
+
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .progress {
+            height: 9px;
+            background: #18364a;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #1abec0, #30ebe0);
+        }
+
+        .overall {
+            border-top: 1px solid #227978;
+            margin-top: 20px;
+            padding-top: 18px;
+            text-align: center;
+        }
+
+        .overall-number {
+            font-size: 54px;
+            color: #25d8d0;
+            font-weight: 800;
+        }
+
+        .level {
+            color: #f4bd4b;
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .quote-box {
+            margin-top: 25px;
+            color: #ccd8df;
+            line-height: 1.7;
+        }
+
+        .download-area {
+            text-align: center;
+            padding: 25px;
+        }
+
+        .download-btn {
+            background: #20d6cd;
+            color: #06131e;
+            padding: 13px 28px;
+            border-radius: 8px;
+            font-weight: 800;
+            border: none;
+            text-decoration: none;
+        }
+
+        @page {
+         size: 1650px 1300px;
+         margin: 0;
+        }
+
+        @media print {
+            .top-nav,
+         .download-area {
+        display: none;
+         }
+         body {
+        background: white;
+        margin: 0;
+        padding: 0;
+         }
+         .certificate-wrapper {
+        padding: 0;
+        }
+         .certificate {
+        transform-origin: top left;
+        box-shadow: none;
+        margin: 0;
+         }
+    }
     </style>
 </head>
-<body>
-<nav class="cq-navbar"><a href="{% url 'dashboard:home' %}" class="cq-brand">← CyberQuest</a></nav>
 
-<div class="container py-5 text-center" style="max-width: 550px;">
-    <h1 class="mb-4">🎓 Certificate</h1>
-    {% if eligible %}
-        <p class="text-muted mb-4">Congratulations — you've completed the CyberQuest curriculum!</p>
-        <a href="{% url 'certificates:download' %}" class="cq-btn">Download Certificate (PDF)</a>
-    {% else %}
-        <p class="text-muted mb-4">Complete every course to unlock your certificate.</p>
-    {% endif %}
+<body>
+
+<nav class="top-nav">
+    <a href="{% url 'dashboard:home' %}">← CyberQuest Dashboard</a>
+</nav>
+
+
+{% if eligible %}
+
+<div class="certificate-wrapper">
+
+<div class="certificate">
+
+    <!-- LEFT SIDE -->
+    <section class="left-panel">
+
+        <div class="brand">
+            <div class="brand-logo">CQ</div>
+            <h2>CYBER<span>QUEST</span></h2>
+            <small>LEARN • SIMULATE • PROTECT</small>
+        </div>
+
+        <div class="panel-heading">
+            ── COURSES COMPLETED ──
+        </div>
+
+        <div class="course">
+            <div class="course-number">01</div>
+            <div class="course-icon">🎣</div>
+            <div>
+                <h4>PHISHING</h4>
+                <p>Detect • Analyze • Respond</p>
+                <div class="completed">COMPLETED ✓</div>
+            </div>
+        </div>
+
+        <div class="course">
+            <div class="course-number">02</div>
+            <div class="course-icon">🔐</div>
+            <div>
+                <h4>PASSWORD SECURITY</h4>
+                <p>Strengthen • Protect • Secure</p>
+                <div class="completed">COMPLETED ✓</div>
+            </div>
+        </div>
+
+        <div class="course">
+            <div class="course-number">03</div>
+            <div class="course-icon">🛡️</div>
+            <div>
+                <h4>NETWORK DEFENSE</h4>
+                <p>Monitor • Defend • Prevent</p>
+                <div class="completed">COMPLETED ✓</div>
+            </div>
+        </div>
+
+        <div class="course">
+            <div class="course-number">04</div>
+            <div class="course-icon">🔏</div>
+            <div>
+                <h4>CRYPTOGRAPHY</h4>
+                <p>Encrypt • Decrypt • Secure</p>
+                <div class="completed">COMPLETED ✓</div>
+            </div>
+        </div>
+
+        <div class="course">
+            <div class="course-number">05</div>
+            <div class="course-icon">🕵️</div>
+            <div>
+                <h4>OSINT</h4>
+                <p>Collect • Investigate • Discover</p>
+                <div class="completed">COMPLETED ✓</div>
+            </div>
+        </div>
+
+        <div class="mission-box">
+            <h3>🏆 MISSION COMPLETE</h3>
+            <p>
+                All 5 courses successfully completed.
+            </p>
+            <strong>You are a CyberQuest Achiever!</strong>
+        </div>
+
+    </section>
+
+
+    <!-- CENTER -->
+    <main class="center-panel">
+
+        <div class="stars">
+            ★ ★ ★ ★ ★
+        </div>
+
+        <div class="certificate-title">
+            CERTIFICATE
+        </div>
+
+        <div class="achievement">
+            OF ACHIEVEMENT
+        </div>
+
+        <div class="presented">
+            PROUDLY PRESENTED TO
+        </div>
+
+        <div class="student-name">
+            {{ display_name }}
+        </div>
+
+        <div class="gold-divider"></div>
+
+        <div class="completion-text">
+            for successfully completing the entire
+        </div>
+
+        <div class="journey">
+            CYBERQUEST LEARNING JOURNEY
+        </div>
+
+        <div class="description">
+            This learner has successfully completed all CyberQuest
+            cybersecurity courses, scenario-based challenges and
+            practical learning activities.
+        </div>
+
+
+        <div class="achievement-row">
+
+            <div class="achievement-item">
+                <div class="achievement-icon">🎯</div>
+                Completed<br>All Courses
+            </div>
+
+            <div class="achievement-item">
+                <div class="achievement-icon">📋</div>
+                Solved Realistic<br>Scenarios
+            </div>
+
+            <div class="achievement-item">
+                <div class="achievement-icon">🧠</div>
+                Made Smart<br>Decisions
+            </div>
+
+            <div class="achievement-item">
+                <div class="achievement-icon">🛡️</div>
+                Achieved All<br>Learning Goals
+            </div>
+
+            <div class="achievement-item">
+                <div class="achievement-icon">🏆</div>
+                Earned This<br>Certificate
+            </div>
+
+        </div>
+
+
+        <!-- TWO SIGNATURES + CENTER SEAL -->
+        <div class="signature-section">
+
+            <div class="signature">
+                <div class="signature-space"></div>
+                <div class="signature-line"></div>
+                <div class="signature-name">Muhammad Mahfuz Hasan</div>
+                <div class="signature-role">Head of CyberQuest</div>
+            </div>
+
+            <div class="seal-wrap">
+                <div class="seal">
+                    <div class="seal-inner">
+                        <div class="seal-mark">🛡</div>
+                        <strong>CYBERQUEST</strong>
+                        <span>CERTIFIED</span>
+                        <span>ACHIEVER</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="signature">
+                <div class="signature-space"></div>
+                <div class="signature-line"></div>
+                <div class="signature-name">Sanjidur Rahman Sanjid</div>
+                <div class="signature-role">Founder &amp; Director</div>
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- RIGHT -->
+    <aside class="right-panel">
+
+        <div class="credential-box">
+
+            <div class="right-title">
+                CREDENTIALS
+            </div>
+
+            <div class="credential-label">
+                CERTIFICATE ID
+            </div>
+
+            <div class="credential-value">
+                {{ certificate_id }}
+            </div>
+
+            <div class="credential-label">
+                DATE ISSUED
+            </div>
+
+            <div class="credential-value">
+                {{ issued_date|date:"d F Y" }}
+            </div>
+
+            <div class="credential-label">
+                VERIFICATION
+            </div>
+
+            <div class="credential-value">
+                Scan QR Code / Verify Certificate ID
+            </div>
+
+            <div style="text-align:center; margin-top:10px;">
+                <img src="{{ qr_code }}" alt="Verification QR Code" style="width:110px; height:110px; border-radius:8px;">
+            </div>
+
+        </div>
+
+
+        <div class="score-card">
+
+            <div class="right-title text-center">
+                YOUR CYBER COMPETENCY PROFILE
+            </div>
+
+
+            <div class="skill">
+                <div class="skill-header">
+                    <span>🎣 PHISHING</span>
+                    <strong>{{ phishing_score }}%</strong>
+                </div>
+
+                <div class="progress">
+                    <div class="progress-bar"
+                         style="width: {{ phishing_score }}%">
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="skill">
+                <div class="skill-header">
+                    <span>🔐 PASSWORD SECURITY</span>
+                    <strong>{{ password_score }}%</strong>
+                </div>
+
+                <div class="progress">
+                    <div class="progress-bar"
+                         style="width: {{ password_score }}%">
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="skill">
+                <div class="skill-header">
+                    <span>🛡 NETWORK DEFENSE</span>
+                    <strong>{{ network_score }}%</strong>
+                </div>
+
+                <div class="progress">
+                    <div class="progress-bar"
+                         style="width: {{ network_score }}%">
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="skill">
+                <div class="skill-header">
+                    <span>🔏 CRYPTOGRAPHY</span>
+                    <strong>{{ cryptography_score }}%</strong>
+                </div>
+
+                <div class="progress">
+                    <div class="progress-bar"
+                         style="width: {{ cryptography_score }}%">
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="skill">
+                <div class="skill-header">
+                    <span>🕵️ OSINT</span>
+                    <strong>{{ osint_score }}%</strong>
+                </div>
+
+                <div class="progress">
+                    <div class="progress-bar"
+                         style="width: {{ osint_score }}%">
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="overall">
+
+                <div class="right-title">
+                    OVERALL COMPETENCY SCORE
+                </div>
+
+                <div class="overall-number">
+                    {{ overall_score }}%
+                </div>
+
+                <div>
+                    LEVEL
+                </div>
+
+                <div class="level">
+                    {{ competency_level }}
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="quote-box">
+
+            <strong>“</strong>
+
+            Cybersecurity is not just a skill,
+            it's a responsibility.
+
+            <br><br>
+
+            You are now part of the next generation
+            of cyber defenders.
+
+        </div>
+
+    </aside>
+
 </div>
+</div>
+
+
+<div class="download-area">
+
+    <a href="{% url 'certificates:download' %}"
+       class="download-btn">
+
+        ⬇ Download Certificate PDF
+
+    </a>
+
+</div>
+
+
+{% else %}
+
+<div class="container py-5 text-center text-white">
+
+    <h1>🔒 Certificate Locked</h1>
+
+    <p class="text-secondary mt-3">
+        Complete all five CyberQuest courses to unlock your certificate.
+    </p>
+
+</div>
+
+{% endif %}
+
+
 </body>
 </html>

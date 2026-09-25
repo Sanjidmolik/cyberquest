@@ -14,12 +14,41 @@
 
 <div class="container py-5" style="max-width: 750px;">
     <h1 class="cq-game-title mb-2">{{ game.emoji }} {{ game.title }}</h1>
-    <p class="text-muted mb-5">{{ game.intro }}</p>
+    <p class="text-muted mb-2">{{ game.intro }}</p>
+    {% if set_number %}
+    <p class="mb-4">
+        <span class="badge text-bg-dark">Question Set {{ set_number }}</span>
+        {% if game.set_type == "SIMULATION" %}
+        <span class="badge text-bg-warning text-dark">Simulation</span>
+        {% elif game.set_type == "NORMAL" %}
+        <span class="badge text-bg-info">Knowledge</span>
+        {% endif %}
+        {% if game.set_title %}<span class="text-muted ms-2">{{ game.set_title }}</span>{% endif %}
+    </p>
+    {% else %}
+    <div class="mb-4"></div>
+    {% endif %}
 
     <form method="post">
         {% csrf_token %}
         {% for q in questions %}
         <div class="cq-quiz-card mb-4">
+            {% if q.scenario %}
+            <div class="cq-scenario mb-3 p-3 border rounded bg-light">
+                {% if q.scenario.title %}<strong>{{ q.scenario.title }}</strong>{% endif %}
+                {% if q.scenario.context %}<p class="mb-2 mt-1">{{ q.scenario.context|linebreaksbr }}</p>{% endif %}
+                {% if q.scenario.sender %}<div><small class="text-muted">From:</small> {{ q.scenario.sender }}</div>{% endif %}
+                {% if q.scenario.subject %}<div><small class="text-muted">Subject:</small> {{ q.scenario.subject }}</div>{% endif %}
+                {% if q.scenario.body %}<div class="mt-2">{{ q.scenario.body|linebreaksbr }}</div>{% endif %}
+                {% if q.scenario.url %}<div class="mt-1"><small class="text-muted">URL:</small> <code>{{ q.scenario.url }}</code></div>{% endif %}
+                {% if q.scenario.log_entry %}<pre class="mt-2 mb-0 small">{{ q.scenario.log_entry }}</pre>{% endif %}
+                {% if q.scenario.alert %}<div class="mt-1"><small class="text-muted">Alert:</small> {{ q.scenario.alert }}</div>{% endif %}
+                {% if q.scenario.network_event %}<div class="mt-1">{{ q.scenario.network_event }}</div>{% endif %}
+                {% if q.scenario.ciphertext %}<pre class="mt-2 mb-0 small">{{ q.scenario.ciphertext }}</pre>{% endif %}
+                {% if q.scenario.public_information_scenario %}<div class="mt-1">{{ q.scenario.public_information_scenario }}</div>{% endif %}
+                {% if q.scenario.password_scenario %}<div class="mt-1">{{ q.scenario.password_scenario }}</div>{% endif %}
+            </div>
+            {% endif %}
             <p class="cq-quiz-prompt">{{ forloop.counter }}. {{ q.prompt|linebreaksbr }}</p>
             {% for option in q.options %}
             <label class="cq-quiz-option">

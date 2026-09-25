@@ -2,151 +2,301 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>CyberQuest — Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberQuest — Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
 </head>
 <body>
 
-<!-- Gamified animated background: moving grid floor + floating glow orbs -->
-<div class="cq-bg">
-    <div class="cq-bg-grid"></div>
-    <div class="cq-bg-orb cq-orb-1"></div>
-    <div class="cq-bg-orb cq-orb-2"></div>
-    <div class="cq-bg-orb cq-orb-3"></div>
+<!-- ================= TOP NAVIGATION ================= -->
+<header class="topnav">
+    <div class="topnav-left">
+        <span class="logo-mark">🛡️</span>
+        <div class="logo-text">
+            <span class="logo-title">CYBERQUEST</span>
+            <span class="logo-tagline">LEARN. PRACTICE. SECURE.</span>
+        </div>
+        <button class="hamburger" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+
+    <form class="topnav-search" action="{% url 'pages:search' %}" method="get">
+        <input type="text" name="q" placeholder="Search missions, courses...">
+        <span class="search-icon">🔍</span>
+    </form>
+
+    <div class="topnav-right">
+        <a href="{% url 'notifications:list' %}" class="icon-btn" title="Notifications">
+            🔔
+            {% if unread_notification_count %}<span class="badge-dot">{{ unread_notification_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'achievements:list' %}" class="icon-btn" title="Achievements">🏆</a>
+        <div class="topnav-divider"></div>
+        <a href="{% url 'accounts:settings' %}" class="user-chip" title="Settings">
+            {% if profile_picture %}
+                <img src="{{ profile_picture.url }}" class="user-avatar-sm" alt="">
+            {% else %}
+                <span class="user-avatar-sm user-avatar-fallback">{{ display_name|slice:":1"|upper }}</span>
+            {% endif %}
+            <span class="user-chip-text">
+                <span class="user-chip-name">{{ display_name }}</span>
+                <span class="user-chip-level">Level {{ level|stringformat:"02d" }} · Settings</span>
+            </span>
+        </a>
+    </div>
+</header>
+
+<div class="app-shell">
+
+    <!-- ================= LEFT SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+        <p class="sidebar-title">COMMAND CENTER</p>
+        <nav class="sidebar-nav">
+            <a href="{% url 'dashboard:home' %}" class="nav-item active">
+                <span class="nav-icon">▣</span> Dashboard
+            </a>
+            <a href="#active-missions" class="nav-item">
+                <span class="nav-icon">🎯</span> Missions
+            </a>
+            <a href="{% url 'practice:center' %}" class="nav-item">
+                <span class="nav-icon">🧪</span> Practice
+            </a>
+            <a href="{% url 'courses:intro' %}" class="nav-item">
+                <span class="nav-icon">📘</span> Learn
+            </a>
+            <a href="#skill-matrix" class="nav-item">
+                <span class="nav-icon">📊</span> Progress
+            </a>
+            <a href="{% url 'achievements:list' %}" class="nav-item">
+                <span class="nav-icon">🎖️</span> Achievements
+            </a>
+            <a href="{% url 'leaderboard:list' %}" class="nav-item">
+                <span class="nav-icon">📈</span> Leaderboard
+            </a>
+            <a href="{% url 'certificates:page' %}" class="nav-item">
+                <span class="nav-icon">📜</span> Certificates
+            </a>
+            <a href="{% url 'notifications:list' %}" class="nav-item">
+                <span class="nav-icon">🔔</span> Notifications
+                {% if unread_notification_count %}<span class="nav-badge">{{ unread_notification_count }}</span>{% endif %}
+            </a>
+            <a href="{% url 'accounts:settings' %}" class="nav-item">
+                <span class="nav-icon">⚙️</span> Settings
+            </a>
+            <form method="post" action="{% url 'accounts:logout' %}" class="nav-logout-form">
+                {% csrf_token %}
+                <button type="submit" class="nav-item nav-item-btn">
+                    <span class="nav-icon">↪</span> Logout
+                </button>
+            </form>
+        </nav>
+
+        <div class="cyber-tip-card">
+            <p class="cyber-tip-title">💡 CYBER TIP</p>
+            <p class="cyber-tip-text">{{ cyber_tip }}</p>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="main-content">
+
+        <div class="page-header">
+            <div>
+                <h1>Good to see you, <span class="accent-green">{{ display_name }}</span>!</h1>
+                <p class="page-subtitle">Ready to level up your cybersecurity skills today?</p>
+            </div>
+            {% if my_rank %}
+            <div class="rank-card">
+                <span class="rank-icon">🥇</span>
+                <div>
+                    <p class="rank-label">RANK</p>
+                    <p class="rank-value">#{{ my_rank }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ============ PROFILE + LEVEL ============ -->
+        <section class="profile-level-card">
+            <div class="profile-block">
+                <div class="avatar-ring" style="--ring-percent: {{ xp_progress_percent }};">
+                    {% if profile_picture %}
+                        <img src="{{ profile_picture.url }}" class="avatar-img" alt="">
+                    {% else %}
+                        <span class="avatar-img avatar-fallback">{{ display_name|slice:":1"|upper }}</span>
+                    {% endif %}
+                </div>
+                <div class="profile-info">
+                    <p class="profile-name">{{ display_name }}</p>
+                    <span class="profile-badge">{{ cyber_class_label }}</span>
+                    <div class="profile-stats-row">
+                        <div><strong>{{ level|stringformat:"02d" }}</strong><span>LEVEL</span></div>
+                        <div><strong>{{ xp }}</strong><span>XP</span></div>
+                        <div><strong>{{ total_badges_earned }}</strong><span>BADGES</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="level-progress-block">
+                <p class="lp-title">LEVEL PROGRESS</p>
+                <p class="lp-level">Level {{ level|stringformat:"02d" }}</p>
+                <p class="lp-xp">{{ xp }} XP <span class="lp-xp-muted">/ {{ level|add:"0" }}00 XP</span></p>
+                <div class="progress-track">
+                    <div class="progress-fill" style="--pct: {{ xp_progress_percent }};"></div>
+                </div>
+                <p class="lp-remaining">{{ xp_remaining }} XP until Level {{ level|add:"1"|stringformat:"02d" }}</p>
+
+                <div class="mini-stats-row">
+                    <div class="mini-stat">
+                        <span class="mini-stat-icon">🎯</span>
+                        <strong>{{ missions_completed }}/{{ total_missions }}</strong>
+                        <span>Missions Played</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-icon">🔥</span>
+                        <strong>{{ current_streak }}</strong>
+                        <span>Day Streak</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-icon">📊</span>
+                        <strong>{{ average_score }}%</strong>
+                        <span>Average Score</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-icon">🛡️</span>
+                        <strong>{{ skills_mastered }}/{{ total_missions }}</strong>
+                        <span>Skills Mastered</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ ACTIVE MISSIONS ============ -->
+        <div class="section-heading" id="active-missions">
+            <h2>ACTIVE MISSIONS</h2>
+            {% if missions_locked %}
+                <span class="locked-note">🔒 Complete all courses to unlock</span>
+            {% endif %}
+        </div>
+
+        <div class="missions-row">
+            {% for m in active_missions %}
+            <a href="{% if not missions_locked %}{% url m.url_name %}{% else %}#{% endif %}"
+               class="mission-card mission-{{ m.color }} {% if missions_locked %}mission-locked{% endif %}">
+                <div class="mission-card-grid"></div>
+                <span class="mission-number">{{ m.number }}</span>
+                <span class="mission-emoji">{{ m.emoji }}</span>
+                <p class="mission-title">{{ m.name }}</p>
+
+                {% if missions_locked %}
+                    <div class="mission-progress-track"><div class="mission-progress-fill" style="--pct: 0;"></div></div>
+                    <span class="mission-btn mission-btn-locked">🔒 LOCKED</span>
+                {% else %}
+                    <div class="mission-progress-track"><div class="mission-progress-fill" style="--pct: {{ m.progress }};"></div></div>
+                    <span class="mission-pct">{{ m.progress }}%</span>
+                    <span class="mission-btn">{% if m.attempted %}REPLAY{% else %}START{% endif %}</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- ============ RECENT ACTIVITY + SKILL MATRIX ============ -->
+        <div class="two-col-row" id="skill-matrix">
+            <section class="panel-card">
+                <p class="panel-title">RECENT ACTIVITY</p>
+                {% for item in recent_activity %}
+                <div class="activity-row">
+                    <span class="activity-icon">{% if item.kind == 'badge' %}🎖️{% else %}✅{% endif %}</span>
+                    <span class="activity-text">{{ item.text }}</span>
+                    {% if item.xp %}<span class="activity-xp">+{{ item.xp }} XP</span>{% endif %}
+                </div>
+                {% empty %}
+                <p class="empty-note">No activity yet — play a mission to get started!</p>
+                {% endfor %}
+            </section>
+
+            <section class="panel-card skill-matrix-card">
+                <div class="panel-title-row">
+                    <p class="panel-title">SKILL MATRIX</p>
+                </div>
+                <div class="skill-matrix-body">
+                    <div class="skill-bars">
+                        {% for s in skill_matrix %}
+                        <div class="skill-bar-row">
+                            <span class="skill-bar-label">{{ s.label }}</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill skill-{{ s.color }}" style="--pct: {{ s.percent }};"></div>
+                            </div>
+                            <span class="skill-bar-pct">{{ s.percent }}%</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <svg class="radar-chart" viewBox="0 0 220 220">
+                        {% for ring in radar_grid_rings %}
+                        <polygon points="{{ ring }}" class="radar-grid-ring"></polygon>
+                        {% endfor %}
+                        <polygon points="{{ radar_data_points }}" class="radar-data-shape"></polygon>
+                        {% for skill, point in radar_label_points %}
+                        <circle cx="{{ point.0 }}" cy="{{ point.1 }}" r="2" class="radar-point"></circle>
+                        {% endfor %}
+                    </svg>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- ================= RIGHT PANEL ================= -->
+    <aside class="right-panel">
+        <section class="panel-card">
+            <div class="panel-title-row">
+                <p class="panel-title">NOTIFICATIONS</p>
+                <a href="{% url 'notifications:list' %}" class="view-all-link">View All</a>
+            </div>
+            {% for n in notifications %}
+            <div class="notif-row">
+                <span class="notif-icon">🔔</span>
+                <div>
+                    <p class="notif-text">{{ n.message }}</p>
+                    <span class="notif-time">{{ n.created_at|timesince }} ago</span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="empty-note">Nothing yet.</p>
+            {% endfor %}
+        </section>
+
+        <section class="panel-card">
+            <div class="panel-title-row">
+                <p class="panel-title">LEADERBOARD</p>
+                <span class="view-all-link muted">All-Time</span>
+            </div>
+            {% for u in top_users %}
+            <div class="leaderboard-row {% if u.pk == request.user.pk %}leaderboard-row-me{% endif %}">
+                <span class="lb-rank">{{ forloop.counter }}</span>
+                {% if u.profile_picture %}
+                    <img src="{{ u.profile_picture.url }}" class="lb-avatar" alt="">
+                {% else %}
+                    <span class="lb-avatar lb-avatar-fallback">{{ u.username|slice:":1"|upper }}</span>
+                {% endif %}
+                <span class="lb-name">{{ u.username }}</span>
+                <span class="lb-xp">{{ u.xp }} XP</span>
+            </div>
+            {% endfor %}
+            <a href="{% url 'leaderboard:list' %}" class="view-full-btn">VIEW FULL LEADERBOARD</a>
+        </section>
+    </aside>
+
 </div>
 
-<nav class="navbar cq-navbar px-4">
-    <span class="navbar-brand cq-brand">CyberQuest</span>
-    <div class="d-flex align-items-center gap-3">
-        <a href="{% url 'achievements:list' %}" class="cq-nav-link">🏆 Badges</a>
-        <a href="{% url 'accounts:profile_settings' %}" class="cq-nav-link">⚙️ Settings</a>
-        <a href="{% url 'notifications:list' %}" class="cq-nav-link">🔔 Notifications</a>
-        <a href="{% url 'pages:search' %}" class="cq-nav-link">🔍 Search</a>
-        <a href="{% url 'leaderboard:list' %}" class="cq-nav-link">🏆 Leaderboard</a>
-        <a href="{% url 'certificates:page' %}" class="cq-nav-link">📜 Certificate</a>
-        <span class="cq-user-email">{{ user_email }}</span>
-        <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm cq-logout-btn">Logout</button>
-        </form>
-    </div>
-</nav>
+<footer class="app-footer">
+    <span>STAY CURIOUS. STAY SECURE.</span>
+    <span>CYBERQUEST v1.0.0</span>
+</footer>
 
-<div class="container py-5 cq-content">
-
-    <!-- ================= PROFILE HEADER ================= -->
-    <div class="cq-profile-card mb-5">
-        {% if profile_picture %}
-            <img src="{{ profile_picture.url }}" class="cq-avatar-img" alt="Profile picture">
-        {% else %}
-            <div class="cq-avatar">{{ display_name|slice:":1"|upper }}</div>
-        {% endif %}
-
-        <div class="cq-profile-info">
-            <h1 class="cq-heading mb-1">{{ display_name }}</h1>
-            <p class="cq-profile-sub mb-0">{{ user_email }}</p>
-        </div>
-
-        <div class="cq-level-badge">
-            <span class="cq-level-number">LVL {{ level }}</span>
-            <span class="cq-level-label">{{ skill_level_label }}</span>
-        </div>
-    </div>
-
-    <!-- ================= STATS ROW ================= -->
-    <div class="row g-4 mb-5">
-        <div class="col-md-3 col-6">
-            <div class="cq-stat-card">
-                <span class="cq-stat-label">Username</span>
-                <span class="cq-stat-value">{{ username|default:"—" }}</span>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="cq-stat-card">
-                <span class="cq-stat-label">Cyber Class</span>
-                <span class="cq-stat-value">{{ cyber_class_label }}</span>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="cq-stat-card">
-                <span class="cq-stat-label">Skill Level</span>
-                <span class="cq-stat-value">{{ skill_level_label }}</span>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="cq-stat-card">
-                <span class="cq-stat-label">Member Since</span>
-                <span class="cq-stat-value">{{ date_joined|date:"M Y" }}</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= XP PROGRESS ================= -->
-    <div class="cq-xp-card mb-5">
-        <div class="d-flex justify-content-between mb-2">
-            <span class="cq-xp-label">Experience Points</span>
-            <span class="cq-xp-value">{{ xp }} XP</span>
-        </div>
-        <div class="cq-xp-bar-track">
-            <div class="cq-xp-bar-fill" style="width: {{ xp_progress_percent }}%;"></div>
-        </div>
-        <p class="cq-xp-hint mt-2 mb-0">{{ xp_progress_percent }}% to Level {{ level|add:"1" }}</p>
-    </div>
-
-    <!-- ================= TRAINING MODULES ================= -->
-    <h2 class="cq-section-title mb-4">Training Modules</h2>
-    <div class="row g-4">
-        <div class="col-md-4">
-            <a href="{% url 'games:phishing_simulator' %}" class="cq-card-link">
-                <div class="cq-card cq-card-playable p-4">
-                    <h5>📧 Phishing Simulator</h5>
-                    <p class="text-muted small">Spot the fake emails before they get you.</p>
-                    <span class="badge cq-badge-play">▶ Play Now</span>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4">
-            <a href="{% url 'games:password_cracker' %}" class="cq-card-link">
-                <div class="cq-card cq-card-playable p-4">
-                    <h5>🔑 Password Cracker Challenge</h5>
-                    <p class="text-muted small">Learn why weak passwords fail instantly.</p>
-                    <span class="badge cq-badge-play">▶ Play Now</span>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4">
-            <a href="{% url 'games:network_defense' %}" class="cq-card-link">
-                <div class="cq-card cq-card-playable p-4">
-                    <h5>🛡️ Network Defense Drill</h5>
-                    <p class="text-muted small">Defend your network from simulated attacks.</p>
-                    <span class="badge cq-badge-play">▶ Play Now</span>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4">
-            <a href="{% url 'games:cryptography' %}" class="cq-card-link">
-                <div class="cq-card cq-card-playable p-4">
-                    <h5>🔐 Cryptography Challenge</h5>
-                    <p class="text-muted small">Test your understanding of encryption, hashing, and classic ciphers.</p>
-                    <span class="badge cq-badge-play">▶ Play Now</span>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4">
-            <a href="{% url 'games:osint' %}" class="cq-card-link">
-                <div class="cq-card cq-card-playable p-4">
-                    <h5>🕵️ OSINT Investigation</h5>
-                    <p class="text-muted small">Gather intelligence from open sources to solve real-world scenarios.</p>
-                    <span class="badge cq-badge-play">▶ Play Now</span>
-                </div>
-            </a>
-        </div>
-    </a>
-</div>
-    </div>
-</div>
-
+<script src="{% static 'dashboard/js/dashboard.js' %}"></script>
 </body>
 </html>

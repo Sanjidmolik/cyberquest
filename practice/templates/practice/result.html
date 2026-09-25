@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulation Result — {{ scenario.incident_code }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">
+</head>
+<body class="practice-body">
+<header class="topnav">
+    <div class="topnav-left">
+        <a href="{% url 'practice:center' %}" class="logo-title">← PRACTICE</a>
+        <span class="logo-tagline">{{ scenario.environment|upper }}</span>
+    </div>
+</header>
+
+<main class="practice-main">
+    <section class="panel-card result-hero">
+        <p class="panel-title">SIMULATION RESULT</p>
+        <h1>{{ session.score }}/100</h1>
+        <p>{{ session.result_summary }}</p>
+        {% if session.xp_awarded %}<p class="accent-green">+{{ session.xp_awarded }} XP</p>{% endif %}
+    </section>
+
+    {% if consequence %}
+    <section class="panel-card consequence-banner quality-{{ consequence.quality }}">
+        <h2>{{ consequence.title }}</h2>
+        <p>{{ consequence.body }}</p>
+    </section>
+    {% endif %}
+
+    <div class="result-grid">
+        <section class="panel-card">
+            <p class="panel-title">INVESTIGATION</p>
+            <p>Investigation points earned: <strong>{{ investigation_score }}</strong></p>
+            <ul class="check-list">
+                {% for e in evidence_status %}
+                <li class="{% if e.collected %}ok{% else %}miss{% endif %}">
+                    {% if e.collected %}✓{% else %}✗{% endif %} {{ e.label }}
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        <section class="panel-card">
+            <p class="panel-title">DECISION & RESPONSE</p>
+            <p>Decision: <strong>{{ consequence.decision_label|default:"—" }}</strong></p>
+            <p>Response: <strong>{{ consequence.response|default:"—" }}</strong></p>
+            {% if consequence.missing_penalty %}
+            <p class="neg-note">Missing evidence penalty: {{ consequence.missing_penalty }}</p>
+            {% endif %}
+        </section>
+    </div>
+
+    <div class="two-col-row">
+        <section class="panel-card">
+            <p class="panel-title">FEEDBACK — STRENGTHS</p>
+            <p>{{ session.strengths }}</p>
+        </section>
+        <section class="panel-card">
+            <p class="panel-title">FEEDBACK — IMPROVE</p>
+            <p>{{ session.improvements }}</p>
+        </section>
+    </div>
+
+    {% if recommendation %}
+    <section class="panel-card next-practice-card">
+        <p class="panel-title">NEXT RECOMMENDATION</p>
+        <h2>{{ recommendation.activity_label }}</h2>
+        <p>{{ recommendation.reason }}</p>
+        <form method="post" action="{% url 'practice:start' recommendation.domain_slug %}">
+            {% csrf_token %}
+            <input type="hidden" name="activity_type" value="{{ recommendation.activity }}">
+            <input type="hidden" name="difficulty" value="{{ recommendation.difficulty }}">
+            <button type="submit" class="practice-btn">START NEXT PRACTICE</button>
+        </form>
+    </section>
+    {% endif %}
+
+    <div class="domain-actions">
+        <a class="practice-btn ghost" href="{% url 'practice:cyber_dna' %}">Cyber DNA</a>
+        <a class="practice-btn ghost" href="{% url 'practice:history' %}">History</a>
+        <a class="practice-btn" href="{% url 'practice:center' %}">Practice Center</a>
+    </div>
+</main>
+</body>
+</html>

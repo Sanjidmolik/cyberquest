@@ -47,6 +47,33 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     xp = models.PositiveIntegerField(default=0)
     level = models.PositiveIntegerField(default=1)
+
+    # ---- Real login-streak tracking (powers the dashboard's Day Streak) ----
+    current_streak = models.PositiveIntegerField(default=0)
+    longest_streak = models.PositiveIntegerField(default=0)
+    last_active_date = models.DateField(blank=True, null=True)
+
+    def record_daily_activity(self):
+        """
+        Call this once per login. Increments the streak if the user was
+        also active yesterday; resets to 1 if they missed a day; does
+        nothing if they've already been recorded today (so refreshing
+        the page repeatedly doesn't inflate the streak).
+        """
+        from django.utils import timezone
+        today = timezone.localdate()
+
+        if self.last_active_date == today:
+            return  # already counted today
+
+        if self.last_active_date == today - timezone.timedelta(days=1):
+            self.current_streak += 1
+        else:
+            self.current_streak = 1  # missed a day (or first-ever activity)
+
+        self.longest_streak = max(self.longest_streak, self.current_streak)
+        self.last_active_date = today
+        self.save(update_fields=["current_streak", "longest_streak", "last_active_date"])
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)

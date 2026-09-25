@@ -25,7 +25,7 @@ from django.urls import reverse
 from django.core.files.base import ContentFile
 import requests
 
-from .forms import LoginForm, SignupForm, ProfilePictureForm, CompleteProfileForm
+from .forms import LoginForm, SignupForm, ProfileSettingsForm, CompleteProfileForm
 from .routing import next_step_url_name
 from .codes import generate_code, check_code
 from .emails import send_welcome_email, send_login_2fa_email, send_password_reset_email
@@ -55,6 +55,7 @@ def signup_view(request):
             from notifications.utils import notify
             notify(user, "Welcome to CyberQuest! Complete your first course to unlock the games.")
             login(request, user, backend="accounts.backends.EmailAuthBackend")
+            user.record_daily_activity()
             messages.success(request, f"Welcome to CyberQuest, {user.display_name()}!")
             return redirect(next_step_url_name(user))
     else:
@@ -111,6 +112,7 @@ def verify_login_pin(request):
             if check_code(user, purpose="login_2fa", submitted_code=submitted_code):
                 del request.session[PENDING_LOGIN_SESSION_KEY]
                 login(request, user, backend="accounts.backends.EmailAuthBackend")
+                user.record_daily_activity()
                 messages.success(request, f"Welcome back, {user.email}!")
                 return redirect(next_step_url_name(user))
             else:
@@ -165,21 +167,58 @@ def reset_password_view(request):
 def logout_view(request):
     logout(request)
     messages.info(request, "You have been logged out.")
-    return redirect("accounts:login")
+    return redirect("pages:home")
 
 
 @login_required(login_url="/accounts/login/")
 def profile_settings(request):
+    """
+    Authenticated users edit ONLY their own profile (request.user).
+    Supports saving personal fields, uploading/replacing a photo, and
+    permanently removing the current profile picture from storage.
+    """
+    user = request.user
+
+    if request.method == "POST" and "remove_photo" in request.POST:
+        if user.profile_picture:
+            user.profile_picture.delete(save=False)
+            user.profile_picture = None
+            user.save(update_fields=["profile_picture"])
+            messages.success(request, "Profile picture removed.")
+        return redirect("accounts:settings")
+
     if request.method == "POST":
-        form = ProfilePictureForm(request.POST, request.FILES)
+        old_picture_name = user.profile_picture.name if user.profile_picture else None
+        form = ProfileSettingsForm(request.POST, request.FILES, instance=user)
         if form.is_valid():
-            request.user.profile_picture = form.cleaned_data["profile_picture"]
-            request.user.save(update_fields=["profile_picture"])
-            messages.success(request, "Profile picture updated!")
-            return redirect("accounts:profile_settings")
+            updated_user = form.save(commit=False)
+            # Never allow privilege / gamification fields through this path.
+            updated_user.save(update_fields=[
+                "profile_picture",
+                "full_name",
+                "username",
+                "date_of_birth",
+                "cyber_class",
+                "skill_level",
+            ])
+            # If a new image replaced an old one, delete the orphaned file.
+            new_picture_name = (
+                updated_user.profile_picture.name if updated_user.profile_picture else None
+            )
+            if old_picture_name and new_picture_name and old_picture_name != new_picture_name:
+                from django.core.files.storage import default_storage
+                if default_storage.exists(old_picture_name):
+                    default_storage.delete(old_picture_name)
+            messages.success(request, "Profile updated successfully.")
+            return redirect("accounts:settings")
     else:
-        form = ProfilePictureForm()
-    return render(request, "accounts/profile_settings.html", {"form": form})
+        form = ProfileSettingsForm(instance=user)
+
+    return render(request, "accounts/profile_settings.html", {
+        "form": form,
+        "user_email": user.email,
+        "google_linked": user.google_linked,
+    })
 
 
 # ============================================================
@@ -263,6 +302,7 @@ def google_login_callback(request):
         return redirect("accounts:login")
 
     login(request, user, backend="accounts.backends.EmailAuthBackend")
+    user.record_daily_activity()
 
     if created:
         send_welcome_email(user)

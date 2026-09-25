@@ -5,6 +5,11 @@ from django.db.models import Q
 from .models import ContactMessage
 
 
+def home_view(request):
+    """Public marketing homepage (CyberShield Academy design)."""
+    return render(request, "pages/home.html")
+
+
 def about_view(request):
     return render(request, "pages/about.html")
 

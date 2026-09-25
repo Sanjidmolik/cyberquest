@@ -1,0 +1,66 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber DNA — CyberQuest</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">
+</head>
+<body class="practice-body">
+<header class="topnav">
+    <div class="topnav-left">
+        <a href="{% url 'practice:center' %}" class="logo-title">← PRACTICE</a>
+        <span class="logo-tagline">CYBER DNA</span>
+    </div>
+</header>
+<main class="practice-main">
+    <section class="panel-card">
+        <p class="panel-title">CYBER DNA</p>
+        {% for d in cyber_dna.domains %}
+        <div class="skill-bar-row dna-row">
+            <span class="skill-bar-label">{{ d.full_label }}</span>
+            <div class="skill-bar-track">
+                <div class="skill-bar-fill skill-green" style="--pct: {{ d.percent }};"></div>
+            </div>
+            <span class="skill-bar-pct">{{ d.percent }}%</span>
+        </div>
+        {% endfor %}
+    </section>
+
+    <div class="mini-stats-row dna-summary">
+        <div class="mini-stat">
+            <strong>{{ cyber_dna.strongest.full_label }}</strong>
+            <span>Strongest</span>
+        </div>
+        <div class="mini-stat">
+            <strong>{{ cyber_dna.weakest.full_label }}</strong>
+            <span>Needs Improvement</span>
+        </div>
+        <div class="mini-stat">
+            <strong>{{ cyber_dna.overall }}%</strong>
+            <span>Overall Competency</span>
+        </div>
+        <div class="mini-stat">
+            <strong>{{ cyber_dna.overall_level }}</strong>
+            <span>Level</span>
+        </div>
+    </div>
+
+    {% if recommendation %}
+    <section class="panel-card next-practice-card">
+        <p class="panel-title">PERSONALIZED PATH</p>
+        <p>{{ recommendation.reason }}</p>
+        <form method="post" action="{% url 'practice:start' recommendation.domain_slug %}">
+            {% csrf_token %}
+            <input type="hidden" name="activity_type" value="{{ recommendation.activity }}">
+            <input type="hidden" name="difficulty" value="{{ recommendation.difficulty }}">
+            <button type="submit" class="practice-btn">START {{ recommendation.activity_label|upper }}</button>
+        </form>
+    </section>
+    {% endif %}
+</main>
+</body>
+</html>

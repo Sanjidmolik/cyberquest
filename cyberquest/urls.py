@@ -19,10 +19,10 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
+from django.templatetags.static import static as static_url
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', RedirectView.as_view(pattern_name='accounts:login', permanent=False)),
     path('accounts/', include('accounts.urls')),
     path('dashboard/', include('dashboard.urls')),
     path('courses/', include('courses.urls')),
@@ -32,6 +32,9 @@ urlpatterns = [
     path('notifications/', include('notifications.urls')),
     path('leaderboard/', include('leaderboard.urls')),
     path('certificate/', include('certificates.urls')),
+    path('practice/', include('practice.urls')),
+    path('api/', include('question_bank.urls')),
+    path('favicon.ico', RedirectView.as_view(url=static_url('dashboard/img/favicon.ico'), permanent=True)),
 ]
 
 # Serve user-uploaded files (profile pictures) during development.

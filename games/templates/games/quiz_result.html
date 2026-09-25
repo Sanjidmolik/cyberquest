@@ -14,10 +14,13 @@
 
 <div class="container py-5" style="max-width: 750px;">
     <h1 class="cq-game-title mb-2">{{ game.emoji }} {{ game.title }} — Results</h1>
+    {% if set_number %}
+    <p class="text-muted">Question Set {{ set_number }}</p>
+    {% endif %}
 
     <div class="cq-score-banner mb-4">
         <span class="cq-score-big">{{ score }} / {{ total }}</span>
-        <span class="cq-score-label">correct</span>
+        <span class="cq-score-label">correct ({{ percent }}%)</span>
         {% if xp_awarded %}
             <span class="cq-xp-pill">+{{ xp_awarded }} XP</span>
         {% elif already_completed %}
@@ -28,8 +31,15 @@
     {% for r in results %}
     <div class="cq-result-card mb-3 {% if r.correct %}cq-result-correct{% else %}cq-result-wrong{% endif %}">
         <p class="mb-1"><strong>{{ r.prompt|linebreaksbr }}</strong></p>
-        <p class="small mb-1">{% if r.correct %}✅ Correct{% else %}❌ Incorrect — correct answer: {{ r.correct_answer }}{% endif %}</p>
-        <p class="small mb-0" style="color:#8b949e;">{{ r.explanation }}</p>
+        {% if r.correct %}
+            <p class="small mb-1">✅ {{ r.correct_feedback }}</p>
+            <p class="small mb-0" style="color:#8b949e;">{{ r.explanation }}</p>
+        {% else %}
+            <p class="small mb-1">❌ {{ r.wrong_feedback }}</p>
+            <p class="small mb-1">Your answer: <em>{{ r.selected_answer }}</em></p>
+            <p class="small mb-1">Correct answer: <strong>{{ r.correct_answer }}</strong></p>
+            <p class="small mb-0" style="color:#8b949e;">{{ r.explanation }}</p>
+        {% endif %}
     </div>
     {% endfor %}
 

@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'notifications',
     'leaderboard',
     'certificates',
+    'practice',
+    'question_bank',
 ]
 
 MIDDLEWARE = [
@@ -160,3 +162,19 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL_ADDRESS')
 
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+
+# ---- AI Question Bank (Gemini) ----
+# Never expose these values to the browser / Next.js client.
+AI_PROVIDER = os.environ.get('AI_PROVIDER', 'gemini')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.5-flash-lite')
+# Comma-separated fallbacks used when the primary model is overloaded (503/high demand).
+GEMINI_MODEL_FALLBACKS = os.environ.get(
+    'GEMINI_MODEL_FALLBACKS',
+    'gemini-3.1-flash-lite,gemini-3.5-flash,gemini-3.6-flash,gemini-flash-lite-latest',
+)
+AI_GENERATION_TIMEOUT = int(os.environ.get('AI_GENERATION_TIMEOUT', '180'))
+AI_GENERATION_MAX_ATTEMPTS = int(os.environ.get('AI_GENERATION_MAX_ATTEMPTS', '2'))
+AI_GENERATION_TEMPERATURE = float(os.environ.get('AI_GENERATION_TEMPERATURE', '0.4'))
+AI_NEAR_DUPLICATE_THRESHOLD = float(os.environ.get('AI_NEAR_DUPLICATE_THRESHOLD', '0.88'))
+AI_MAX_REPAIR_ATTEMPTS = int(os.environ.get('AI_MAX_REPAIR_ATTEMPTS', '3'))

@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Practice History — CyberQuest</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">
+</head>
+<body class="practice-body">
+<header class="topnav">
+    <div class="topnav-left">
+        <a href="{% url 'practice:center' %}" class="logo-title">← PRACTICE</a>
+        <span class="logo-tagline">HISTORY</span>
+    </div>
+</header>
+<main class="practice-main">
+    <section class="panel-card">
+        <p class="panel-title">PRACTICE HISTORY</p>
+        <div class="history-table">
+            <div class="history-head">
+                <span>DATE</span><span>DOMAIN</span><span>ACTIVITY</span>
+                <span>DIFFICULTY</span><span>SCORE</span><span>RESULT</span>
+            </div>
+            {% for s in sessions %}
+            <a class="history-row" href="{% url 'practice:result' s.pk %}">
+                <span>{{ s.completed_at|date:"d M Y" }}</span>
+                <span>{{ s.get_domain_display }}</span>
+                <span>{{ s.get_activity_type_display }}</span>
+                <span>{{ s.get_difficulty_display }}</span>
+                <span>{{ s.percent }}%</span>
+                <span>Completed</span>
+            </a>
+            {% empty %}
+            <p class="empty-note">No completed practice yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+</main>
+</body>
+</html>

@@ -55,13 +55,111 @@ class LoginForm(forms.Form):
         return email
 
 
-class ProfilePictureForm(forms.Form):
-    profile_picture = forms.ImageField(required=True)
+class ProfileSettingsForm(forms.ModelForm):
+    """
+    Lets a logged-in user edit their own personal profile fields.
+    Intentionally excludes email (login identifier) and all system-
+    controlled fields (xp, level, streaks, privileges, etc.).
+    """
+    MAX_IMAGE_BYTES = 5 * 1024 * 1024
+    ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP", "GIF"}
+
+    class Meta:
+        model = UserModel
+        fields = [
+            "profile_picture",
+            "full_name",
+            "username",
+            "date_of_birth",
+            "cyber_class",
+            "skill_level",
+        ]
+        widgets = {
+            "full_name": forms.TextInput(attrs={
+                "class": "cq-settings-input",
+                "placeholder": "Your full name",
+                "autocomplete": "name",
+            }),
+            "username": forms.TextInput(attrs={
+                "class": "cq-settings-input",
+                "placeholder": "Choose a unique username",
+                "autocomplete": "username",
+            }),
+            "date_of_birth": forms.DateInput(attrs={
+                "class": "cq-settings-input",
+                "type": "date",
+            }),
+            "cyber_class": forms.Select(attrs={"class": "cq-settings-input"}),
+            "skill_level": forms.Select(attrs={"class": "cq-settings-input"}),
+            "profile_picture": forms.FileInput(attrs={
+                "class": "cq-settings-file",
+                "accept": "image/jpeg,image/png,image/webp,image/gif",
+                "id": "id_profile_picture",
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["profile_picture"].required = False
+        self.fields["full_name"].required = False
+        self.fields["username"].required = False
+        self.fields["date_of_birth"].required = False
+
+    def clean_username(self):
+        username = (self.cleaned_data.get("username") or "").strip()
+        if not username:
+            return None
+        qs = UserModel.objects.filter(username__iexact=username)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError("That username is already taken.")
+        return username
+
+    def clean_full_name(self):
+        return (self.cleaned_data.get("full_name") or "").strip()
+
+    def clean_date_of_birth(self):
+        dob = self.cleaned_data.get("date_of_birth")
+        if dob:
+            validate_minimum_age(dob)
+        return dob
 
     def clean_profile_picture(self):
-        picture = self.cleaned_data["profile_picture"]
-        if picture.size > 5 * 1024 * 1024:
+        picture = self.cleaned_data.get("profile_picture")
+        if not picture:
+            return picture
+
+        # Skip re-validation when the field is unchanged (existing FileField value).
+        if not hasattr(picture, "content_type") and not hasattr(picture, "read"):
+            return picture
+        if getattr(self.instance, "profile_picture", None) and picture == self.instance.profile_picture:
+            return picture
+
+        if getattr(picture, "size", 0) > self.MAX_IMAGE_BYTES:
             raise ValidationError("Image must be smaller than 5MB.")
+
+        content_type = getattr(picture, "content_type", None)
+        if content_type and not content_type.startswith("image/"):
+            raise ValidationError("Please upload an image file (JPG, PNG, WEBP, or GIF).")
+
+        try:
+            from PIL import Image
+
+            picture.seek(0)
+            with Image.open(picture) as img:
+                img.verify()
+            picture.seek(0)
+            with Image.open(picture) as img:
+                img.load()
+                if img.format not in self.ALLOWED_IMAGE_FORMATS:
+                    raise ValidationError("Please upload a JPG, PNG, WEBP, or GIF image.")
+            picture.seek(0)
+        except ValidationError:
+            raise
+        except Exception:
+            raise ValidationError("The uploaded file is not a valid image.")
+
         return picture
 
 

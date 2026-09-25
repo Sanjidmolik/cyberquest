@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Practice Center — CyberQuest</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">
+</head>
+<body class="practice-body">
+<header class="topnav">
+    <div class="topnav-left">
+        <a href="{% url 'dashboard:home' %}" class="logo-title">CYBERQUEST</a>
+        <span class="logo-tagline">PRACTICE CENTER</span>
+    </div>
+    <div class="topnav-right practice-nav-links">
+        <a href="{% url 'practice:cyber_dna' %}">Cyber DNA</a>
+        <a href="{% url 'practice:history' %}">History</a>
+        <a href="{% url 'dashboard:home' %}">Dashboard</a>
+    </div>
+</header>
+
+<main class="practice-main">
+    <div class="page-header">
+        <div>
+            <h1>Practice <span class="accent-green">Center</span></h1>
+            <p class="page-subtitle">Adaptive drills across five cybersecurity domains.</p>
+        </div>
+    </div>
+
+    {% if recommendation %}
+    <section class="panel-card next-practice-card">
+        <p class="panel-title">YOUR NEXT PRACTICE</p>
+        <h2>{{ recommendation.activity_label }}</h2>
+        <p>Current Competency: <strong>{{ recommendation.percent }}%</strong></p>
+        <p>Difficulty: <strong>{{ recommendation.difficulty_label|upper }}</strong></p>
+        <p class="why-text">Why: {{ recommendation.reason }}</p>
+        <form method="post" action="{% url 'practice:start' recommendation.domain_slug %}">
+            {% csrf_token %}
+            <input type="hidden" name="activity_type" value="{{ recommendation.activity }}">
+            <input type="hidden" name="difficulty" value="{{ recommendation.difficulty }}">
+            <button type="submit" class="practice-btn">START PRACTICE</button>
+        </form>
+    </section>
+    {% endif %}
+
+    <div class="domain-grid">
+        {% for d in domains %}
+        <article class="panel-card domain-card">
+            <div class="domain-card-head">
+                <span class="domain-emoji">{{ d.emoji }}</span>
+                <h3>{{ d.full_label|upper }}</h3>
+            </div>
+            <p class="comp-line">Competency: <strong>{{ d.percent }}%</strong></p>
+            <div class="progress-track"><div class="progress-fill" style="--pct: {{ d.percent }};"></div></div>
+            <p>Level: <strong>{{ d.level }}</strong></p>
+            <p>Recommended: <strong>{{ d.difficulty_label }} {{ d.activity|title }}</strong></p>
+            <div class="domain-actions">
+                <a class="practice-btn ghost" href="{% url 'practice:domain' d.slug %}">Details</a>
+                <form method="post" action="{% url 'practice:start' d.slug %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="activity_type" value="{{ d.activity }}">
+                    <input type="hidden" name="difficulty" value="{{ d.difficulty }}">
+                    <button type="submit" class="practice-btn">START PRACTICE</button>
+                </form>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</main>
+</body>
+</html>

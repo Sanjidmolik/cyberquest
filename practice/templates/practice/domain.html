@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ domain.full_label }} — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">
+</head>
+<body class="practice-body">
+<header class="topnav">
+    <div class="topnav-left">
+        <a href="{% url 'practice:center' %}" class="logo-title">← PRACTICE</a>
+    </div>
+</header>
+<main class="practice-main">
+    <section class="panel-card">
+        <p class="panel-title">{{ domain.emoji }} {{ domain.full_label|upper }}</p>
+        <p>Competency: <strong>{{ domain.percent }}%</strong> · Level: <strong>{{ domain.level }}</strong></p>
+        <div class="progress-track"><div class="progress-fill" style="--pct: {{ domain.percent }};"></div></div>
+        <p class="page-subtitle">{{ scenario.environment }} — {{ scenario.briefing.summary }}</p>
+
+        <div class="activity-choice-row">
+            <form method="post" action="{% url 'practice:start' domain.slug %}">
+                {% csrf_token %}
+                <input type="hidden" name="activity_type" value="simulation">
+                <input type="hidden" name="difficulty" value="{{ domain.difficulty }}">
+                <button class="practice-btn" type="submit">Enter Simulation Console</button>
+            </form>
+            <form method="post" action="{% url 'practice:start' domain.slug %}">
+                {% csrf_token %}
+                <input type="hidden" name="activity_type" value="incident">
+                <input type="hidden" name="difficulty" value="{{ domain.difficulty }}">
+                <button class="practice-btn ghost" type="submit">Start Incident Response</button>
+            </form>
+            <a class="practice-btn ghost" href="{% url domain.game_url %}">Play Domain Game</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>
