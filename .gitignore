@@ -18,3 +18,9 @@ Thumbs.db
 
 # Environment secrets
 .env
+
+# Node.js dependencies
+node_modules/
+
+# Django collected static files
+staticfiles/
