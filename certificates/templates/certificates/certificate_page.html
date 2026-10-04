@@ -512,7 +512,7 @@
 <body>
 
 <nav class="top-nav">
-    <a href="{% url 'dashboard:home' %}">← CyberQuest Dashboard</a>
+    <a href="{% url 'pages:home' %}" aria-label="CyberQuest home">CyberQuest</a>
 </nav>
 
 
@@ -860,15 +860,91 @@
 
 
 <div class="download-area">
-
-    <a href="{% url 'certificates:download' %}"
-       class="download-btn">
-
+    <div id="cq-cert-loader" class="cq-loader" hidden>
+        <div class="cq-loader-card" role="status" aria-live="polite">
+            <div class="cq-cube" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            <h2>Preparing your certificate</h2>
+            <p class="cq-stage">Verifying course completion...</p>
+            <p class="cq-error" hidden></p>
+            <button type="button" class="cq-retry" hidden>Try again</button>
+        </div>
+    </div>
+    <a href="{% url 'certificates:download' %}" class="download-btn" id="cq-cert-download">
         ⬇ Download Certificate PDF
-
     </a>
-
 </div>
+<style>
+.cq-loader{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(8,24,16,.72);padding:24px}
+.cq-loader[hidden]{display:none}
+.cq-loader-card{width:min(420px,100%);background:#10281c;color:#e7f6df;border-radius:18px;padding:28px 22px;text-align:center}
+.cq-cube{width:72px;height:72px;margin:0 auto 18px;position:relative;transform-style:preserve-3d;animation:cqspin 4.5s linear infinite}
+.cq-cube span{position:absolute;inset:0;border:2px solid #7dffb2;background:rgba(125,255,178,.12)}
+.cq-cube span:nth-child(1){transform:rotateY(0deg) translateZ(36px)}
+.cq-cube span:nth-child(2){transform:rotateY(90deg) translateZ(36px)}
+.cq-cube span:nth-child(3){transform:rotateY(180deg) translateZ(36px)}
+.cq-cube span:nth-child(4){transform:rotateY(-90deg) translateZ(36px)}
+.cq-cube span:nth-child(5){transform:rotateX(90deg) translateZ(36px)}
+.cq-cube span:nth-child(6){transform:rotateX(-90deg) translateZ(36px)}
+@keyframes cqspin{to{transform:rotateX(360deg) rotateY(360deg)}}
+.cq-loader .cq-error{color:#ffb4a8}
+.cq-loader button{margin-top:12px;background:#fd7f01;color:#fff;border:0;border-radius:8px;padding:8px 14px;font-weight:700}
+@media (prefers-reduced-motion:reduce){.cq-cube{animation:none}}
+</style>
+<script>
+(function () {
+  const btn = document.getElementById("cq-cert-download");
+  const loader = document.getElementById("cq-cert-loader");
+  if (!btn || !loader) return;
+  const stage = loader.querySelector(".cq-stage");
+  const error = loader.querySelector(".cq-error");
+  const retry = loader.querySelector(".cq-retry");
+  const waiting = [
+    "Verifying course completion...",
+    "Validating your achievement...",
+    "Preparing your certificate..."
+  ];
+  let timer = null;
+  let busy = false;
+  function show(on) { loader.hidden = !on; }
+  async function run() {
+    if (busy) return;
+    busy = true;
+    btn.setAttribute("aria-disabled", "true");
+    error.hidden = true;
+    retry.hidden = true;
+    let i = 0;
+    stage.textContent = waiting[0];
+    show(true);
+    timer = setInterval(() => {
+      i = (i + 1) % waiting.length;
+      stage.textContent = waiting[i];
+    }, 1400);
+    try {
+      const res = await fetch(btn.href, { credentials: "same-origin" });
+      if (!res.ok) throw new Error("Certificate generation failed.");
+      const blob = await res.blob();
+      clearInterval(timer);
+      stage.textContent = "Your certificate is ready.";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "CyberQuest_Certificate.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+      setTimeout(() => { show(false); busy = false; btn.removeAttribute("aria-disabled"); }, 700);
+    } catch (err) {
+      clearInterval(timer);
+      error.hidden = false;
+      error.textContent = "Certificate generation failed. You can try again.";
+      retry.hidden = false;
+      busy = false;
+      btn.removeAttribute("aria-disabled");
+    }
+  }
+  btn.addEventListener("click", (e) => { e.preventDefault(); run(); });
+  retry.addEventListener("click", run);
+})();
+</script>
 
 
 {% else %}

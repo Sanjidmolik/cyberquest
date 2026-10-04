@@ -1,351 +1,519 @@
 /*
-  courses/static/courses/js/reader.js
-  ---------------------------------------
-  Powers the book-style course reader for BOTH content types:
-    - Plain text courses: this file paginates the content into
-      screen-sized "pages" on the fly (re-paginates on font size change).
-    - PDF e-book courses: this file renders each PDF page onto a canvas
-      via PDF.js, on demand, and treats each rendered canvas as a page.
+  Course reader page turning.
 
-  Either way, from here down everything (flipping, progress bar, page
-  counter, resuming, marking complete) works identically -- the two
-  content types are unified behind one `getPageContent(index)` function.
+  react-pageflip 2.0.3 does not run by itself in this Django page: its
+  build is a React wrapper whose effect is:
+
+      pageFlip = new PageFlip(element, props);
+      pageFlip.loadFromHTML(pageElements);
+
+  That PageFlip class is the page-flip build (courses/js/vendor), exposed in
+  the browser as St.PageFlip. This file uses that same constructor and
+  loadFromHTML call.
+
+  Course text and PDF pages still come from the existing course record.
 */
-
 (function () {
     "use strict";
 
-    const cfg = READER_CONFIG;
+    /* Every visit opens on the first page. Set this to false if you ever want
+       readers to resume where they stopped (uses the saved page from the server). */
+    const START_AT_FIRST_PAGE = true;
 
-    // ---- DOM references ----
-    const pageCurrentEl = document.getElementById("page-current");
-    const pageIncomingEl = document.getElementById("page-incoming");
+    /* The template declares `const READER_CONFIG = {...}`. A top-level `const`
+       is visible by name but is NOT a property of `window`, so it must be read
+       by name (falling back to window for a `var`/window assignment). */
+    const cfg = (typeof READER_CONFIG !== "undefined") ? READER_CONFIG : window.READER_CONFIG;
+    if (!cfg) {
+        console.error("CyberQuest reader: READER_CONFIG is missing, so the book cannot start.");
+        return;
+    }
+
+    const bookEl = document.getElementById("book");
     const prevBtn = document.getElementById("prev-btn");
     const nextBtn = document.getElementById("next-btn");
     const pageIndicator = document.getElementById("page-indicator");
     const progressFill = document.getElementById("reader-progress-fill");
     const completeBtn = document.getElementById("complete-btn");
+    const loadingEl = document.getElementById("reader-loading");
+    const errorEl = document.getElementById("reader-error");
+    const stageEl = document.getElementById("reader-stage");
+    const fullBtn = document.getElementById("fullscreen-btn");
+    const fontBtns = [document.getElementById("font-decrease"), document.getElementById("font-increase")];
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    let currentIndex = 0;
+    /* localStorage can throw (private mode, blocked cookies): never let that break the reader. */
+    const store = {
+        get: function (key) { try { return window.localStorage.getItem(key); } catch (e) { return null; } },
+        set: function (key, value) { try { window.localStorage.setItem(key, value); } catch (e) { /* ignore */ } },
+    };
+
+    const TEXT_RATIO = 460 / 640;   // width / height of one text page
+    const MIN_PAGE_W = 340;         // narrower than this and a two-page spread becomes one page
+
+    let pageRatio = TEXT_RATIO;
+    let pageFlip = null;
     let totalPages = 1;
-    let textPages = [];       // used when !cfg.usesPdf
-    let pdfDoc = null;        // used when cfg.usesPdf
-    let pdfPageCache = {};    // pageIndex -> rendered canvas (cloned on use)
-    let hasReachedEnd = cfg.alreadyDone;
+    let reachedEnd = cfg.alreadyDone;
+    let paginationKey = "";
 
-    // ============================================================
-    // TEXT PAGINATION (only used for plain-text courses)
-    // ============================================================
-    function paginateText() {
+    function showError() {
+        if (loadingEl) loadingEl.hidden = true;
+        if (stageEl) stageEl.hidden = true;
+        if (errorEl) errorEl.hidden = false;
+    }
+
+    /* ---------------------------------------------------------------
+       Sizing: make the book as large as the screen allows
+       --------------------------------------------------------------- */
+    function computeLayout() {
+        const narrow = window.matchMedia("(max-width: 700px)").matches;
+        const gutter = narrow ? 34 : 64;              // room for the arrow buttons
+        const styles = window.getComputedStyle(stageEl);
+        const padY = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
+        const availW = Math.max(200, stageEl.clientWidth - gutter * 2);
+        const availH = Math.max(200, stageEl.clientHeight - padY);
+
+        let pageH = Math.min(availH, availW / 2 / pageRatio);
+        let pageW = pageH * pageRatio;
+        const spread = availW >= MIN_PAGE_W * 2 && pageW >= MIN_PAGE_W;
+        if (!spread) {
+            pageH = Math.min(availH, availW / pageRatio);
+            pageW = pageH * pageRatio;
+        }
+        pageW = Math.floor(pageW);
+        pageH = Math.floor(pageH);
+        return { spread: spread, pageW: pageW, pageH: pageH, bookW: spread ? pageW * 2 : pageW };
+    }
+
+    function applyLayout() {
+        const layout = computeLayout();
+        bookEl.style.width = layout.bookW + "px";
+        bookEl.style.height = layout.pageH + "px";
+        bookEl.style.minWidth = "0";
+        bookEl.style.minHeight = "0";
+        bookEl.style.maxWidth = "none";
+        return layout;
+    }
+
+    function pageShell(inner, number, total, extra) {
+        const page = document.createElement("div");
+        page.className = "cq-sheet";
+        if (extra) page.dataset.density = extra;
+        page.innerHTML =
+            '<header class="cq-sheet-label">' + cfg.chapterLabel + "</header>" +
+            inner +
+            '<footer class="cq-sheet-foot">Page ' + number + " of " + total + "</footer>";
+        return page;
+    }
+
+    function pdfSheet(inner) {
+        const page = document.createElement("div");
+        page.className = "cq-sheet cq-pdf-sheet";
+        page.innerHTML = inner;
+        return page;
+    }
+
+    /* ---------------------------------------------------------------
+       Text courses
+       --------------------------------------------------------------- */
+    function paginateText(pageW, pageH) {
         const source = document.getElementById("raw-course-content");
-        if (!source) { textPages = ["<p>No content available yet.</p>"]; return; }
-
-        // A hidden measuring box with the SAME size/padding/font as a real
-        // page, so we can find exactly how much content fits per page.
+        const blocks = source ? Array.from(source.children) : [];
         const measurer = document.createElement("div");
-        measurer.style.cssText = window.getComputedStyle(pageCurrentEl).cssText;
-        measurer.style.position = "absolute";
-        measurer.style.visibility = "hidden";
-        measurer.style.height = pageCurrentEl.clientHeight + "px";
-        measurer.style.width = pageCurrentEl.clientWidth + "px";
-        measurer.style.overflow = "hidden";
+        measurer.className = "cq-sheet cq-measurer";
+        measurer.style.width = pageW + "px";
+        measurer.style.height = pageH + "px";
         document.body.appendChild(measurer);
 
-        const maxHeight = pageCurrentEl.clientHeight;
-        const blocks = Array.from(source.children).length ? Array.from(source.children) : [source];
-
+        /* Measure with the same label and footer a real page has, so the text
+           that "fits" really fits and pages never need a scrollbar. */
+        const head = '<header class="cq-sheet-label">' + cfg.chapterLabel + "</header>";
+        const foot = '<footer class="cq-sheet-foot">Page 000 of 000</footer>';
+        const max = measurer.clientHeight;
         const pages = [];
-        let currentPageHTML = "";
+        let current = "";
 
         function fits(html) {
-            measurer.innerHTML = html;
-            return measurer.scrollHeight <= maxHeight;
+            measurer.innerHTML = head + html + foot;
+            return measurer.scrollHeight <= max + 1;
         }
 
-        blocks.forEach((block) => {
-            const candidate = currentPageHTML + block.outerHTML;
+        blocks.forEach(function (block) {
+            const candidate = current + block.outerHTML;
             if (fits(candidate)) {
-                currentPageHTML = candidate;
-            } else if (currentPageHTML === "") {
-                // A single block alone is too tall (long paragraph) --
-                // split it word by word so nothing gets lost.
-                const words = block.textContent.split(" ");
+                current = candidate;
+            } else if (!current) {
+                const words = block.textContent.split(/\s+/);
                 let chunk = "";
-                words.forEach((word) => {
-                    const testChunk = chunk + word + " ";
-                    if (fits(`<p>${testChunk}</p>`)) {
-                        chunk = testChunk;
-                    } else {
-                        pages.push(`<p>${chunk}</p>`);
-                        chunk = word + " ";
+                words.forEach(function (word) {
+                    const next = (chunk + " " + word).trim();
+                    if (fits("<p>" + next + "</p>")) chunk = next;
+                    else {
+                        if (chunk) pages.push("<p>" + chunk + "</p>");
+                        chunk = word;
                     }
                 });
-                currentPageHTML = `<p>${chunk}</p>`;
+                current = chunk ? "<p>" + chunk + "</p>" : "";
             } else {
-                pages.push(currentPageHTML);
-                currentPageHTML = block.outerHTML;
+                pages.push(current);
+                current = block.outerHTML;
             }
         });
-        if (currentPageHTML) pages.push(currentPageHTML);
-
-        document.body.removeChild(measurer);
-        textPages = pages.length ? pages : ["<p>No content available yet.</p>"];
+        if (current) pages.push(current);
+        measurer.remove();
+        return pages.length ? pages : ["<p>No content available yet.</p>"];
     }
 
-    // ============================================================
-    // PDF RENDERING (only used for PDF e-book courses)
-    // ============================================================
-    async function loadPdf() {
+    function currentKey(layout) {
+        const size = window.getComputedStyle(document.documentElement).getPropertyValue("--reader-font-size");
+        return layout.pageW + "x" + layout.pageH + "@" + (size || "").trim();
+    }
+
+    /* Text pages are cut to fit the page size and font size, so they must be
+       cut again when either changes (window resize, full screen, A+ / A-). */
+    function repaginate() {
+        if (!pageFlip || cfg.usesPdf) return;
+        const layout = computeLayout();
+        const key = currentKey(layout);
+        if (key === paginationKey) return;
+        paginationKey = key;
+
+        const oldTotal = totalPages;
+        const current = pageFlip.getCurrentPageIndex();
+        const nodes = buildNodes(paginateText(layout.pageW, layout.pageH));
+        pageFlip.updateFromHtml(nodes);
+        totalPages = pageFlip.getPageCount();
+        const target = oldTotal > 1 ? Math.round(current / (oldTotal - 1) * (totalPages - 1)) : 0;
+        applyLayout();
+        pageFlip.update();
+        if (target !== pageFlip.getCurrentPageIndex()) pageFlip.turnToPage(target);
+        updateUi(pageFlip.getCurrentPageIndex());
+    }
+
+    /* ---------------------------------------------------------------
+       PDF courses: sharp pages, shown as soon as the first spread is ready
+       --------------------------------------------------------------- */
+    async function openPdf() {
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-        pdfDoc = await pdfjsLib.getDocument({
-             url: cfg.pdfUrl,
+        const doc = await pdfjsLib.getDocument({
+            url: cfg.pdfUrl,
             standardFontDataUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",
         }).promise;
-        totalPages = pdfDoc.numPages;
+        const first = await doc.getPage(1);
+        const base = first.getViewport({ scale: 1 });
+        return { doc: doc, ratio: base.width / base.height };
     }
 
-       async function renderPdfPage(index) {
-        // IMPORTANT: we cache a data URL (not the canvas element itself).
-        // Cloning or re-serializing a <canvas> node does NOT preserve its
-        // drawn pixel content -- only the empty tag/dimensions survive.
-        // An <img> built from a cached data URL has no such problem.
-        if (pdfPageCache[index]) {
-            const img = document.createElement("img");
-            img.src = pdfPageCache[index];
-            img.className = "cq-pdf-page-img";
-            return img;
-        }
+    /* Render big enough for full screen on this display, so text stays crisp. */
+    function renderTargetWidth(layout) {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const biggest = Math.max(layout.pageW, Math.round(window.screen.height * pageRatio));
+        return Math.max(700, Math.min(1500, Math.round(biggest * dpr)));
+    }
 
-        const pageNumber = index + 1; // PDF.js pages are 1-indexed
-        const page = await pdfDoc.getPage(pageNumber);
-        const containerWidth = pageCurrentEl.clientWidth - 92; // minus page padding
-        const baseViewport = page.getViewport({ scale: 1 });
-        const scale = containerWidth / baseViewport.width;
-        const viewport = page.getViewport({ scale });
-
+    async function renderPdfPage(doc, n, width) {
+        const page = await doc.getPage(n);
+        const base = page.getViewport({ scale: 1 });
+        const viewport = page.getViewport({ scale: width / base.width });
         const canvas = document.createElement("canvas");
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
-
-        pdfPageCache[index] = canvas.toDataURL();
-
-        const img = document.createElement("img");
-        img.src = pdfPageCache[index];
-        img.className = "cq-pdf-page-img";
-        return img;
+        canvas.width = Math.round(viewport.width);
+        canvas.height = Math.round(viewport.height);
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        const blob = await new Promise(function (resolve) { canvas.toBlob(resolve, "image/jpeg", 0.92); });
+        canvas.width = 0;
+        canvas.height = 0;
+        page.cleanup();
+        return URL.createObjectURL(blob);
     }
 
-    // ============================================================
-    // UNIFIED PAGE ACCESS
-    // ============================================================
-    async function getPageContent(index) {
-        if (cfg.usesPdf) {
-            return await renderPdfPage(index);
-        }
-        return textPages[index] || "";
-    }
-
-    // ============================================================
-    // UNIFIED PAGE ACCESS
-    // ============================================================
-    async function getPageContent(index) {
-        if (cfg.usesPdf) {
-            const canvas = await renderPdfPage(index);
-            const wrapper = document.createElement("div");
-            wrapper.appendChild(canvas);
-            return wrapper.innerHTML === "" ? "" : wrapper;
-        }
-        return textPages[index] || "";
-    }
-
-    function setElementContent(el, content) {
-        if (content instanceof HTMLElement) {
-            el.innerHTML = "";
-            el.appendChild(content);
-        } else {
-            el.innerHTML = content;
+    async function fillPdfPage(doc, n, width, img) {
+        try {
+            img.src = await renderPdfPage(doc, n, width);
+            img.parentNode.classList.add("is-ready");
+        } catch (err) {
+            console.warn("CyberQuest reader: could not draw PDF page " + n, err);
         }
     }
 
-    // ============================================================
-    // NAVIGATION + FLIP ANIMATION
-    // ============================================================
-    async function renderCurrentPage() {
-        const content = await getPageContent(currentIndex);
-        setElementContent(pageCurrentEl, content);
-        updateUI();
-        saveProgress();
-    }
-
-    function updateUI() {
-        pageIndicator.textContent = `Page ${currentIndex + 1} of ${totalPages}`;
-        progressFill.style.width = `${((currentIndex + 1) / totalPages) * 100}%`;
-        prevBtn.disabled = currentIndex === 0;
-        nextBtn.disabled = currentIndex === totalPages - 1;
-
-        if (currentIndex === totalPages - 1) {
-            hasReachedEnd = true;
-        }
-        if (hasReachedEnd) {
-            completeBtn.disabled = cfg.alreadyDone; // stays enabled unless already done
-            if (!cfg.alreadyDone) completeBtn.textContent = "Mark Course Complete";
-        }
-    }
-
-    async function goToPage(newIndex, direction) {
-        if (newIndex < 0 || newIndex >= totalPages || newIndex === currentIndex) return;
-
-        // Pre-render the incoming page's content BEFORE animating, so it's
-        // ready and waiting underneath the moment it's revealed.
-        const incomingContent = await getPageContent(newIndex);
-        setElementContent(pageIncomingEl, incomingContent);
-
-        pageCurrentEl.classList.add(direction === "next" ? "flipping-next" : "flipping-prev");
-
-        function handler(e) {
-            // transform AND opacity transition together -- only act once,
-            // on whichever fires, but ignore the first if a second is coming.
-            if (e.propertyName !== "transform") return;
-            pageCurrentEl.removeEventListener("transitionend", handler);
-
-            currentIndex = newIndex;
-
-            // Reuse the content we already rendered above instead of
-            // re-fetching it -- and reset the flip rotation WITHOUT
-            // animating the reset itself (only the deliberate turn should
-            // ever animate; otherwise removing the class plays the flip
-            // backwards first, which is the "flash" you were seeing).
-            pageCurrentEl.style.transition = "none";
-            setElementContent(pageCurrentEl, incomingContent);
-            pageCurrentEl.classList.remove("flipping-next", "flipping-prev");
-            pageCurrentEl.offsetHeight; // force a reflow so the transition:none actually takes effect
-            pageCurrentEl.style.transition = "";
-
-            updateUI();
-            saveProgress();
-        }
-
-        pageCurrentEl.addEventListener("transitionend", handler);
-    }
-
-    nextBtn.addEventListener("click", () => goToPage(currentIndex + 1, "next"));
-    prevBtn.addEventListener("click", () => goToPage(currentIndex - 1, "prev"));
-
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "ArrowRight") goToPage(currentIndex + 1, "next");
-        if (e.key === "ArrowLeft") goToPage(currentIndex - 1, "prev");
-    });
-
-    // Simple swipe support for touch devices
-    let touchStartX = null;
-    document.getElementById("book").addEventListener("touchstart", (e) => {
-        touchStartX = e.touches[0].clientX;
-    });
-    document.getElementById("book").addEventListener("touchend", (e) => {
-        if (touchStartX === null) return;
-        const deltaX = e.changedTouches[0].clientX - touchStartX;
-        if (Math.abs(deltaX) > 50) {
-            if (deltaX < 0) goToPage(currentIndex + 1, "next");
-            else goToPage(currentIndex - 1, "prev");
-        }
-        touchStartX = null;
-    });
-
-    // ============================================================
-    // FONT SIZE + THEME CONTROLS
-    // ============================================================
-    document.getElementById("font-increase").addEventListener("click", () => {
-        changeFontSize(2);
-    });
-    document.getElementById("font-decrease").addEventListener("click", () => {
-        changeFontSize(-2);
-    });
-
-    function changeFontSize(delta) {
-        const current = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--reader-font-size"));
-        const next = Math.max(14, Math.min(28, current + delta));
-        document.documentElement.style.setProperty("--reader-font-size", next + "px");
-        localStorage.setItem("cq_reader_font_size", next);
-        if (!cfg.usesPdf) {
-            // Font size change means page capacity changed -- must re-paginate.
-            const progressRatio = currentIndex / totalPages;
-            paginateText();
-            totalPages = textPages.length;
-            currentIndex = Math.min(Math.round(progressRatio * totalPages), totalPages - 1);
-            renderCurrentPage();
-        }
-    }
-
-    document.querySelectorAll(".theme-btn").forEach((btn) => {
-        btn.addEventListener("click", () => setTheme(btn.dataset.theme));
-    });
-
-    function setTheme(theme) {
-        document.body.className = `theme-${theme}`;
-        localStorage.setItem("cq_reader_theme", theme);
-        document.querySelectorAll(".theme-btn").forEach((b) => {
-            b.classList.toggle("active", b.dataset.theme === theme);
+    /* ---------------------------------------------------------------
+       Book building
+       --------------------------------------------------------------- */
+    function buildNodes(parts) {
+        const total = parts.length + 1;
+        const cover = pageShell(
+            "<h1>" + cfg.courseTitle + "</h1><p>" + (cfg.shortDescription || "") + "</p>",
+            1,
+            total,
+            "hard"
+        );
+        const body = parts.map(function (html, index) {
+            const last = index === parts.length - 1;
+            if (cfg.usesPdf) {
+                const sheet = pdfSheet(html);
+                if (last && cfg.practiceUrl) {
+                    sheet.insertAdjacentHTML(
+                        "beforeend",
+                        '<p class="cq-practice cq-practice-float"><a class="reader-complete-btn" href="' + cfg.practiceUrl + '">Start Practice</a></p>'
+                    );
+                }
+                return sheet;
+            }
+            let bodyHtml = html;
+            if (last && cfg.practiceUrl) {
+                bodyHtml += '<p class="cq-practice"><a class="reader-complete-btn" href="' + cfg.practiceUrl + '">Start Practice</a></p>';
+            }
+            return pageShell(bodyHtml, index + 2, total, "");
         });
+        return [cover].concat(body);
     }
 
-    // ============================================================
-    // SAVE PROGRESS + MARK COMPLETE (server calls)
-    // ============================================================
+    /* In two-page (landscape) mode page-flip reports the LEFT page of the spread,
+       but the right page (index + 1) is on screen too. The last page counts as
+       reached as soon as it is visible, otherwise a book with an even number of
+       body pages could never be completed on desktop. */
+    function lastVisibleIndex(index) {
+        const spread = pageFlip && pageFlip.getOrientation() === "landscape";
+        return spread && index > 0 ? Math.min(index + 1, totalPages - 1) : index;
+    }
+
+    function updateUi(index) {
+        totalPages = pageFlip ? pageFlip.getPageCount() : totalPages;
+        const current = Math.min(index, totalPages - 1);
+        const seen = lastVisibleIndex(current);
+        pageIndicator.textContent = seen > current
+            ? "Pages " + (current + 1) + "\u2013" + (seen + 1) + " of " + totalPages
+            : "Page " + (current + 1) + " of " + totalPages;
+        progressFill.style.width = ((seen + 1) / totalPages) * 100 + "%";
+        prevBtn.disabled = current <= 0;
+        nextBtn.disabled = seen >= totalPages - 1;
+        if (seen >= totalPages - 1) reachedEnd = true;
+        if (reachedEnd && !cfg.alreadyDone) {
+            completeBtn.disabled = false;
+            completeBtn.textContent = "Mark Course Complete";
+        }
+    }
+
     let saveTimer = null;
-    function saveProgress() {
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
+    function saveProgress(index) {
+        window.clearTimeout(saveTimer);
+        saveTimer = window.setTimeout(function () {
             fetch(cfg.saveProgressUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "X-CSRFToken": cfg.csrfToken },
-                body: JSON.stringify({ page_index: currentIndex }),
-            }).catch(() => {}); // best-effort, never blocks reading
+                body: JSON.stringify({ page_index: index }),
+            }).catch(function () {});
         }, 400);
     }
 
-    completeBtn.addEventListener("click", async () => {
+    function relayout() {
+        if (!pageFlip) return;
+        applyLayout();
+        pageFlip.update();
+        repaginate();
+    }
+
+    function mount(nodes) {
+        bookEl.style.visibility = "hidden";
+        nodes.forEach(function (node) { bookEl.appendChild(node); });
+        if (typeof St === "undefined" || !St.PageFlip) {
+            throw new Error("page flip engine missing");
+        }
+        pageFlip = new St.PageFlip(bookEl, {
+            /* With size "stretch" these two numbers only set the page shape;
+               applyLayout() below sets the real, screen-filling size. */
+            width: Math.round(pageRatio * 1000),
+            height: 1000,
+            size: "stretch",
+            minWidth: MIN_PAGE_W,
+            maxWidth: 4000,
+            minHeight: 200,
+            maxHeight: 4000,
+            showCover: true,
+            usePortrait: true,
+            mobileScrollSupport: true,
+            flippingTime: reduced ? 1 : 700,
+            useMouseEvents: true,
+            drawShadow: !reduced,
+            maxShadowOpacity: 0.35,
+            swipeDistance: 30,
+            clickEventForward: true,
+            startPage: START_AT_FIRST_PAGE ? 0 : Math.min(cfg.resumePageIndex || 0, nodes.length - 1),
+        });
+        pageFlip.loadFromHTML(nodes);
+        applyLayout();
+        pageFlip.update();
+        bookEl.style.visibility = "";
+
+        pageFlip.on("flip", function (event) {
+            updateUi(event.data);
+            saveProgress(event.data);
+        });
+        pageFlip.on("changeOrientation", function () {
+            updateUi(pageFlip.getCurrentPageIndex());
+        });
+        updateUi(pageFlip.getCurrentPageIndex());
+        prevBtn.addEventListener("click", function () { pageFlip.flipPrev(); });
+        nextBtn.addEventListener("click", function () { pageFlip.flipNext(); });
+        document.addEventListener("keydown", function (event) {
+            if (event.ctrlKey || event.metaKey || event.altKey) return;
+            if (event.key === "ArrowRight") pageFlip.flipNext();
+            else if (event.key === "ArrowLeft") pageFlip.flipPrev();
+            else if (event.key === "f" || event.key === "F") toggleFullscreen();
+        });
+
+        let resizeTimer = null;
+        window.addEventListener("resize", function () {
+            if (!pageFlip) return;
+            applyLayout();
+            pageFlip.update();
+            window.clearTimeout(resizeTimer);
+            resizeTimer = window.setTimeout(relayout, 200);
+        });
+    }
+
+    /* ---------------------------------------------------------------
+       Full screen
+       --------------------------------------------------------------- */
+    function fullscreenSupported() {
+        return !!(document.fullscreenEnabled && document.documentElement.requestFullscreen);
+    }
+
+    function toggleFullscreen() {
+        if (!fullscreenSupported()) return;
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            document.documentElement.requestFullscreen().catch(function () {});
+        }
+    }
+
+    function syncFullscreenBtn() {
+        if (!fullBtn) return;
+        const on = !!document.fullscreenElement;
+        fullBtn.textContent = on ? "Exit full screen" : "Full screen";
+        fullBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+
+    if (fullBtn) {
+        if (fullscreenSupported()) {
+            fullBtn.addEventListener("click", toggleFullscreen);
+            document.addEventListener("fullscreenchange", function () {
+                syncFullscreenBtn();
+                window.setTimeout(relayout, 150);
+            });
+            syncFullscreenBtn();
+        } else {
+            fullBtn.hidden = true;
+        }
+    }
+
+    /* ---------------------------------------------------------------
+       Controls
+       --------------------------------------------------------------- */
+    completeBtn.addEventListener("click", async function () {
         if (completeBtn.disabled) return;
         try {
             const res = await fetch(cfg.completeUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "X-CSRFToken": cfg.csrfToken },
-                body: JSON.stringify({ pages_reached: currentIndex, total_pages: totalPages }),
+                body: JSON.stringify({
+                    pages_reached: pageFlip ? lastVisibleIndex(pageFlip.getCurrentPageIndex()) : 0,
+                    total_pages: pageFlip ? pageFlip.getPageCount() : 1,
+                }),
             });
             const data = await res.json();
             if (res.ok) {
                 completeBtn.textContent = "✔ Course Complete!";
                 completeBtn.disabled = true;
                 if (data.new_badges && data.new_badges.length) {
-                    alert("🏆 New badge unlocked: " + data.new_badges.join(", "));
+                    window.alert("New badge unlocked: " + data.new_badges.join(", "));
                 }
             } else {
-                alert(data.error || "Could not mark complete yet.");
+                window.alert(data.error || "Could not mark complete yet.");
             }
         } catch (err) {
-            alert("Something went wrong saving your progress. Please try again.");
+            window.alert("Something went wrong saving your progress. Please try again.");
         }
     });
 
-    // ============================================================
-    // INIT
-    // ============================================================
+    document.getElementById("try-again").addEventListener("click", function () {
+        window.location.reload();
+    });
+
+    /* A- / A+ resize the text of text courses. PDF pages are pictures, so the
+       buttons would do nothing there: hide them instead of leaving dead buttons. */
+    if (cfg.usesPdf) {
+        fontBtns.forEach(function (btn) { if (btn) btn.hidden = true; });
+    } else {
+        document.getElementById("font-increase").addEventListener("click", function () { changeFont(2); });
+        document.getElementById("font-decrease").addEventListener("click", function () { changeFont(-2); });
+    }
+
+    function changeFont(delta) {
+        const current = parseInt(window.getComputedStyle(document.documentElement).getPropertyValue("--reader-font-size"), 10) || 18;
+        const next = Math.max(14, Math.min(28, current + delta));
+        if (next === current) return;
+        document.documentElement.style.setProperty("--reader-font-size", next + "px");
+        store.set("cq_reader_font_size", String(next));
+        repaginate();
+    }
+
+    const themeBtns = Array.from(document.querySelectorAll(".theme-btn"));
+    themeBtns.forEach(function (btn) {
+        btn.addEventListener("click", function () { setTheme(btn.dataset.theme); });
+    });
+
+    function setTheme(theme) {
+        if (["light", "sepia", "dark"].indexOf(theme) === -1) theme = "light";
+        document.body.className = "theme-" + theme;
+        themeBtns.forEach(function (btn) {
+            const on = btn.dataset.theme === theme;
+            btn.classList.toggle("active", on);
+            btn.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        store.set("cq_reader_theme", theme);
+    }
+
+    /* ---------------------------------------------------------------
+       Start
+       --------------------------------------------------------------- */
     async function init() {
-        const savedTheme = localStorage.getItem("cq_reader_theme") || "light";
-        setTheme(savedTheme);
-        const savedFontSize = localStorage.getItem("cq_reader_font_size");
-        if (savedFontSize) document.documentElement.style.setProperty("--reader-font-size", savedFontSize + "px");
-
-        if (cfg.usesPdf) {
-            await loadPdf();
-        } else {
-            paginateText();
-            totalPages = textPages.length;
+        setTheme(store.get("cq_reader_theme") || "light");
+        const savedSize = store.get("cq_reader_font_size");
+        if (savedSize) document.documentElement.style.setProperty("--reader-font-size", savedSize + "px");
+        try {
+            if (cfg.usesPdf) {
+                const pdf = await openPdf();
+                pageRatio = pdf.ratio;
+                const layout = computeLayout();
+                const width = renderTargetWidth(layout);
+                const parts = Array.from({ length: pdf.doc.numPages }, function (_, i) {
+                    return '<img class="cq-pdf-page-img" alt="Course page ' + (i + 1) + '" draggable="false">';
+                });
+                const nodes = buildNodes(parts);
+                const imgs = nodes.slice(1).map(function (node) { return node.querySelector("img"); });
+                const firstBatch = Math.min(2, imgs.length);
+                for (let n = 1; n <= firstBatch; n += 1) await fillPdfPage(pdf.doc, n, width, imgs[n - 1]);
+                mount(nodes);
+                if (loadingEl) loadingEl.hidden = true;
+                /* The rest of the pages draw quietly while the reader starts. */
+                for (let n = firstBatch + 1; n <= imgs.length; n += 1) await fillPdfPage(pdf.doc, n, width, imgs[n - 1]);
+            } else {
+                pageRatio = TEXT_RATIO;
+                const layout = computeLayout();
+                paginationKey = currentKey(layout);
+                mount(buildNodes(paginateText(layout.pageW, layout.pageH)));
+                if (loadingEl) loadingEl.hidden = true;
+            }
+        } catch (err) {
+            console.error("CyberQuest reader failed to start:", err);
+            showError();
         }
-
-        currentIndex = Math.min(cfg.resumePageIndex || 0, totalPages - 1);
-        renderCurrentPage();
     }
 
     init();

@@ -1,7 +1,9 @@
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from courses.progress import has_completed_all_courses
+from .analytics import analytics_payload
 from .utils import get_dashboard_context, build_radar_points
 
 
@@ -19,3 +21,14 @@ def dashboard_home(request):
     context["radar_grid_rings"] = grid_rings
 
     return render(request, "dashboard/dashboard.html", context)
+
+
+@login_required(login_url="/accounts/login/")
+def admin_analytics(request):
+    if not request.user.is_staff:
+        return HttpResponseForbidden("Staff only.")
+    try:
+        days = int(request.GET.get("days", "30"))
+    except ValueError:
+        days = 30
+    return render(request, "dashboard/admin_analytics.html", analytics_payload(days))

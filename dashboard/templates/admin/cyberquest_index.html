@@ -1,0 +1,7 @@
+{% extends "admin/index.html" %}
+{% block content %}
+<div class="module" style="margin-bottom:16px;">
+    <table><caption><a href="{% url 'dashboard:analytics' %}">CyberQuest analytics</a></caption></table>
+</div>
+{{ block.super }}
+{% endblock %}

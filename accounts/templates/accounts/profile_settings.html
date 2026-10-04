@@ -14,7 +14,7 @@
 <div class="cq-settings-shell">
 
     <div class="cq-settings-topbar">
-        <a href="{% url 'dashboard:home' %}" class="cq-settings-brand">
+        <a href="{% url 'pages:home' %}" class="cq-settings-brand" aria-label="CyberQuest home">
             <span class="cq-settings-brand-mark">🛡️</span>
             <span>
                 <span class="cq-settings-brand-title">CYBERQUEST</span>
@@ -147,6 +147,25 @@
             <button type="submit" class="cq-settings-btn cq-settings-btn-primary">Save Changes</button>
         </div>
     </form>
+
+    <section class="cq-settings-header" aria-labelledby="totp-heading">
+        <h2 id="totp-heading">Two-factor authentication</h2>
+        <p>Status: <strong>{% if totp_enabled %}Enabled{% else %}Disabled{% endif %}</strong></p>
+        <p>Use an authenticator app. Enabling asks for a code before it turns on. Turning it off requires your password or a current authenticator code.</p>
+        {% if not totp_enabled %}
+        <form method="post" action="{% url 'accounts:totp_start' %}">{% csrf_token %}
+            <button type="submit">Enable 2FA</button>
+        </form>
+        {% else %}
+        <form method="post" action="{% url 'accounts:totp_disable' %}">{% csrf_token %}
+            <label for="disable-password">Password</label>
+            <input id="disable-password" name="password" type="password" autocomplete="current-password">
+            <label for="disable-code">Or authenticator code</label>
+            <input id="disable-code" name="code" inputmode="numeric" autocomplete="one-time-code">
+            <button type="submit">Disable 2FA</button>
+        </form>
+        {% endif %}
+    </section>
 
 </div>
 

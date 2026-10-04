@@ -82,6 +82,10 @@ def login_view(request):
             elif not user.is_active:
                 messages.error(request, "Your account has been suspended. Please contact support if you believe this is a mistake.")
             else:
+                if user.totp_enabled:
+                    request.session[PENDING_LOGIN_SESSION_KEY] = user.pk
+                    request.session["pending_auth"] = "totp"
+                    return redirect("accounts:verify_totp")
                 code = generate_code(user, purpose="login_2fa")
                 send_login_2fa_email(user, code.code)
                 request.session[PENDING_LOGIN_SESSION_KEY] = user.pk
@@ -218,6 +222,7 @@ def profile_settings(request):
         "form": form,
         "user_email": user.email,
         "google_linked": user.google_linked,
+        "totp_enabled": user.totp_enabled,
     })
 
 
@@ -301,6 +306,12 @@ def google_login_callback(request):
         messages.error(request, "Your account has been suspended. Please contact support if you believe this is a mistake.")
         return redirect("accounts:login")
 
+    if user.totp_enabled:
+        request.session[PENDING_LOGIN_SESSION_KEY] = user.pk
+        request.session["pending_auth"] = "totp"
+        messages.info(request, "Enter the code from your authenticator app to finish signing in.")
+        return redirect("accounts:verify_totp")
+
     login(request, user, backend="accounts.backends.EmailAuthBackend")
     user.record_daily_activity()
 
@@ -342,3 +353,127 @@ def complete_profile_view(request):
         form = CompleteProfileForm()
 
     return render(request, "accounts/complete_profile.html", {"form": form})
+
+
+def _totp_locked(request) -> bool:
+    from django.utils import timezone
+    until = request.session.get("totp_lock_until")
+    return bool(until and timezone.now().timestamp() < until)
+
+
+def _totp_register_failure(request) -> None:
+    from django.utils import timezone
+    fails = request.session.get("totp_fails", 0) + 1
+    request.session["totp_fails"] = fails
+    if fails >= 5:
+        request.session["totp_lock_until"] = timezone.now().timestamp() + 300
+        request.session["totp_fails"] = 0
+
+
+def verify_totp_login(request):
+    from .totp import consume_recovery_code, verify_totp
+
+    pending_user_id = request.session.get(PENDING_LOGIN_SESSION_KEY)
+    if request.session.get("pending_auth") != "totp" or not pending_user_id:
+        messages.error(request, "Please log in first.")
+        return redirect("accounts:login")
+    user = UserModel.objects.filter(pk=pending_user_id, totp_enabled=True).first()
+    if user is None:
+        request.session.pop(PENDING_LOGIN_SESSION_KEY, None)
+        request.session.pop("pending_auth", None)
+        return redirect("accounts:login")
+
+    if request.method == "POST":
+        if _totp_locked(request):
+            messages.error(request, "Too many attempts. Wait five minutes and try again.")
+        else:
+            code = request.POST.get("code", "")
+            ok = verify_totp(user.totp_secret, code) or consume_recovery_code(user, code)
+            if ok:
+                request.session.pop(PENDING_LOGIN_SESSION_KEY, None)
+                request.session.pop("pending_auth", None)
+                request.session.pop("totp_fails", None)
+                request.session.pop("totp_lock_until", None)
+                login(request, user, backend="accounts.backends.EmailAuthBackend")
+                user.record_daily_activity()
+                messages.success(request, f"Welcome back, {user.email}!")
+                return redirect(next_step_url_name(user))
+            _totp_register_failure(request)
+            messages.error(request, "Incorrect authenticator or recovery code.")
+    return render(request, "accounts/verify_totp.html", {"email": user.email})
+
+
+@login_required(login_url="/accounts/login/")
+def totp_start(request):
+    import base64
+    import io
+    import qrcode
+    from .totp import new_secret, provisioning_uri
+
+    if request.user.totp_enabled:
+        messages.info(request, "Two-factor authentication is already enabled.")
+        return redirect("accounts:settings")
+    secret = request.session.get("pending_totp_secret")
+    if request.method == "POST" or not secret:
+        if request.method != "POST":
+            return redirect("accounts:settings")
+        secret = new_secret()
+        request.session["pending_totp_secret"] = secret
+    uri = provisioning_uri(secret, request.user.email)
+    image = qrcode.make(uri)
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    qr = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return render(request, "accounts/totp_setup.html", {
+        "secret": secret,
+        "qr_data_uri": f"data:image/png;base64,{qr}",
+    })
+
+
+@login_required(login_url="/accounts/login/")
+def totp_confirm(request):
+    from .totp import issue_recovery_codes, verify_totp
+
+    secret = request.session.get("pending_totp_secret")
+    if not secret:
+        messages.error(request, "Start two-factor setup again.")
+        return redirect("accounts:settings")
+    if request.method != "POST":
+        return redirect("accounts:totp_start")
+    if _totp_locked(request):
+        messages.error(request, "Too many attempts. Wait five minutes and try again.")
+        return redirect("accounts:settings")
+    if not verify_totp(secret, request.POST.get("code", "")):
+        _totp_register_failure(request)
+        messages.error(request, "That code did not match. Two-factor authentication is still off.")
+        return redirect("accounts:settings")
+    user = request.user
+    user.totp_secret = secret
+    user.totp_enabled = True
+    user.save(update_fields=["totp_secret", "totp_enabled"])
+    codes = issue_recovery_codes(user)
+    request.session.pop("pending_totp_secret", None)
+    request.session.pop("totp_fails", None)
+    return render(request, "accounts/totp_recovery.html", {"codes": codes})
+
+
+@login_required(login_url="/accounts/login/")
+def totp_disable(request):
+    from .totp import verify_totp
+
+    if request.method != "POST":
+        return redirect("accounts:settings")
+    user = request.user
+    password = request.POST.get("password", "")
+    code = request.POST.get("code", "")
+    password_ok = user.has_usable_password() and user.check_password(password)
+    code_ok = verify_totp(user.totp_secret, code)
+    if not password_ok and not code_ok:
+        messages.error(request, "Enter your password or a current authenticator code to turn off 2FA.")
+        return redirect("accounts:settings")
+    user.totp_enabled = False
+    user.totp_secret = ""
+    user.save(update_fields=["totp_enabled", "totp_secret"])
+    user.recovery_codes.all().delete()
+    messages.success(request, "Two-factor authentication is now off.")
+    return redirect("accounts:settings")

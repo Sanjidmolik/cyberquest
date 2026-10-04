@@ -101,6 +101,7 @@ def validate_single_question(
     expected_question_number: int | None = None,
     require_source: bool = True,
     label: str | None = None,
+    target_language: str = "en",
 ) -> list[str]:
     """Return validation errors for one question (empty list = valid)."""
     errors: list[str] = []
@@ -173,6 +174,13 @@ def validate_single_question(
         if not isinstance(scenario, dict) or not scenario:
             errors.append(f"{tag}: simulation question_type requires scenario data.")
 
+    from question_bank.services.language_check import language_errors_for_question
+
+    target = (target_language or "en").strip().lower()
+    errors.extend(
+        language_errors_for_question(question, target_language=target, tag=tag)
+    )
+
     return errors
 
 
@@ -196,6 +204,7 @@ def filter_payload_against_plans(
     source_content: str,
     extra_existing_prompts: list[str] | None = None,
     require_source: bool = True,
+    target_language: str = "en",
 ) -> FilteredBankResult:
     """
     Accept valid questions into blueprint slots; collect missing slots for repair.
@@ -280,6 +289,7 @@ def filter_payload_against_plans(
                 expected_difficulty=expected_diff,
                 expected_question_number=qnum,
                 require_source=require_source,
+                target_language=target_language,
             )
             prompt = (question.get("question") or "").strip()
             if prompt and is_duplicate_against(prompt, accepted_prompts):
@@ -357,6 +367,7 @@ def merge_replacements(
     set_plans: list[dict[str, Any]],
     source_content: str,
     require_source: bool = True,
+    target_language: str = "en",
 ) -> FilteredBankResult:
     """Validate repair replacements and fill matching missing slots."""
     plan_by_number = {int(p["set_number"]): p for p in set_plans}
@@ -396,6 +407,7 @@ def merge_replacements(
             expected_difficulty=slot["difficulty"],
             expected_question_number=qnum,
             require_source=require_source,
+            target_language=target_language,
         )
         prompt = (raw.get("question") or "").strip()
         if prompt and is_duplicate_against(prompt, accepted_prompts):
@@ -440,6 +452,7 @@ def validate_generation_payload(
     simulation_sets: int,
     questions_per_set: int,
     set_plans: list[dict[str, Any]] | None = None,
+    target_language: str = "en",
 ) -> ValidationResult:
     """
     Strict full-bank validation (used by tests / callers that require completeness).
@@ -459,6 +472,7 @@ def validate_generation_payload(
         payload,
         set_plans=plans,
         source_content=source_content,
+        target_language=target_language,
     )
     result = ValidationResult(ok=True)
     if filtered.insufficient:

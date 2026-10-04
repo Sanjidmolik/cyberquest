@@ -33,11 +33,11 @@ class GameAttempt(models.Model):
         ("steganography", "Steganography Hunt"),
     ]
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="game_attempts")
-    game_key = models.CharField(max_length=50, choices=GAME_CHOICES)
+    game_key = models.CharField(max_length=50, choices=GAME_CHOICES, db_index=True)
     score = models.PositiveIntegerField()
     total_questions = models.PositiveIntegerField()
     xp_awarded = models.PositiveIntegerField(default=0)
-    completed_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     # Question-set tracking (nullable for legacy / non-set games)
     question_set = models.ForeignKey(

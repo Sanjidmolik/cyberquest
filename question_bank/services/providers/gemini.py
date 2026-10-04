@@ -90,17 +90,23 @@ class GeminiQuestionProvider(AIQuestionProvider):
         simulation_sets: int,
         questions_per_set: int,
         set_plans: list[dict[str, Any]] | None = None,
+        target_language: str | None = None,
+        source_language: str | None = None,
     ) -> dict[str, Any]:
         if not self.api_key:
             raise GeminiProviderError(
                 "Question generation failed: GEMINI_API_KEY is not configured."
             )
 
+        resolved_target = target_language or language
+
         def _prompt(extra: str = "") -> str:
             base = build_generation_prompt(
                 source_content=source_content,
                 domain=domain,
-                language=language,
+                language=resolved_target,
+                target_language=resolved_target,
+                source_language=source_language,
                 difficulty=difficulty,
                 total_sets=total_sets,
                 normal_sets=normal_sets,
@@ -113,6 +119,8 @@ class GeminiQuestionProvider(AIQuestionProvider):
         return self._generate_with_retries(
             prompt_builder=_prompt,
             response_schema=GENERATION_RESPONSE_SCHEMA,
+            target_language=resolved_target,
+            source_language=source_language,
         )
 
     def generate_replacements(
@@ -123,6 +131,8 @@ class GeminiQuestionProvider(AIQuestionProvider):
         language: str,
         missing_slots: list[dict[str, Any]],
         existing_questions: list[dict[str, Any]],
+        target_language: str | None = None,
+        source_language: str | None = None,
     ) -> dict[str, Any]:
         if not self.api_key:
             raise GeminiProviderError(
@@ -131,11 +141,15 @@ class GeminiQuestionProvider(AIQuestionProvider):
         if not missing_slots:
             return {"insufficient_source_content": False, "message": "", "replacements": []}
 
+        resolved_target = target_language or language
+
         def _prompt(extra: str = "") -> str:
             base = build_repair_prompt(
                 source_content=source_content,
                 domain=domain,
-                language=language,
+                language=resolved_target,
+                target_language=resolved_target,
+                source_language=source_language,
                 missing_slots=missing_slots,
                 existing_questions=existing_questions,
             )
@@ -144,6 +158,8 @@ class GeminiQuestionProvider(AIQuestionProvider):
         return self._generate_with_retries(
             prompt_builder=_prompt,
             response_schema=REPAIR_RESPONSE_SCHEMA,
+            target_language=resolved_target,
+            source_language=source_language,
         )
 
     def _generate_with_retries(
@@ -151,6 +167,8 @@ class GeminiQuestionProvider(AIQuestionProvider):
         *,
         prompt_builder,
         response_schema: dict[str, Any],
+        target_language: str = "en",
+        source_language: str | None = None,
     ) -> dict[str, Any]:
         prompt = prompt_builder()
         last_error = "Unknown Gemini error"
@@ -184,7 +202,11 @@ class GeminiQuestionProvider(AIQuestionProvider):
                         break
                     if attempt >= self.max_attempts:
                         break
-                    prompt = prompt_builder(build_retry_correction_prompt(last_error))
+                    prompt = prompt_builder(build_retry_correction_prompt(
+                        last_error,
+                        target_language=target_language,
+                        source_language=source_language,
+                    ))
 
         if capacity_errors:
             raise GeminiProviderError(

@@ -15,3 +15,17 @@ class ContactMessage(models.Model):
 
     def __str__(self):
         return f"{self.name} <{self.email}> - {self.submitted_at:%Y-%m-%d}"
+
+
+class HomepageVisitDay(models.Model):
+    """Session-deduped homepage visits for one calendar day. Not unique visitors."""
+
+    day = models.DateField(unique=True)
+    visits = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-day"]
+        indexes = [models.Index(fields=["day"])]
+
+    def __str__(self):
+        return f"{self.day}: {self.visits}"

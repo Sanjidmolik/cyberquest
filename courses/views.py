@@ -21,7 +21,49 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 import json
 
+from django.db.models import Q
+from django.urls import reverse
+
+from games.registry import GAMES_REGISTRY
 from .models import Course, CourseProgress, ReadingProgress
+
+# Existing games the learning book can hand off to. Matching is by the course
+# title or code already stored in the database, not by new lesson text.
+LEARNING_TOPICS = {
+    "phishing": ("phishing", "games:phishing_simulator", "Phishing Simulator"),
+    "password-cracker": ("password", "games:password_cracker", "Password Cracker"),
+    "network-defense": ("network", "games:network_defense", "Network Defense"),
+    "cryptography": ("crypto", "games:cryptography", "Cryptography Challenge"),
+    "osint": ("osint", "games:osint", "OSINT Investigation"),
+}
+
+
+def practice_link_for_course(course):
+    haystack = f"{course.code} {course.title}".lower()
+    for _slug, (hint, url_name, label) in LEARNING_TOPICS.items():
+        if hint in haystack:
+            return reverse(url_name), label
+    for game in GAMES_REGISTRY:
+        if game["key"].split("_")[0] in haystack:
+            return reverse(game["url_name"]), game["name"]
+    return "", ""
+
+
+def _reader_context(request, course):
+    already_done = CourseProgress.objects.filter(user=request.user, course=course).exists()
+    reading_state, _ = ReadingProgress.objects.get_or_create(
+        user=request.user, course=course, defaults={"last_page_index": 0}
+    )
+    practice_url, practice_label = practice_link_for_course(course)
+    return {
+        "course": course,
+        "load_error": False,
+        "already_done": already_done,
+        "resume_page_index": reading_state.last_page_index,
+        "uses_pdf": course.uses_pdf(),
+        "practice_url": practice_url,
+        "practice_label": practice_label,
+    }
 from .progress import has_completed_all_courses, completed_course_count
 
 
@@ -69,12 +111,25 @@ def course_detail(request, code):
         user=request.user, course=course, defaults={"last_page_index": 0}
     )
 
-    return render(request, "courses/course_reader.html", {
-        "course": course,
-        "already_done": already_done,
-        "resume_page_index": reading_state.last_page_index,
-        "uses_pdf": course.uses_pdf(),
-    })
+    return render(request, "courses/course_reader.html", _reader_context(request, course))
+
+
+@login_required(login_url="/accounts/login/")
+def learning_course(request, topic):
+    """Alias routes /learning/<topic>/ onto the existing course reader."""
+    topic_info = LEARNING_TOPICS.get(topic)
+    if topic_info is None:
+        return render(request, "courses/course_reader.html", {"load_error": True, "course": None}, status=404)
+    hint = topic_info[0]
+    course = (
+        Course.objects.filter(is_published=True)
+        .filter(Q(title__icontains=hint) | Q(code__icontains=hint))
+        .order_by("order", "code")
+        .first()
+    )
+    if course is None:
+        return render(request, "courses/course_reader.html", {"load_error": True, "course": None}, status=404)
+    return render(request, "courses/course_reader.html", _reader_context(request, course))
 
 
 @login_required(login_url="/accounts/login/")

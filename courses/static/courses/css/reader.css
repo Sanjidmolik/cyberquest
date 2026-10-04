@@ -16,9 +16,23 @@
 }
 
 /* ---------- Theme variants ---------- */
-body.theme-light { --page-bg: #ffffff; --page-text: #1a1a1a; --ui-bg: #f4f3ee; --ui-text: #333; }
-body.theme-sepia { --page-bg: #f4ecd8; --page-text: #3b2f1e; --ui-bg: #ece3cf; --ui-text: #3b2f1e; }
-body.theme-dark  { --page-bg: #1c1c1e; --page-text: #e6e6e6; --ui-bg: #121212; --ui-text: #ddd; }
+body.theme-light {
+    --page-bg: #ffffff; --page-text: #1a1a1a; --ui-bg: #f4f3ee; --ui-text: #333;
+    --sheet-bg: #f7f8f4; --sheet-text: #1c2430; --sheet-border: #d5dde8;
+    --sheet-label: #3d6fbf; --sheet-head: #24304a; --sheet-foot: #5b6780; --pdf-bg: #ffffff;
+}
+body.theme-sepia {
+    --page-bg: #f4ecd8; --page-text: #3b2f1e; --ui-bg: #ece3cf; --ui-text: #3b2f1e;
+    --sheet-bg: #f4ecd8; --sheet-text: #3b2f1e; --sheet-border: #d9c9a3;
+    --sheet-label: #8a5a14; --sheet-head: #4a3515; --sheet-foot: #7a6644; --pdf-bg: #f1e6c8;
+}
+body.theme-dark {
+    --page-bg: #1c1c1e; --page-text: #e6e6e6; --ui-bg: #121212; --ui-text: #ddd;
+    --sheet-bg: #1f2024; --sheet-text: #e6e6e6; --sheet-border: #3a3b42;
+    --sheet-label: #8db4ff; --sheet-head: #ffffff; --sheet-foot: #9aa0b4; --pdf-bg: #17171a;
+}
+
+[hidden] { display: none !important; }
 
 * { box-sizing: border-box; }
 
@@ -39,7 +53,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 20px;
+    gap: 12px;
+    padding: 6px 16px;
     border-bottom: 1px solid rgba(128,128,128,0.25);
     flex-shrink: 0;
 }
@@ -53,12 +68,23 @@ body {
     color: inherit;
     border-radius: 6px;
     padding: 4px 10px;
+    min-width: 36px;
+    min-height: 32px;
     cursor: pointer;
     font-size: 0.85rem;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
-.reader-btn:hover { border-color: currentColor; }
-.reader-theme-group { display: flex; gap: 4px; margin-left: 8px; }
-.theme-btn.active { background: rgba(128,128,128,0.25); }
+.reader-btn:hover { border-color: currentColor; background: rgba(128,128,128,0.15); }
+.reader-btn:active { transform: scale(0.95); }
+.reader-btn:focus-visible { outline: 2px solid #1f9c53; outline-offset: 2px; }
+.reader-theme-group { display: flex; gap: 4px; margin: 0 8px; }
+.theme-btn.active {
+    background: rgba(31,156,83,0.22);
+    border-color: #1f9c53;
+    box-shadow: inset 0 0 0 1px #1f9c53;
+}
+#fullscreen-btn { white-space: nowrap; }
+#fullscreen-btn[aria-pressed="true"] { background: rgba(31,156,83,0.22); border-color: #1f9c53; }
 
 /* ---------- Progress bar ---------- */
 .reader-progress-track {
@@ -75,85 +101,100 @@ body {
 
 /* ---------- Reading stage ---------- */
 .reader-stage {
+    position: relative;
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    padding: 20px;
+    padding: 6px 0;
     min-height: 0;
+    min-width: 0;
 }
 
 .flip-zone {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    width: 52px;
+    height: 120px;
     background: transparent;
     border: none;
+    border-radius: 10px;
     color: inherit;
-    opacity: 0.35;
-    font-size: 1.4rem;
+    opacity: 0.5;
+    font-size: 1.8rem;
     cursor: pointer;
-    padding: 20px 10px;
-    flex-shrink: 0;
+    padding: 0;
+    transition: opacity 0.15s ease, background 0.15s ease;
 }
-.flip-zone:hover:not(:disabled) { opacity: 0.9; }
+.flip-zone-left { left: 4px; }
+.flip-zone-right { right: 4px; }
+.flip-zone:hover:not(:disabled) { opacity: 1; background: rgba(128,128,128,0.15); }
+.flip-zone:focus-visible { outline: 2px solid #1f9c53; }
 .flip-zone:disabled { opacity: 0.1; cursor: default; }
 
-/* ---------- The "book": a stack of two pages for the flip illusion ---------- */
-.book {
-    position: relative;
-    width: 100%;
-    max-width: 700px;
-    height: 100%;
-    max-height: 820px;
-    perspective: 2000px;
-}
-
-.page {
-    position: absolute;
-    inset: 0;
-    background: var(--page-bg);
-    color: var(--page-text);
-    border: 1px solid var(--page-border);
-    border-radius: 6px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-    padding: 40px 46px;
-    overflow: hidden;
-    font-family: 'Merriweather', serif;
+.reader-logo { color: inherit; font-weight: 800; text-decoration: none; letter-spacing: 0.04em; }
+.reader-status { text-align: center; padding: 48px 16px; }
+/* The loading message floats so it never changes the size the book is fitted to. */
+#reader-loading { position: absolute; left: 0; right: 0; top: 40%; z-index: 4; pointer-events: none; }
+/* align-self: stretch gives the book the stage's height, so page-flip (size: "stretch")
+   fits the pages inside it instead of growing taller than the screen. */
+/* reader.js sets the exact width and height so the pages fill the screen. */
+.book { flex: none; position: relative; }
+.cq-sheet {
+    background: var(--sheet-bg);
+    color: var(--sheet-text);
+    border: 1px solid var(--sheet-border);
+    padding: 28px 32px 36px;
+    overflow: auto;
+    font-family: Merriweather, Georgia, serif;
     font-size: var(--reader-font-size);
-    line-height: 1.75;
+    line-height: 1.7;
 }
+.cq-sheet-label { font-family: Inter, sans-serif; font-size: 12px; letter-spacing: 0.08em; color: var(--sheet-label); text-transform: uppercase; }
+.cq-sheet h1 { font-size: 1.6rem; color: var(--sheet-head); }
+.cq-sheet-foot { margin-top: 18px; font-family: Inter, sans-serif; font-size: 12px; color: var(--sheet-foot); }
+.cq-practice { margin-top: 24px; }
+.cq-measurer { position: absolute; visibility: hidden; left: -9999px; top: 0; }
 
-.page-current {
-    z-index: 2;
-    transform-origin: left center;
-    backface-visibility: hidden;
-    transition: transform 0.5s cubic-bezier(0.45, 0, 0.55, 1), opacity 0.5s ease;
+/* ---------- PDF pages: the picture fills the whole page ---------- */
+.cq-pdf-sheet {
+    padding: 0;
+    overflow: hidden;
+    background: var(--pdf-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.page-incoming {
-    z-index: 1;
+.cq-pdf-sheet::before {
+    content: "Loading page\2026";
+    position: absolute;
+    font-family: Inter, sans-serif;
+    font-size: 13px;
+    color: var(--sheet-foot);
 }
-
-/* The flip: current page rotates away on the Y axis, fading, revealing
-   the (already-updated) page underneath. */
-.page-current.flipping-next {
-    transform: rotateY(-100deg);
-    opacity: 0;
+.cq-pdf-sheet.is-ready::before { display: none; }
+.cq-pdf-page-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
 }
-.page-current.flipping-prev {
-    transform: rotateY(100deg);
-    opacity: 0;
-}
-
-.page :first-child { margin-top: 0; }
-
-/* PDF pages render into a canvas instead of text */
-.page canvas, .page .cq-pdf-page-img { max-width: 100%; max-height: 100%; display: block; margin: 0 auto; }
+.cq-pdf-page-img:not([src]) { visibility: hidden; }
+body.theme-dark .cq-pdf-page-img { filter: brightness(0.88) contrast(1.04); }
+body.theme-sepia .cq-pdf-page-img { filter: sepia(0.28) brightness(0.98); }
+.cq-practice-float { position: absolute; left: 0; right: 0; bottom: 16px; margin: 0; text-align: center; z-index: 2; }
+.cq-practice-float a { display: inline-block; text-decoration: none; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
 
 /* ---------- Footer ---------- */
 .reader-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 20px;
+    padding: 6px 16px;
     border-top: 1px solid rgba(128,128,128,0.25);
     flex-shrink: 0;
 }
@@ -174,8 +215,11 @@ body {
     cursor: not-allowed;
 }
 
-@media (max-width: 600px) {
-    .page { padding: 24px 22px; }
+@media (max-width: 700px) {
+    .reader-topbar { flex-wrap: wrap; padding: 6px 10px; gap: 6px 10px; }
     .reader-controls { flex-wrap: wrap; }
-    .flip-zone { padding: 10px 4px; }
+    .flip-zone { width: 30px; height: 80px; font-size: 1.3rem; }
+    .flip-zone-left { left: 2px; }
+    .flip-zone-right { right: 2px; }
+    .cq-sheet { padding: 20px 18px 28px; }
 }

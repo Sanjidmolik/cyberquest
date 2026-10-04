@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Recovery codes — CyberQuest</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/settings.css' %}">
+</head>
+<body class="cq-settings-body">
+<div class="cq-settings-shell">
+    <h1>Two-factor authentication is on</h1>
+    <p>Save these recovery codes now. Each code works once. They will not be shown again.</p>
+    <ul>
+        {% for code in codes %}<li><code>{{ code }}</code></li>{% endfor %}
+    </ul>
+    <a href="{% url 'accounts:settings' %}">Back to settings</a>
+</div>
+</body>
+</html>

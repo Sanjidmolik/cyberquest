@@ -22,6 +22,8 @@ class AIQuestionProvider(ABC):
         simulation_sets: int,
         questions_per_set: int,
         set_plans: list[dict[str, Any]] | None = None,
+        target_language: str | None = None,
+        source_language: str | None = None,
     ) -> dict[str, Any]:
         raise NotImplementedError
 
@@ -33,6 +35,8 @@ class AIQuestionProvider(ABC):
         language: str,
         missing_slots: list[dict[str, Any]],
         existing_questions: list[dict[str, Any]],
+        target_language: str | None = None,
+        source_language: str | None = None,
     ) -> dict[str, Any]:
         """Optional repair API. Default raises if not implemented."""
         raise NotImplementedError("This provider does not support replacement generation.")

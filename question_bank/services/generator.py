@@ -31,6 +31,19 @@ from question_bank.services.validator import (
     validate_bank_configuration,
 )
 
+def _set_stage(bank: QuestionBank, stage: str, *, completed: int | None = None, requested: int | None = None) -> None:
+    """Persist an honest generation stage. Does not invent a percentage."""
+    bank.generation_stage = stage[:120]
+    fields = ["generation_stage", "updated_at"]
+    if completed is not None:
+        bank.generation_completed = completed
+        fields.append("generation_completed")
+    if requested is not None:
+        bank.generation_requested = requested
+        fields.append("generation_requested")
+    bank.save(update_fields=fields)
+
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_REPAIR_ATTEMPTS = 3
@@ -93,12 +106,16 @@ def generate_question_bank(bank_id: int, *, created_by=None) -> QuestionBank:
 
     bank.status = QuestionBank.STATUS_GENERATING
     bank.last_error = ""
+    bank.generation_stage = "Analyzing source material..."
+    bank.generation_completed = 0
+    bank.generation_requested = bank.expected_total_questions
     bank.ai_provider = getattr(settings, "AI_PROVIDER", "gemini") or "gemini"
     bank.ai_model = getattr(settings, "GEMINI_MODEL", "") or ""
     if created_by is not None and bank.created_by_id is None:
         bank.created_by = created_by
     bank.save(update_fields=[
         "status", "last_error", "ai_provider", "ai_model", "created_by", "updated_at",
+        "generation_stage", "generation_completed", "generation_requested",
     ])
 
     existing_domain_prompts = list(
@@ -109,13 +126,28 @@ def generate_question_bank(bank_id: int, *, created_by=None) -> QuestionBank:
         .exclude(sets__question_bank=bank)
         .values_list("prompt", flat=True)[:800]
     )
+    target_language = bank.resolve_output_language()
+    logger.info(
+        "Generation target_language=%s source_language=%s bank_id=%s",
+        target_language,
+        bank.source_language,
+        bank.pk,
+    )
 
     try:
+        _set_stage(
+            bank,
+            "Generating questions...",
+            completed=0,
+            requested=bank.expected_total_questions,
+        )
         provider = get_ai_provider()
         payload = provider.generate_question_bank(
             source_content=bank.source_content,
             domain=bank.domain,
-            language=bank.resolve_output_language(),
+            language=target_language,
+            target_language=target_language,
+            source_language=bank.source_language,
             difficulty=bank.difficulty,
             total_sets=bank.total_sets,
             normal_sets=bank.normal_sets,
@@ -143,9 +175,22 @@ def generate_question_bank(bank_id: int, *, created_by=None) -> QuestionBank:
         source_content=bank.source_content,
         extra_existing_prompts=existing_domain_prompts,
         require_source=True,
+        target_language=target_language,
     )
 
     requested = bank.expected_total_questions
+    _set_stage(
+        bank,
+        "Checking difficulty levels...",
+        completed=len(filtered.accepted_questions),
+        requested=requested,
+    )
+    _set_stage(
+        bank,
+        "Validating language and answers...",
+        completed=len(filtered.accepted_questions),
+        requested=requested,
+    )
     logger.info(
         "Initial AI filter bank_id=%s requested=%s valid=%s missing=%s",
         bank.pk,
@@ -165,11 +210,19 @@ def generate_question_bank(bank_id: int, *, created_by=None) -> QuestionBank:
             bank.pk,
             len(filtered.missing_slots),
         )
+        _set_stage(
+            bank,
+            f"Retrying validation ({attempt}/{max_repair})...",
+            completed=len(filtered.accepted_questions),
+            requested=requested,
+        )
         try:
             repair_payload = provider.generate_replacements(
                 source_content=bank.source_content,
                 domain=bank.domain,
-                language=bank.resolve_output_language(),
+                language=target_language,
+                target_language=target_language,
+                source_language=bank.source_language,
                 missing_slots=filtered.missing_slots,
                 existing_questions=filtered.accepted_questions,
             )
@@ -204,6 +257,7 @@ def generate_question_bank(bank_id: int, *, created_by=None) -> QuestionBank:
             set_plans=set_plans,
             source_content=bank.source_content,
             require_source=True,
+            target_language=target_language,
         )
         logger.info(
             "Repair attempt %s result bank_id=%s generated=%s valid_now=%s missing=%s (was %s)",
@@ -240,8 +294,14 @@ def generate_question_bank(bank_id: int, *, created_by=None) -> QuestionBank:
                     f"valid questions. Missing {len(filtered.missing_slots)} slot(s). "
                     "Not available to students until generation is completed and approved."
                 )
+            bank.generation_stage = (
+                "Ready for review." if complete else "Partial generation saved."
+            )
+            bank.generation_completed = len(filtered.accepted_questions)
+            bank.generation_requested = requested
             bank.save(update_fields=[
                 "status", "last_error", "generated_at", "generation_version", "updated_at",
+                "generation_stage", "generation_completed", "generation_requested",
             ])
     except Exception:
         logger.exception("Database persistence failure bank_id=%s", bank.pk)
@@ -263,7 +323,8 @@ def generate_question_bank(bank_id: int, *, created_by=None) -> QuestionBank:
 def _mark_failed(bank: QuestionBank, message: str, *, insufficient: bool = False) -> QuestionBank:
     bank.status = QuestionBank.STATUS_FAILED
     bank.last_error = message
-    bank.save(update_fields=["status", "last_error", "updated_at"])
+    bank.generation_stage = "Generation failed"
+    bank.save(update_fields=["status", "last_error", "generation_stage", "updated_at"])
     _clear_bank_content(bank)
     if insufficient:
         logger.info("Insufficient source content bank_id=%s", bank.pk)

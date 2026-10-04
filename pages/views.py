@@ -7,7 +7,10 @@ from .models import ContactMessage
 
 def home_view(request):
     """Public marketing homepage (CyberShield Academy design)."""
-    return render(request, "pages/home.html")
+    from pages.visits import homepage_visit_totals, record_homepage_visit
+
+    record_homepage_visit(request)
+    return render(request, "home.html", homepage_visit_totals())
 
 
 def about_view(request):

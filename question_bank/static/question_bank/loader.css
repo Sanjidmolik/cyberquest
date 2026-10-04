@@ -1,0 +1,47 @@
+.cq-loader {
+  position: fixed; inset: 0; z-index: 2000;
+  display: none; place-items: center;
+  background: rgba(7, 16, 12, 0.72);
+  padding: 24px;
+}
+.cq-loader.on { display: grid; }
+.cq-loader-card {
+  width: min(420px, 100%);
+  background: #10281c;
+  color: #e7f6df;
+  border-radius: 18px;
+  padding: 28px 22px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+.cq-cube {
+  width: 72px; height: 72px; margin: 0 auto 18px;
+  transform-style: preserve-3d;
+  animation: cq-spin 4.5s linear infinite;
+}
+.cq-cube span {
+  position: absolute; inset: 0;
+  border: 2px solid #7dffb2;
+  background: rgba(125, 255, 178, 0.12);
+  box-shadow: 0 0 18px rgba(125, 255, 178, 0.45);
+}
+.cq-cube span:nth-child(1) { transform: rotateY(0deg) translateZ(36px); }
+.cq-cube span:nth-child(2) { transform: rotateY(90deg) translateZ(36px); }
+.cq-cube span:nth-child(3) { transform: rotateY(180deg) translateZ(36px); }
+.cq-cube span:nth-child(4) { transform: rotateY(-90deg) translateZ(36px); }
+.cq-cube span:nth-child(5) { transform: rotateX(90deg) translateZ(36px); }
+.cq-cube span:nth-child(6) { transform: rotateX(-90deg) translateZ(36px); }
+@keyframes cq-spin {
+  to { transform: rotateX(360deg) rotateY(360deg); }
+}
+.cq-loader h2 { margin: 0 0 8px; font-size: 1.15rem; }
+.cq-loader p { margin: 0; min-height: 1.4em; }
+.cq-loader .cq-count { margin-top: 10px; font-variant-numeric: tabular-nums; color: #b7e7c5; }
+.cq-loader .cq-error { color: #ffb4a8; margin-top: 12px; }
+.cq-loader button {
+  margin-top: 14px; background: #fd7f01; color: #fff; border: 0;
+  border-radius: 8px; padding: 8px 14px; font-weight: 700; cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cq-cube { animation: none; }
+}

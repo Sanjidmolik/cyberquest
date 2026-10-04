@@ -9,7 +9,7 @@ from django.utils.html import format_html
 
 from games.models import Question, QuestionSet
 from question_bank.models import QuestionBank
-from question_bank.services.generator import generate_question_bank
+from question_bank.services.jobs import start_generation
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,10 @@ class QuestionBankAdmin(admin.ModelAdmin):
     )
     list_filter = ("domain", "status", "difficulty", "output_language")
     search_fields = ("title", "description", "source_content")
+
+    class Media:
+        css = {"all": ("question_bank/loader.css",)}
+        js = ("question_bank/loader.js",)
     readonly_fields = (
         "status",
         "ai_provider",
@@ -75,7 +79,9 @@ class QuestionBankAdmin(admin.ModelAdmin):
             "fields": ("source_content", "source_language", "output_language"),
             "description": (
                 "The AI must generate questions ONLY from this source. "
-                "Do not enable web search / grounding."
+                "Output language is the target language for questions. "
+                "Choose English even when the source is Bangla. "
+                "Gemini must not switch that target to Hindi."
             ),
         }),
         ("Generation configuration (Customize Set)", {
@@ -135,9 +141,22 @@ class QuestionBankAdmin(admin.ModelAdmin):
 
     @admin.action(description="Generate Question Bank with Gemini")
     def generate_with_gemini(self, request, queryset):
+        started = []
         for bank in queryset:
             try:
-                updated = generate_question_bank(bank.pk, created_by=request.user)
+                if start_generation(bank.pk, request.user.pk):
+                    started.append(str(bank.pk))
+                    self.message_user(
+                        request,
+                        f"«{bank.title}»: generation started. This page shows live status.",
+                        messages.SUCCESS,
+                    )
+                else:
+                    self.message_user(
+                        request,
+                        f"«{bank.title}» is already generating.",
+                        messages.WARNING,
+                    )
             except Exception:
                 logger.exception("Admin generate failed bank_id=%s", bank.pk)
                 self.message_user(
@@ -145,32 +164,11 @@ class QuestionBankAdmin(admin.ModelAdmin):
                     f"«{bank.title}»: unexpected generation error.",
                     messages.ERROR,
                 )
-                continue
-
-            if updated.status == QuestionBank.STATUS_REVIEW:
-                self.message_user(
-                    request,
-                    (
-                        f"«{updated.title}»: successfully generated "
-                        f"{updated.total_sets} question sets containing "
-                        f"{updated.expected_total_questions} questions. "
-                        f"{updated.normal_sets} normal sets and "
-                        f"{updated.simulation_sets} simulation sets are ready for review."
-                    ),
-                    messages.SUCCESS,
-                )
-            elif updated.status == QuestionBank.STATUS_PARTIAL:
-                self.message_user(
-                    request,
-                    f"«{updated.title}»: {updated.last_error}",
-                    messages.WARNING,
-                )
-            else:
-                self.message_user(
-                    request,
-                    f"«{updated.title}»: {updated.last_error or 'Generation failed.'}",
-                    messages.ERROR,
-                )
+        if started:
+            from django.http import HttpResponseRedirect
+            from django.urls import reverse
+            url = reverse("admin:question_bank_questionbank_changelist")
+            return HttpResponseRedirect(f"{url}?generating={','.join(started)}")
 
     @admin.action(description="Approve selected Question Banks")
     def approve_selected_banks(self, request, queryset):

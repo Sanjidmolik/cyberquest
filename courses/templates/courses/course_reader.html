@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>{{ course.title }} — CyberQuest</title>
+<title>{% if course %}{{ course.title }} — CyberQuest{% else %}CyberQuest learning{% endif %}</title>
 <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'courses/css/reader.css' %}">
 {% if uses_pdf %}
@@ -13,8 +13,12 @@
 <body>
 
 <div class="reader-topbar">
-    <a href="{% url 'courses:intro' %}" class="reader-back">&larr; All Courses</a>
+    <a href="{% url 'pages:home' %}" class="reader-logo" aria-label="CyberQuest home">CyberQuest</a>
+    <a href="{% url 'courses:intro' %}" class="reader-back">Back to Learning</a>
+    {% if course %}
+    <a href="{% url 'courses:detail' course.code %}" class="reader-back">Back to Course</a>
     <span class="reader-title">{{ course.title }}</span>
+    {% endif %}
 
     <div class="reader-controls">
         <button id="font-decrease" class="reader-btn" title="Smaller text">A&minus;</button>
@@ -24,6 +28,7 @@
             <button class="reader-btn theme-btn" data-theme="sepia" title="Sepia theme">📜</button>
             <button class="reader-btn theme-btn" data-theme="dark" title="Dark theme">🌙</button>
         </div>
+        <button id="fullscreen-btn" class="reader-btn" type="button" title="Full screen (F)" aria-label="Toggle full screen" aria-pressed="false">Full screen</button>
     </div>
 </div>
 
@@ -32,17 +37,22 @@
     <div id="reader-progress-fill" class="reader-progress-fill"></div>
 </div>
 
+{% if load_error or not course %}
+<div id="reader-error" class="reader-status">
+    <p>Unable to load this learning module.</p>
+    <button type="button" id="try-again" class="reader-complete-btn" onclick="location.reload()">Try Again</button>
+</div>
+{% else %}
+<div id="reader-loading" class="reader-status">Preparing CyberQuest learning module...</div>
+<div id="reader-error" class="reader-status" hidden>
+    <p>Unable to load this learning module.</p>
+    <button type="button" id="try-again" class="reader-complete-btn">Try Again</button>
+</div>
+
 <div id="reader-stage" class="reader-stage">
-
-    <button id="prev-btn" class="flip-zone flip-zone-left" aria-label="Previous page">&#10094;</button>
-
-    <div id="book" class="book">
-        <div id="page-current" class="page page-current"></div>
-        <div id="page-incoming" class="page page-incoming"></div>
-    </div>
-
-    <button id="next-btn" class="flip-zone flip-zone-right" aria-label="Next page">&#10095;</button>
-
+    <button id="prev-btn" class="flip-zone flip-zone-left" type="button" aria-label="Previous page">&#10094;</button>
+    <div id="book" class="book" aria-label="CyberQuest learning book"></div>
+    <button id="next-btn" class="flip-zone flip-zone-right" type="button" aria-label="Next page">&#10095;</button>
 </div>
 
 <div class="reader-footer">
@@ -52,15 +62,13 @@
     </button>
 </div>
 
-<!-- Raw source content, hidden -- read by reader.js for text pagination.
-     Only used when the course has no PDF uploaded. -->
 {% if not uses_pdf %}
 <div id="raw-course-content" hidden>{{ course.content|linebreaks }}</div>
 {% endif %}
 
 <script>
     const READER_CONFIG = {
-        courseCode: "{{ course.code }}",
+        courseCode: "{{ course.code|escapejs }}",
         usesPdf: {{ uses_pdf|yesno:"true,false" }},
         pdfUrl: {% if uses_pdf %}"{{ course.pdf_file.url }}"{% else %}null{% endif %},
         resumePageIndex: {{ resume_page_index }},
@@ -68,8 +76,15 @@
         saveProgressUrl: "{% url 'courses:save_progress' course.code %}",
         completeUrl: "{% url 'courses:mark_complete' course.code %}",
         csrfToken: "{{ csrf_token }}",
+        practiceUrl: "{{ practice_url|default:'' }}",
+        practiceLabel: "{{ practice_label|default:'Start Practice'|escapejs }}",
+        courseTitle: "{{ course.title|escapejs }}",
+        shortDescription: "{{ course.short_description|escapejs }}",
+        chapterLabel: "{{ course.code|escapejs }}",
     };
 </script>
+<script src="{% static 'courses/js/vendor/page-flip.browser.js' %}"></script>
 <script src="{% static 'courses/js/reader.js' %}"></script>
+{% endif %}
 </body>
 </html>

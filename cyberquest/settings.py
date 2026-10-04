@@ -70,7 +70,7 @@ ROOT_URLCONF = 'cyberquest.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "home page"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -131,6 +131,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    ("home_page", BASE_DIR / "home page"),
+    ("vendor/page-flip", BASE_DIR / "node_modules" / "page-flip" / "dist" / "js"),
+]
 
 # ---- User-uploaded files (profile pictures, etc.) ----
 # Different from STATIC_URL/STATIC_ROOT above: those are OUR css/js files,

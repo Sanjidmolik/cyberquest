@@ -68,7 +68,11 @@ class QuestionBank(models.Model):
     output_language = models.CharField(
         max_length=20,
         choices=LANGUAGE_CHOICES,
-        default=LANG_SAME,
+        default=LANG_EN,
+        help_text=(
+            "Target language for generated questions. Comes from this selection, "
+            "not from the source text. English stays English even when the source is Bangla."
+        ),
     )
     difficulty = models.CharField(
         max_length=20,
@@ -123,6 +127,20 @@ class QuestionBank(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     generated_at = models.DateTimeField(null=True, blank=True)
+    generation_stage = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        help_text="Current honest stage label while generation is running. Not a percentage.",
+    )
+    generation_completed = models.PositiveIntegerField(
+        default=0,
+        help_text="Valid questions accepted so far during the current run.",
+    )
+    generation_requested = models.PositiveIntegerField(
+        default=0,
+        help_text="Questions requested for the current run.",
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -162,9 +180,17 @@ class QuestionBank(models.Model):
         return self.total_sets * self.questions_per_set
 
     def resolve_output_language(self) -> str:
-        """Return concrete language code for generation prompts."""
-        if self.output_language == self.LANG_SAME:
-            if self.source_language == self.LANG_BN:
-                return self.LANG_BN
+        """
+        Concrete target language for every Gemini call.
+
+        The admin's output_language wins. Source text is never inspected to
+        guess Hindi, English, or Bangla. "Same as Source" uses the selected
+        source_language, and otherwise defaults to English.
+        """
+        if self.output_language == self.LANG_EN:
             return self.LANG_EN
-        return self.output_language
+        if self.output_language == self.LANG_BN:
+            return self.LANG_BN
+        if self.output_language == self.LANG_SAME and self.source_language == self.LANG_BN:
+            return self.LANG_BN
+        return self.LANG_EN

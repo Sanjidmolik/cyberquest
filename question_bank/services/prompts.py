@@ -34,6 +34,10 @@ STRICT RULES:
     omit that slot rather than inventing. CyberQuest will repair missing slots.
 13. Simulation scenarios must be derived from the source. Do not invent real company names,
     breach statistics, or policies absent from the source.
+14. LANGUAGE: Follow the LANGUAGE POLICY in the user message exactly.
+    The source language never chooses the output language.
+    Never write questions in Hindi unless Hindi is the requested target language.
+    Never substitute Hindi for Bangla or English.
 """
 
 DIFFICULTY_DEFINITIONS = """
@@ -68,6 +72,55 @@ def _language_label(language: str) -> str:
     }.get(language, language)
 
 
+def language_policy_block(
+    target_language: str,
+    source_language: str | None = None,
+) -> str:
+    """
+    Explicit output-language contract.
+
+    The admin-selected target always wins over the language of the source text.
+    """
+    target = (target_language or "en").strip().lower()
+    if target == "same_as_source":
+        target = "en"
+    source_label = _language_label(source_language or "same_as_source")
+    if target == "bn":
+        return f"""LANGUAGE POLICY (mandatory — this target overrides the source language):
+- SOURCE LANGUAGE SETTING: {source_label}
+- The requested output language is বাংলা (Bangla).
+- Generate all question text, answer options, correct answers, explanations, hints, simulation instructions, and feedback in Bangla.
+- Never generate Hindi.
+- Never substitute Hindi for Bengali.
+- Do not rewrite the questions into English prose. Technical acronyms, URLs, and product names may stay in Latin script.
+- Preserve the original technical meaning, cybersecurity terminology, and facts.
+- For source-based questions, do not introduce unsupported facts or outside knowledge.
+- source_evidence may quote the source. Every other student-facing string must be Bangla.
+- TARGET LANGUAGE: বাংলা (Bangla)
+"""
+    return f"""LANGUAGE POLICY (mandatory — this target overrides the source language):
+- SOURCE LANGUAGE SETTING: {source_label}
+- The source content may be written in Bangla, Bengali, or another language.
+- The requested output language is English.
+- Translate and understand the source content internally as needed.
+- Generate all question text, answer options, correct answers, explanations, hints, simulation instructions, and feedback in English.
+- Never generate Hindi.
+- Never substitute Hindi for Bengali or English.
+- Do not copy the source language into the generated questions unless the admin explicitly selects that language.
+- Preserve the original technical meaning, cybersecurity terminology, and facts.
+- For source-based questions, do not introduce unsupported facts or outside knowledge.
+- source_evidence may quote the original source language. Every other student-facing string must be English.
+- TARGET LANGUAGE: English
+"""
+
+
+def _resolve_target_language(language: str | None, target_language: str | None) -> str:
+    target = (target_language or language or "en").strip().lower()
+    if target == "same_as_source":
+        return "en"
+    return target
+
+
 def _format_set_plans(set_plans: list[dict[str, Any]]) -> str:
     lines: list[str] = []
     for plan in set_plans:
@@ -93,8 +146,12 @@ def build_generation_prompt(
     simulation_sets: int,
     questions_per_set: int,
     set_plans: list[dict[str, Any]] | None = None,
+    target_language: str | None = None,
+    source_language: str | None = None,
 ) -> str:
-    language_label = _language_label(language)
+    target = _resolve_target_language(language, target_language)
+    language_label = _language_label(target)
+    policy = language_policy_block(target, source_language)
     plans = set_plans or []
     blueprint_block = _format_set_plans(plans) if plans else (
         f"- Sets 1..{normal_sets}: normal/mcq\n"
@@ -111,9 +168,11 @@ PROCESS (required):
 5. Match the assigned difficulty for that slot exactly.
 6. Provide source_material + source_evidence for every question.
 
+{policy}
 CONFIGURATION:
 - DOMAIN / TOPIC: {domain}
 - BANK DIFFICULTY MODE: {difficulty}
+- TARGET LANGUAGE: {language_label}
 - OUTPUT LANGUAGE: {language_label}
 - TOTAL SETS: {total_sets}
 - NORMAL SETS: {normal_sets}
@@ -172,6 +231,8 @@ def build_repair_prompt(
     language: str,
     missing_slots: list[dict[str, Any]],
     existing_questions: list[dict[str, Any]],
+    target_language: str | None = None,
+    source_language: str | None = None,
 ) -> str:
     """
     missing_slots items:
@@ -179,7 +240,9 @@ def build_repair_prompt(
     existing_questions items:
       {set_number, question_number, question, difficulty, source_material}
     """
-    language_label = _language_label(language)
+    target = _resolve_target_language(language, target_language)
+    language_label = _language_label(target)
+    policy = language_policy_block(target, source_language)
     used_materials = sorted({
         (q.get("source_material") or q.get("source_section") or "").strip()
         for q in existing_questions
@@ -207,7 +270,9 @@ PROCESS:
 4. Avoid semantic duplicates of existing questions.
 5. Provide source_material + source_evidence for each.
 
+{policy}
 DOMAIN / TOPIC: {domain}
+TARGET LANGUAGE: {language_label}
 OUTPUT LANGUAGE: {language_label}
 
 {DIFFICULTY_DEFINITIONS}
@@ -250,11 +315,20 @@ SOURCE CONTENT (sole knowledge base):
 """
 
 
-def build_retry_correction_prompt(previous_error: str) -> str:
+def build_retry_correction_prompt(
+    previous_error: str,
+    *,
+    target_language: str = "en",
+    source_language: str | None = None,
+) -> str:
+    policy = language_policy_block(target_language, source_language)
     return (
         "Your previous response failed validation.\n"
         f"Error: {previous_error}\n"
+        f"{policy}\n"
         "Return corrected structured JSON only. Obey all STRICT RULES. "
         "Match the CyberQuest difficulty blueprint exactly. "
+        "Write every student-facing string in the TARGET LANGUAGE above. "
+        "Never generate Hindi unless Hindi is that target. "
         "Do not invent facts. Prefer omitting a slot over inventing."
     )

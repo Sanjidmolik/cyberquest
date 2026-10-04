@@ -52,6 +52,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     current_streak = models.PositiveIntegerField(default=0)
     longest_streak = models.PositiveIntegerField(default=0)
     last_active_date = models.DateField(blank=True, null=True)
+    totp_enabled = models.BooleanField(default=False)
+    totp_secret = models.CharField(max_length=64, blank=True, default="")
 
     def record_daily_activity(self):
         """
@@ -74,6 +76,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         self.longest_streak = max(self.longest_streak, self.current_streak)
         self.last_active_date = today
         self.save(update_fields=["current_streak", "longest_streak", "last_active_date"])
+        UserActivityDay.objects.get_or_create(user=self, day=today)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -101,3 +104,38 @@ class VerificationCode(models.Model):
     def is_valid(self):
         from django.utils import timezone
         return (not self.is_used) and timezone.now() < self.expires_at
+
+
+class UserActivityDay(models.Model):
+    """One row per user per calendar day they authenticate. Used for active-user analytics."""
+
+    user = models.ForeignKey(
+        "accounts.CustomUser",
+        on_delete=models.CASCADE,
+        related_name="activity_days",
+    )
+    day = models.DateField(db_index=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "day"], name="uniq_user_activity_day"),
+        ]
+        indexes = [models.Index(fields=["day", "user"])]
+
+    def __str__(self):
+        return f"{self.user_id} @ {self.day}"
+
+
+class RecoveryCode(models.Model):
+    """Hashed one-time recovery codes for authenticator 2FA. Never store the raw code."""
+
+    user = models.ForeignKey(
+        "accounts.CustomUser",
+        on_delete=models.CASCADE,
+        related_name="recovery_codes",
+    )
+    code_hash = models.CharField(max_length=128)
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "used"])]

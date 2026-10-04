@@ -36,6 +36,9 @@ def _bank_dict(bank: QuestionBank) -> dict:
         "ai_model": bank.ai_model,
         "generation_version": bank.generation_version,
         "last_error": bank.last_error,
+        "generation_stage": bank.generation_stage,
+        "generation_completed": bank.generation_completed,
+        "generation_requested": bank.generation_requested,
         "created_at": bank.created_at.isoformat() if bank.created_at else None,
         "generated_at": bank.generated_at.isoformat() if bank.generated_at else None,
     }
@@ -91,7 +94,7 @@ def question_bank_list_create(request):
         domain=data.get("domain") or "phishing_simulator",
         source_content=data.get("source_content") or "",
         source_language=data.get("source_language") or QuestionBank.LANG_SAME,
-        output_language=data.get("output_language") or QuestionBank.LANG_SAME,
+        output_language=data.get("output_language") or QuestionBank.LANG_EN,
         difficulty=data.get("difficulty") or QuestionBank.DIFF_MIXED,
         total_sets=int(data.get("total_sets") or 10),
         normal_sets=int(data.get("normal_sets") or 7),
