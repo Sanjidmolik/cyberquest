@@ -1,17 +1,17 @@
-{% extends "shared/base.html" %}
+{% extends "dashboard/base_command.html" %}
 {% load static %}
 
 {% block title %}CyberQuest — Profile Settings{% endblock %}
+{% block context_name %}Profile{% endblock %}
+{% block body_class %}command-child cq-shell{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">{% endblock %}
 
 {% block content %}
-<div class="cq-container" style="max-width:760px;">
+<div class="cq-container command-page-inner" style="max-width:760px;">
   <div class="cq-page-card" style="margin-bottom:1rem;">
-    <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center;">
-      <div>
-        <h1 class="cq-heading" style="margin-bottom:0.35rem;">Profile Settings</h1>
-        <p class="cq-sub" style="margin:0;">Manage your personal information and profile picture.</p>
-      </div>
-      <a href="{% url 'dashboard:home' %}" class="cq-btn cq-btn-ghost cq-btn-sm">← Dashboard</a>
+    <div>
+      <h1 class="cq-heading" style="margin-bottom:0.35rem;">Profile Settings</h1>
+      <p class="cq-sub" style="margin:0;">Manage your personal information and profile picture.</p>
     </div>
   </div>
 

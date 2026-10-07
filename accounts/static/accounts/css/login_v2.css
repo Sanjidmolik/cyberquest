@@ -153,7 +153,7 @@ html[data-theme="night"] .lq-muted { color: #d8c4f7; }
 }
 html[data-theme="night"] .lq-aside { background: #35106f; }
 .lq-brand {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.75rem;
     font-size: 1.35rem;
@@ -162,6 +162,15 @@ html[data-theme="night"] .lq-aside { background: #35106f; }
     text-decoration: none;
 }
 .lq-brand:hover { opacity: 0.92; }
+.lq-brand.cq-brand-link,
+.lq-mbrand.cq-brand-link {
+    display: inline-flex;
+    align-items: center;
+}
+.lq-aside .cq-logo-lockup {
+    --cq-badge: 44px;
+    --cq-word: 1.25rem;
+}
 .lq-logo {
     display: grid;
     place-items: center;
@@ -189,7 +198,7 @@ html[data-theme="night"] .lq-aside { background: #35106f; }
     margin: 0 auto;
 }
 .lq-mbrand {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 2.25rem;
@@ -201,6 +210,10 @@ html[data-theme="night"] .lq-aside { background: #35106f; }
 .lq-mbrand:hover { opacity: 0.92; }
 .lq-mbrand .lq-logo { width: 2.25rem; height: 2.25rem; background: var(--lq-accent); color: #fff; }
 html[data-theme="night"] .lq-mbrand .lq-logo { background: #fff; color: var(--lq-accent); }
+.lq-mbrand .cq-logo-lockup {
+    --cq-badge: 36px;
+    --cq-word: 1.05rem;
+}
 .lq-head { margin-bottom: 2rem; }
 .lq-hello { margin: 0 0 0.75rem; font-size: 1.35rem; font-weight: 400; color: var(--lq-link); }
 html[data-theme="night"] .lq-hello { color: #e9d5ff; }

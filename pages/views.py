@@ -2,6 +2,9 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+
+from cyberquest.ratelimit import rate_limit
+
 from .models import ContactMessage
 
 
@@ -17,6 +20,7 @@ def about_view(request):
     return render(request, "pages/about.html")
 
 
+@rate_limit(key_prefix="contact", limit=8, window_seconds=3600)
 def contact_view(request):
     if request.method == "POST":
         name = request.POST.get("name", "").strip()

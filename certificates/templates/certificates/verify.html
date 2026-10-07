@@ -1,0 +1,52 @@
+{% extends "shared/base.html" %}
+{% load static %}
+
+{% block title %}{% if found %}Certificate Verified{% else %}Invalid Certificate{% endif %} — CyberQuest{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'certificates/css/certificates.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="cq-container" style="padding: 36px 0 56px;">
+  <div class="cq-verify">
+    <div style="font-family:Bangers,'Comic Sans MS',cursive;letter-spacing:.28em;font-size:1.2rem;color:var(--lilac);">
+      CYBERQUEST
+    </div>
+
+    {% if found and valid %}
+      <div class="cq-verify-badge valid">✓ CERTIFICATE VERIFIED</div>
+      <dl>
+        <div>
+          <dt>Certificate ID</dt>
+          <dd>{{ certificate.certificate_id }}</dd>
+        </div>
+        <div>
+          <dt>Name</dt>
+          <dd>{{ certificate.recipient_name }}</dd>
+        </div>
+        <div>
+          <dt>Score</dt>
+          <dd>{{ certificate.score }}%</dd>
+        </div>
+        <div>
+          <dt>Issued</dt>
+          <dd>{{ certificate.issued_at|date:"d F Y" }}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>VALID</dd>
+        </div>
+      </dl>
+    {% else %}
+      <div class="cq-verify-badge invalid">INVALID CERTIFICATE</div>
+      <p class="cq-cert-message" style="margin-top:8px;">Certificate not found.</p>
+      {% if certificate_id %}
+      <p style="color:var(--muted);font-family:ui-monospace,monospace;font-size:.9rem;">
+        ID checked: {{ certificate_id }}
+      </p>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

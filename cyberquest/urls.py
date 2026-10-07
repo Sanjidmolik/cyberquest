@@ -21,6 +21,8 @@ from django.conf.urls.static import static
 from django.views.generic import RedirectView
 from django.templatetags.static import static as static_url
 
+from certificates.views import verify_certificate
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
@@ -33,6 +35,8 @@ urlpatterns = [
     path('notifications/', include('notifications.urls')),
     path('leaderboard/', include('leaderboard.urls')),
     path('certificate/', include('certificates.urls')),
+    # Public QR verification URL (canonical for certificate QR codes)
+    path('verify/<str:certificate_id>/', verify_certificate, name='certificate_verify'),
     path('practice/', include('practice.urls')),
     path('api/', include('question_bank.urls')),
     path('favicon.ico', RedirectView.as_view(url=static_url('dashboard/img/favicon.ico'), permanent=True)),

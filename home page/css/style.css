@@ -187,6 +187,14 @@ main, footer { position: relative; z-index: 1; }
   box-shadow: 0 0 18px rgba(181,125,236,.55);
 }
 .logo-mark svg { width: 17px; height: 17px; }
+.logo.cq-brand-link { display: inline-flex; align-items: center; }
+.nav .cq-logo-lockup { --cq-badge: 36px; --cq-word: 1.05rem; }
+.footer-grid .cq-logo-lockup { --cq-badge: 42px; --cq-word: 1.2rem; }
+.cq-brand .cq-logo-lockup {
+  --cq-badge: 3.8cqi;
+  --cq-word: 1.35cqi;
+  --cq-gap: 0.55cqi;
+}
 .nav-links li, .nav-auth li { display: flex; }
 .nav-links, .nav-auth { display: flex; align-items: center; gap: 6px; list-style: none; margin: 0; padding: 0; }
 .nav-link {
@@ -514,8 +522,9 @@ section { position: relative; padding: 120px 0; }
 .cq-watermark { position: absolute; left: 50%; top: 50%; width: 34cqi; translate: -50% -54%; opacity: .05; pointer-events: none; }
 .cq-content { position: absolute; inset: 5cqi 7cqi 4.4cqi; display: grid; grid-template-rows: auto auto 1fr auto auto; justify-items: center; }
 
-.cq-brand { display: flex; align-items: center; gap: 1.1cqi; }
+.cq-brand { display: flex; align-items: center; justify-content: center; gap: 1.1cqi; }
 .cq-brand svg { width: 3.4cqi; height: 3.4cqi; }
+.cq-brand img { height: 5.2cqi; width: auto; border-radius: 0.7cqi; display: block; }
 .cq-brand span { font: 700 1.7cqi/1 "Cinzel", Georgia, serif; letter-spacing: .5em; padding-left: .5em; }
 .cq-brand b { color: var(--purple); font-weight: 700; }
 .cq-titles { margin-top: 2.2cqi; }

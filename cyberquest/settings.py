@@ -15,6 +15,7 @@ import os
 
 from dotenv import load_dotenv
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 load_dotenv()
 
@@ -25,32 +26,52 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    'SECRET_KEY',
-    'django-insecure-local-development-only-key'
-)
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+# Default False; set DEBUG=True in local .env for development.
+DEBUG = _env_bool("DEBUG", default=False)
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
+# SECURITY WARNING: keep the secret key used in production secret!
+# Never hard-code a real production secret. Local DEBUG may use a clearly
+# insecure fallback so `runserver` works after copying .env.example.
+SECRET_KEY = (os.environ.get("SECRET_KEY") or "").strip()
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "django-insecure-local-development-only-key"
+    else:
+        raise ImproperlyConfigured(
+            "SECRET_KEY environment variable is required when DEBUG is False."
+        )
+
+# Local defaults keep localhost development working. Production hosts come from
+# ALLOWED_HOSTS and/or Render's RENDER_EXTERNAL_HOSTNAME — no invented domains.
+_allowed = [
+    h.strip()
+    for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if h.strip()
 ]
+ALLOWED_HOSTS = _allowed or ["localhost", "127.0.0.1"]
 
 # Render provides this automatically.
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-
-if RENDER_EXTERNAL_HOSTNAME:
+RENDER_EXTERNAL_HOSTNAME = (os.environ.get("RENDER_EXTERNAL_HOSTNAME") or "").strip()
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-    CSRF_TRUSTED_ORIGINS = []
-
+CSRF_TRUSTED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if o.strip()
+]
 if RENDER_EXTERNAL_HOSTNAME:
-    CSRF_TRUSTED_ORIGINS.append(
-        f'https://{RENDER_EXTERNAL_HOSTNAME}'
-    )
+    _render_origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
+    if _render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_render_origin)
 # Application definition
 
 INSTALLED_APPS = [
@@ -164,7 +185,13 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # Manifest hashing is for production collectstatic. Local/DEBUG must
+        # not require a pre-built manifest (keeps runserver and tests working).
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG
+            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
     },
 }
 
@@ -214,3 +241,22 @@ AI_GENERATION_MAX_ATTEMPTS = int(os.environ.get('AI_GENERATION_MAX_ATTEMPTS', '2
 AI_GENERATION_TEMPERATURE = float(os.environ.get('AI_GENERATION_TEMPERATURE', '0.4'))
 AI_NEAR_DUPLICATE_THRESHOLD = float(os.environ.get('AI_NEAR_DUPLICATE_THRESHOLD', '0.88'))
 AI_MAX_REPAIR_ATTEMPTS = int(os.environ.get('AI_MAX_REPAIR_ATTEMPTS', '3'))
+
+# Public site origin for certificate QR verification links (no trailing slash).
+# Example on Render: https://your-app.onrender.com
+# Falls back to the incoming request host when unset.
+PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '').rstrip('/')
+
+# ---- Production HTTPS / cookie hardening (DEBUG keeps local HTTP working) ----
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = _env_bool("SECURE_SSL_REDIRECT", default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool(
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True
+    )
+    SECURE_HSTS_PRELOAD = _env_bool("SECURE_HSTS_PRELOAD", default=True)
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"

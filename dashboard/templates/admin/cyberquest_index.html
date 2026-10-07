@@ -1,6 +1,25 @@
 {% extends "admin/index.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/admin_cyberquest.css' %}">
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+  <a href="{% url 'admin:index' %}" class="cq-brand-link cq-admin-brand" aria-label="CyberQuest admin">
+    {% include "shared/_brand_mark.html" with logo_class="cq-logo-lockup--sm" %}
+  </a>
+</h1>
+{% endblock %}
+
 {% block content %}
-<div class="module" style="margin-bottom:16px;">
+<div class="module cq-analytics-module" style="margin-bottom:16px;">
     <table><caption><a href="{% url 'dashboard:analytics' %}">CyberQuest analytics</a></caption></table>
 </div>
 {{ block.super }}

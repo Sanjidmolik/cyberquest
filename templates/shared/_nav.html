@@ -1,11 +1,6 @@
 {% load static %}
 <nav class="cq-nav" id="cq-nav">
-  <a href="{% url 'pages:home' %}" class="cq-logo" aria-label="CyberQuest home">
-    <span class="cq-logo-mark">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
-    </span>
-    CyberQuest
-  </a>
+  {% include "shared/_brand.html" with logo_class="cq-logo-lockup--sm" %}
   <ul class="cq-nav-links">
     <li><a class="cq-nav-link" href="{% url 'pages:home' %}">Home</a></li>
     <li><a class="cq-nav-link" href="{% url 'courses:intro' %}">Courses</a></li>

@@ -1,0 +1,183 @@
+/* ==========================================================
+   CyberQuest CSS logo (no image file)
+   Purple gradient badge + Bangers wordmark — matches theme
+   ========================================================== */
+
+.cq-brand-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.cq-logo-lockup {
+  --cq-lilac: #e7b3ff;
+  --cq-lavender: #b57dec;
+  --cq-purple: #701fd3;
+  --cq-purple-deep: #520ea3;
+  --cq-ink: #ffffff;
+  --cq-badge: 34px;
+  --cq-word: 1.05rem;
+  --cq-gap: 8px;
+  --cq-grad: linear-gradient(135deg, #b57dec 0%, #701fd3 55%, #520ea3 100%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cq-gap);
+  line-height: 1;
+  user-select: none;
+}
+
+.cq-logo-lockup--stack {
+  flex-direction: column;
+  align-items: center;
+  --cq-badge: 48px;
+  --cq-word: 1.15rem;
+  --cq-gap: 7px;
+}
+
+.cq-logo-lockup--sm {
+  --cq-badge: 28px;
+  --cq-word: 0.95rem;
+  --cq-gap: 6px;
+}
+
+.cq-logo-lockup--lg {
+  --cq-badge: 46px;
+  --cq-word: 1.35rem;
+  --cq-gap: 10px;
+}
+
+.cq-logo-lockup--xl {
+  --cq-badge: 58px;
+  --cq-word: 1.55rem;
+  --cq-gap: 12px;
+}
+
+.cq-logo-badge {
+  position: relative;
+  width: var(--cq-badge);
+  height: var(--cq-badge);
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: calc(var(--cq-badge) * 0.3);
+  background: var(--cq-grad);
+  box-shadow: 0 0 18px rgba(181, 125, 236, 0.55);
+  isolation: isolate;
+  overflow: hidden;
+  animation: cq-badge-glow 2.8s ease-in-out infinite;
+}
+
+.cq-logo-badge-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1.5px solid rgba(243, 222, 255, 0.55);
+  pointer-events: none;
+}
+
+.cq-logo-badge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    125deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.28) 42%,
+    transparent 68%
+  );
+  transform: translateX(-120%);
+  animation: cq-badge-shine 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cq-logo-cq {
+  position: relative;
+  z-index: 1;
+  font-family: Bangers, "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
+  font-weight: 400;
+  font-size: calc(var(--cq-badge) * 0.48);
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  text-shadow:
+    1px 1px 0 rgb(0 0 0 / 0.28),
+    2px 2px 0 rgb(0 0 0 / 0.18);
+}
+
+.cq-logo-word {
+  position: relative;
+  display: inline-block;
+  font-family: Bangers, "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
+  font-weight: 400;
+  font-size: var(--cq-word);
+  letter-spacing: 0.06em;
+  color: var(--cq-ink);
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.15;
+  text-shadow:
+    1px 1px 0 rgb(0 0 0 / 0.35),
+    2px 2px 0 rgb(0 0 0 / 0.28),
+    3px 3px 0 rgb(0 0 0 / 0.2);
+}
+
+.cq-brand-link:hover .cq-logo-badge {
+  box-shadow: 0 0 26px rgba(181, 125, 236, 0.8);
+  filter: brightness(1.08);
+  animation-duration: 1.4s;
+}
+
+.cq-brand-link:hover .cq-logo-word {
+  color: var(--cq-lilac);
+}
+
+/* Light theme: ink reads on lavender surfaces */
+[data-theme="light"] .cq-logo-lockup {
+  --cq-ink: #1c1033;
+  --cq-lilac: #701fd3;
+}
+
+[data-theme="light"] .cq-logo-word {
+  text-shadow:
+    1px 1px 0 rgb(47 20 97 / 0.18),
+    2px 2px 0 rgb(47 20 97 / 0.16),
+    3px 3px 0 rgb(47 20 97 / 0.12);
+}
+
+[data-theme="light"] .cq-logo-cq {
+  text-shadow:
+    1px 1px 0 rgb(47 20 97 / 0.22),
+    2px 2px 0 rgb(47 20 97 / 0.14);
+}
+
+[data-theme="light"] .cq-logo-badge {
+  box-shadow: 0 0 16px rgba(112, 31, 211, 0.4);
+}
+
+[data-theme="light"] .cq-brand-link:hover .cq-logo-badge {
+  box-shadow: 0 0 22px rgba(112, 31, 211, 0.55);
+}
+
+@keyframes cq-badge-glow {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(181, 125, 236, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(181, 125, 236, 0.75);
+  }
+}
+
+@keyframes cq-badge-shine {
+  0%, 55%, 100% { transform: translateX(-130%); opacity: 0; }
+  15% { opacity: 0.85; }
+  40% { transform: translateX(130%); opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cq-logo-badge,
+  .cq-logo-badge::after {
+    animation: none !important;
+  }
+}

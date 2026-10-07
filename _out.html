@@ -1,0 +1,450 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberQuest — Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/dashboard/css/dashboard.css">
+</head>
+<body>
+
+<!-- ================= TOP NAVIGATION ================= -->
+<header class="topnav">
+    <div class="topnav-left">
+        <a href="/" class="logo-lockup" aria-label="CyberQuest home">
+        <span class="logo-mark">🛡️</span>
+        <div class="logo-text">
+            <span class="logo-title">CYBERQUEST</span>
+            <span class="logo-tagline">LEARN. PRACTICE. SECURE.</span>
+        </div>
+        </a>
+        <button class="hamburger" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+
+    <form class="topnav-search" action="/search/" method="get">
+        <input type="text" name="q" placeholder="Search missions, courses...">
+        <span class="search-icon">🔍</span>
+    </form>
+
+    <div class="topnav-right">
+        <a href="/notifications/" class="icon-btn" title="Notifications">
+            🔔
+            
+        </a>
+        <a href="/badges/" class="icon-btn" title="Achievements">🏆</a>
+        <div class="topnav-divider"></div>
+        <a href="/accounts/settings/" class="user-chip" title="Settings">
+            
+                <img src="/media/profile_pictures/dragon.png" class="user-avatar-sm" alt="">
+            
+            <span class="user-chip-text">
+                <span class="user-chip-name">Sanjid</span>
+                <span class="user-chip-level">Level 03 · Settings</span>
+            </span>
+        </a>
+    </div>
+</header>
+
+<div class="app-shell">
+
+    <!-- ================= LEFT SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+        <p class="sidebar-title">COMMAND CENTER</p>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/" class="nav-item active">
+                <span class="nav-icon">▣</span> Dashboard
+            </a>
+            <a href="#active-missions" class="nav-item">
+                <span class="nav-icon">🎯</span> Missions
+            </a>
+            <a href="/practice/" class="nav-item">
+                <span class="nav-icon">🧪</span> Practice
+            </a>
+            <a href="/courses/intro/" class="nav-item">
+                <span class="nav-icon">📘</span> Learn
+            </a>
+            <a href="#skill-matrix" class="nav-item">
+                <span class="nav-icon">📊</span> Progress
+            </a>
+            <a href="/badges/" class="nav-item">
+                <span class="nav-icon">🎖️</span> Achievements
+            </a>
+            <a href="/leaderboard/" class="nav-item">
+                <span class="nav-icon">📈</span> Leaderboard
+            </a>
+            <a href="/certificate/" class="nav-item">
+                <span class="nav-icon">📜</span> Certificates
+            </a>
+            <a href="/notifications/" class="nav-item">
+                <span class="nav-icon">🔔</span> Notifications
+                
+            </a>
+            <a href="/accounts/settings/" class="nav-item">
+                <span class="nav-icon">⚙️</span> Settings
+            </a>
+            <form method="post" action="/accounts/logout/" class="nav-logout-form">
+                <input type="hidden" name="csrfmiddlewaretoken" value="v6krsdzZd2xzWyhYsYFZL086fbllHldwYlBRtYKBYJMdeUlMlCEuEv9z2RLxoUuh">
+                <button type="submit" class="nav-item nav-item-btn">
+                    <span class="nav-icon">↪</span> Logout
+                </button>
+            </form>
+        </nav>
+
+        <div class="cyber-tip-card">
+            <p class="cyber-tip-title">💡 CYBER TIP</p>
+            <p class="cyber-tip-text">Reusing a password across sites means one breach can compromise every account that shares it.</p>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="main-content">
+
+        <div class="page-header">
+            <div>
+                <h1>Good to see you, <span class="accent-green">Sanjid</span>!</h1>
+                <p class="page-subtitle">Ready to level up your cybersecurity skills today?</p>
+            </div>
+            
+            <div class="rank-card">
+                <span class="rank-icon">🥇</span>
+                <div>
+                    <p class="rank-label">RANK</p>
+                    <p class="rank-value">#1</p>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- ============ PROFILE + LEVEL ============ -->
+        <section class="profile-level-card">
+            <div class="profile-block">
+                <div class="avatar-ring" style="--ring-percent: 76;">
+                    
+                        <img src="/media/profile_pictures/dragon.png" class="avatar-img" alt="">
+                    
+                </div>
+                <div class="profile-info">
+                    <p class="profile-name">Sanjid</p>
+                    <span class="profile-badge">General Recruit</span>
+                    <div class="profile-stats-row">
+                        <div><strong>03</strong><span>LEVEL</span></div>
+                        <div><strong>276</strong><span>XP</span></div>
+                        <div><strong>4</strong><span>BADGES</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="level-progress-block">
+                <p class="lp-title">LEVEL PROGRESS</p>
+                <p class="lp-level">Level 03</p>
+                <p class="lp-xp">276 XP <span class="lp-xp-muted">/ 300 XP</span></p>
+                <div class="progress-track">
+                    <div class="progress-fill" style="--pct: 76;"></div>
+                </div>
+                <p class="lp-remaining">24 XP until Level 04</p>
+
+                <div class="mini-stats-row">
+                    <div class="mini-stat">
+                        <span class="mini-stat-icon">🎯</span>
+                        <strong>2/6</strong>
+                        <span>Missions Played</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-icon">🔥</span>
+                        <strong>2</strong>
+                        <span>Day Streak</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-icon">📊</span>
+                        <strong>80%</strong>
+                        <span>Average Score</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-icon">🛡️</span>
+                        <strong>1/6</strong>
+                        <span>Skills Mastered</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ ACTIVE MISSIONS ============ -->
+        <div class="section-heading" id="active-missions">
+            <h2>ACTIVE MISSIONS</h2>
+            
+        </div>
+
+        <div class="missions-row">
+            
+            <a href="/games/phishing-simulator/"
+               class="mission-card mission-green ">
+                <div class="mission-card-grid"></div>
+                <span class="mission-number">01</span>
+                <span class="mission-emoji">📧</span>
+                <p class="mission-title">Phishing Simulator</p>
+
+                
+                    <div class="mission-progress-track"><div class="mission-progress-fill" style="--pct: 100;"></div></div>
+                    <span class="mission-pct">100%</span>
+                    <span class="mission-btn">REPLAY</span>
+                
+            </a>
+            
+            <a href="/games/password-cracker/"
+               class="mission-card mission-cyan ">
+                <div class="mission-card-grid"></div>
+                <span class="mission-number">02</span>
+                <span class="mission-emoji">🔑</span>
+                <p class="mission-title">Password Cracker Challenge</p>
+
+                
+                    <div class="mission-progress-track"><div class="mission-progress-fill" style="--pct: 60;"></div></div>
+                    <span class="mission-pct">60%</span>
+                    <span class="mission-btn">REPLAY</span>
+                
+            </a>
+            
+            <a href="/games/cryptography/"
+               class="mission-card mission-amber ">
+                <div class="mission-card-grid"></div>
+                <span class="mission-number">03</span>
+                <span class="mission-emoji">🔐</span>
+                <p class="mission-title">Cryptography Challenge</p>
+
+                
+                    <div class="mission-progress-track"><div class="mission-progress-fill" style="--pct: 0;"></div></div>
+                    <span class="mission-pct">0%</span>
+                    <span class="mission-btn">START</span>
+                
+            </a>
+            
+            <a href="/games/osint/"
+               class="mission-card mission-teal ">
+                <div class="mission-card-grid"></div>
+                <span class="mission-number">04</span>
+                <span class="mission-emoji">🕵️</span>
+                <p class="mission-title">OSINT Investigation</p>
+
+                
+                    <div class="mission-progress-track"><div class="mission-progress-fill" style="--pct: 0;"></div></div>
+                    <span class="mission-pct">0%</span>
+                    <span class="mission-btn">START</span>
+                
+            </a>
+            
+            <a href="/games/steganography/"
+               class="mission-card mission-rose ">
+                <div class="mission-card-grid"></div>
+                <span class="mission-number">05</span>
+                <span class="mission-emoji">🖼️</span>
+                <p class="mission-title">Steganography Hunt</p>
+
+                
+                    <div class="mission-progress-track"><div class="mission-progress-fill" style="--pct: 0;"></div></div>
+                    <span class="mission-pct">0%</span>
+                    <span class="mission-btn">START</span>
+                
+            </a>
+            
+            <a href="/games/network-defense/"
+               class="mission-card mission-purple ">
+                <div class="mission-card-grid"></div>
+                <span class="mission-number">06</span>
+                <span class="mission-emoji">🛡️</span>
+                <p class="mission-title">Network Defense</p>
+
+                
+                    <div class="mission-progress-track"><div class="mission-progress-fill" style="--pct: 0;"></div></div>
+                    <span class="mission-pct">0%</span>
+                    <span class="mission-btn">START</span>
+                
+            </a>
+            
+        </div>
+
+        <!-- ============ RECENT ACTIVITY + SKILL MATRIX ============ -->
+        <div class="two-col-row" id="skill-matrix">
+            <section class="panel-card">
+                <p class="panel-title">RECENT ACTIVITY</p>
+                
+                <div class="activity-row">
+                    <span class="activity-icon">✅</span>
+                    <span class="activity-text">Completed: Phishing Simulator</span>
+                    
+                </div>
+                
+                <div class="activity-row">
+                    <span class="activity-icon">✅</span>
+                    <span class="activity-text">Completed: Phishing Simulator</span>
+                    
+                </div>
+                
+                <div class="activity-row">
+                    <span class="activity-icon">✅</span>
+                    <span class="activity-text">Completed: Phishing Simulator</span>
+                    
+                </div>
+                
+            </section>
+
+            <section class="panel-card skill-matrix-card">
+                <div class="panel-title-row">
+                    <p class="panel-title">SKILL MATRIX</p>
+                </div>
+                <div class="skill-matrix-body">
+                    <div class="skill-bars">
+                        
+                        <div class="skill-bar-row">
+                            <span class="skill-bar-label">Phishing Simulator</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill skill-green" style="--pct: 100;"></div>
+                            </div>
+                            <span class="skill-bar-pct">100%</span>
+                        </div>
+                        
+                        <div class="skill-bar-row">
+                            <span class="skill-bar-label">Password Cracker Challenge</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill skill-cyan" style="--pct: 60;"></div>
+                            </div>
+                            <span class="skill-bar-pct">60%</span>
+                        </div>
+                        
+                        <div class="skill-bar-row">
+                            <span class="skill-bar-label">Cryptography Challenge</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill skill-amber" style="--pct: 0;"></div>
+                            </div>
+                            <span class="skill-bar-pct">0%</span>
+                        </div>
+                        
+                        <div class="skill-bar-row">
+                            <span class="skill-bar-label">OSINT Investigation</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill skill-teal" style="--pct: 0;"></div>
+                            </div>
+                            <span class="skill-bar-pct">0%</span>
+                        </div>
+                        
+                        <div class="skill-bar-row">
+                            <span class="skill-bar-label">Steganography Hunt</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill skill-rose" style="--pct: 0;"></div>
+                            </div>
+                            <span class="skill-bar-pct">0%</span>
+                        </div>
+                        
+                        <div class="skill-bar-row">
+                            <span class="skill-bar-label">Network Defense</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill skill-purple" style="--pct: 0;"></div>
+                            </div>
+                            <span class="skill-bar-pct">0%</span>
+                        </div>
+                        
+                    </div>
+
+                    <svg class="radar-chart" viewBox="0 0 220 220">
+                        
+                        <polygon points="" class="radar-data-shape"></polygon>
+                        
+                    </svg>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- ================= RIGHT PANEL ================= -->
+    <aside class="right-panel">
+        <section class="panel-card">
+            <div class="panel-title-row">
+                <p class="panel-title">NOTIFICATIONS</p>
+                <a href="/notifications/" class="view-all-link">View All</a>
+            </div>
+            
+            <div class="notif-row">
+                <span class="notif-icon">🔔</span>
+                <div>
+                    <p class="notif-text">🏆 New badge unlocked: 📧 Phishing Expert!</p>
+                    <span class="notif-time">1 week, 4 days ago</span>
+                </div>
+            </div>
+            
+            <div class="notif-row">
+                <span class="notif-icon">🔔</span>
+                <div>
+                    <p class="notif-text">🏆 New badge unlocked: ⭐ Rising Star!</p>
+                    <span class="notif-time">2 weeks, 2 days ago</span>
+                </div>
+            </div>
+            
+            <div class="notif-row">
+                <span class="notif-icon">🔔</span>
+                <div>
+                    <p class="notif-text">🏆 New badge unlocked: 🎯 First Steps!</p>
+                    <span class="notif-time">1 month ago</span>
+                </div>
+            </div>
+            
+        </section>
+
+        <section class="panel-card">
+            <div class="panel-title-row">
+                <p class="panel-title">LEADERBOARD</p>
+                <span class="view-all-link muted">All-Time</span>
+            </div>
+            
+            <div class="leaderboard-row leaderboard-row-me">
+                <span class="lb-rank">1</span>
+                
+                    <img src="/media/profile_pictures/dragon.png" class="lb-avatar" alt="">
+                
+                <span class="lb-name">Sanjid</span>
+                <span class="lb-xp">276 XP</span>
+            </div>
+            
+            <div class="leaderboard-row ">
+                <span class="lb-rank">2</span>
+                
+                    <span class="lb-avatar lb-avatar-fallback">S</span>
+                
+                <span class="lb-name">sadaf</span>
+                <span class="lb-xp">0 XP</span>
+            </div>
+            
+            <div class="leaderboard-row ">
+                <span class="lb-rank">3</span>
+                
+                    <span class="lb-avatar lb-avatar-fallback">A</span>
+                
+                <span class="lb-name">admin_readiness</span>
+                <span class="lb-xp">0 XP</span>
+            </div>
+            
+            <div class="leaderboard-row ">
+                <span class="lb-rank">4</span>
+                
+                    <span class="lb-avatar lb-avatar-fallback">T</span>
+                
+                <span class="lb-name">themeuser</span>
+                <span class="lb-xp">0 XP</span>
+            </div>
+            
+            <a href="/leaderboard/" class="view-full-btn">VIEW FULL LEADERBOARD</a>
+        </section>
+    </aside>
+
+</div>
+
+<footer class="app-footer">
+    <span>STAY CURIOUS. STAY SECURE.</span>
+    <span>CYBERQUEST v1.0.0</span>
+</footer>
+
+<script src="/static/dashboard/js/dashboard.js"></script>
+</body>
+</html>

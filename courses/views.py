@@ -26,6 +26,11 @@ from django.urls import reverse
 
 from games.registry import GAMES_REGISTRY
 from .models import Course, CourseProgress, ReadingProgress
+from .progress import (
+    completed_course_count,
+    has_completed_all_courses,
+    server_total_pages,
+)
 
 # Existing games the learning book can hand off to. Matching is by the course
 # title or code already stored in the database, not by new lesson text.
@@ -64,7 +69,6 @@ def _reader_context(request, course):
         "practice_url": practice_url,
         "practice_label": practice_label,
     }
-from .progress import has_completed_all_courses, completed_course_count
 
 
 @login_required(login_url="/accounts/login/")
@@ -137,14 +141,30 @@ def learning_course(request, topic):
 def save_reading_progress(request, code):
     """Called by reader.js after every page flip. Fire-and-forget -- never blocks reading."""
     course = get_object_or_404(Course, code=code, is_published=True)
+    total = server_total_pages(course)
     try:
         page_index = int(json.loads(request.body).get("page_index", 0))
     except (ValueError, TypeError, json.JSONDecodeError):
         page_index = 0
 
-    ReadingProgress.objects.update_or_create(
-        user=request.user, course=course, defaults={"last_page_index": max(page_index, 0)},
+    if page_index < 0:
+        page_index = 0
+
+    state, _ = ReadingProgress.objects.get_or_create(
+        user=request.user, course=course, defaults={"last_page_index": 0}
     )
+    # Small forward steps only (+2 covers two-page landscape spreads).
+    max_allowed = state.last_page_index + 2
+    if course.uses_pdf():
+        max_allowed = min(total - 1, max_allowed)
+    else:
+        # Text pagination is viewport-defined; keep a hard ceiling against abuse.
+        max_allowed = min(max_allowed, 500)
+    page_index = min(page_index, max_allowed)
+
+    if page_index > state.last_page_index:
+        state.last_page_index = page_index
+        state.save(update_fields=["last_page_index", "updated_at"])
     return JsonResponse({"saved": True})
 
 
@@ -153,22 +173,45 @@ def save_reading_progress(request, code):
 def mark_course_complete(request, code):
     """
     Called by reader.js ONLY when the user has reached the final page.
-    Still re-validated here server-side (never trust the client alone) --
-    see the design note on course_detail() above.
+    Page totals come from the stored course/PDF on the server — client
+    ``total_pages`` is ignored.
     """
     course = get_object_or_404(Course, code=code, is_published=True)
+    total_pages = server_total_pages(course)
 
     try:
         data = json.loads(request.body)
         pages_reached = int(data.get("pages_reached", -1))
-        total_pages = int(data.get("total_pages", -1))
     except (ValueError, TypeError, json.JSONDecodeError):
-        pages_reached, total_pages = -1, -1
+        pages_reached = -1
 
-    if total_pages <= 0 or pages_reached < total_pages - 1:
-        # -1 index of the last page is (total_pages - 1) -- they haven't
-        # actually reached the end yet, so we refuse to mark it complete.
+    if pages_reached < 0 or pages_reached > 500:
         return JsonResponse({"error": "You need to read through to the last page first."}, status=400)
+
+    progress = ReadingProgress.objects.filter(user=request.user, course=course).first()
+    saved_index = progress.last_page_index if progress else 0
+
+    if course.uses_pdf():
+        # Exact server page count (cover + PDF pages). Reject impossible indices.
+        if pages_reached >= total_pages or pages_reached < total_pages - 1:
+            return JsonResponse(
+                {"error": "You need to read through to the last page first."}, status=400
+            )
+        if saved_index < max(0, total_pages - 2):
+            return JsonResponse(
+                {"error": "You need to read through to the last page first."}, status=400
+            )
+    else:
+        # Text: server total is a lower bound. Client may have more pages; require
+        # at least that bound, with ReadingProgress proving gradual reading.
+        if pages_reached < total_pages - 1:
+            return JsonResponse(
+                {"error": "You need to read through to the last page first."}, status=400
+            )
+        if saved_index < max(0, pages_reached - 1):
+            return JsonResponse(
+                {"error": "You need to read through to the last page first."}, status=400
+            )
 
     CourseProgress.objects.get_or_create(user=request.user, course=course)
     messages.success(request, f"{course.title} complete!")

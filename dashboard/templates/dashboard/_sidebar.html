@@ -1,0 +1,83 @@
+{% with ns=request.resolver_match.namespace|default:"" url=request.resolver_match.url_name|default:"" %}
+<aside class="sidebar" id="sidebar">
+    <p class="sidebar-title">COMMAND CENTER</p>
+    <nav class="sidebar-nav" aria-label="Command center">
+        <p class="nav-group-label">In dashboard</p>
+        <a href="{% url 'dashboard:home' %}#overview"
+           class="nav-item{% if ns == 'dashboard' and url == 'home' %} active{% endif %}"
+           data-nav="overview"
+           data-section="overview"
+           {% if ns == 'dashboard' and url == 'home' %}aria-current="page"{% endif %}>
+            <span class="nav-icon">▣</span> Overview
+        </a>
+        <a href="{% url 'dashboard:home' %}#active-missions"
+           class="nav-item"
+           data-nav="missions"
+           data-section="active-missions">
+            <span class="nav-icon">🎯</span> Missions
+        </a>
+        <a href="{% url 'dashboard:home' %}#skill-matrix"
+           class="nav-item"
+           data-nav="progress"
+           data-section="skill-matrix">
+            <span class="nav-icon">📊</span> Progress
+        </a>
+
+        <p class="nav-group-label">Areas</p>
+        <a href="{% url 'practice:center' %}"
+           class="nav-item{% if ns == 'practice' %} active{% endif %}"
+           data-nav="practice"
+           {% if ns == 'practice' %}aria-current="page"{% endif %}>
+            <span class="nav-icon">🧪</span> Practice
+        </a>
+        <a href="{% url 'courses:intro' %}"
+           class="nav-item{% if ns == 'courses' %} active{% endif %}"
+           data-nav="learn"
+           {% if ns == 'courses' %}aria-current="page"{% endif %}>
+            <span class="nav-icon">📘</span> Learn
+        </a>
+        <a href="{% url 'achievements:list' %}"
+           class="nav-item{% if ns == 'achievements' %} active{% endif %}"
+           data-nav="achievements"
+           {% if ns == 'achievements' %}aria-current="page"{% endif %}>
+            <span class="nav-icon">🎖️</span> Achievements
+        </a>
+        <a href="{% url 'leaderboard:list' %}"
+           class="nav-item{% if ns == 'leaderboard' %} active{% endif %}"
+           data-nav="leaderboard"
+           {% if ns == 'leaderboard' %}aria-current="page"{% endif %}>
+            <span class="nav-icon">📈</span> Leaderboard
+        </a>
+        <a href="{% url 'certificates:page' %}"
+           class="nav-item{% if ns == 'certificates' %} active{% endif %}"
+           data-nav="certificates"
+           {% if ns == 'certificates' %}aria-current="page"{% endif %}>
+            <span class="nav-icon">📜</span> Certificates
+        </a>
+        <a href="{% url 'notifications:list' %}"
+           class="nav-item{% if ns == 'notifications' %} active{% endif %}"
+           data-nav="notifications"
+           {% if ns == 'notifications' %}aria-current="page"{% endif %}>
+            <span class="nav-icon">🔔</span> Notifications
+            {% if unread_notification_count %}<span class="nav-badge">{{ unread_notification_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'accounts:settings' %}"
+           class="nav-item{% if ns == 'accounts' and url == 'settings' %} active{% endif %}"
+           data-nav="settings"
+           {% if ns == 'accounts' and url == 'settings' %}aria-current="page"{% endif %}>
+            <span class="nav-icon">⚙️</span> Settings
+        </a>
+        <form method="post" action="{% url 'accounts:logout' %}" class="nav-logout-form">
+            {% csrf_token %}
+            <button type="submit" class="nav-item nav-item-btn" data-nav="logout">
+                <span class="nav-icon">↪</span> Logout
+            </button>
+        </form>
+    </nav>
+
+    <div class="cyber-tip-card">
+        <p class="cyber-tip-title">💡 CYBER TIP</p>
+        <p class="cyber-tip-text">{{ cyber_tip|default:"Stay curious. Stay secure." }}</p>
+    </div>
+</aside>
+{% endwith %}

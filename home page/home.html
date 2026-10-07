@@ -15,24 +15,20 @@
       if (m) m.setAttribute('content', t === 'light' ? '#f7f1ff' : '#701fd3');
     })();
   </script>
-  <title>CyberShield Academy</title>
+  <title>Cyber Quest</title>
   <meta name="description" content="Learn cybersecurity through interactive comics, hands-on labs and earn a verified certificate." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=Cinzel:wght@500;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Great+Vibes&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="{% static 'home_page/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}" />
   <script>document.documentElement.classList.remove('no-js')</script>
 </head>
 <body>
 
   <!-- ================= NAVBAR ================= -->
   <nav class="nav" id="nav">
-    <a href="{% url 'pages:home' %}" class="logo" aria-label="CyberShield home">
-      <span class="logo-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
-      </span>
-      CyberShield
-    </a>
+    {% include "shared/_brand.html" with brand_class="logo" %}
     <ul class="nav-links">
       <li><a class="nav-link active" href="#home">Home</a></li>
       <li><a class="nav-link" href="#courses">Courses</a></li>
@@ -226,8 +222,7 @@
 
             <div class="cq-content">
               <div class="cq-brand">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#6614d8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
-                <span>CYBER<b>QUEST</b></span>
+                {% include "shared/_brand_mark.html" with stacked="1" logo_class="cq-logo-lockup--sm" %}
               </div>
 
               <div class="cq-titles">
@@ -295,7 +290,7 @@
     <div class="container">
       <div class="footer-grid">
         <div>
-          <a href="{% url 'pages:home' %}" class="logo"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg></span>CyberShield</a>
+          {% include "shared/_brand.html" with brand_class="logo" logo_class="cq-logo-lockup--lg" %}
           <p style="color:var(--muted);max-width:280px;font-size:14px">Cybersecurity education through comics, labs and certificates.</p>
         </div>
         <div><h4>Learn</h4><ul><li><a href="#courses">Courses</a></li><li><a href="#comics">Comics</a></li><li><a href="{% url 'courses:intro' %}">Demo</a></li></ul></div>

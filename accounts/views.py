@@ -25,6 +25,8 @@ from django.urls import reverse
 from django.core.files.base import ContentFile
 import requests
 
+from cyberquest.ratelimit import rate_limit
+
 from .forms import LoginForm, SignupForm, ProfileSettingsForm, CompleteProfileForm
 from .routing import next_step_url_name
 from .codes import generate_code, check_code
@@ -38,6 +40,7 @@ PENDING_RESET_SESSION_KEY = "pending_reset_user_id"
 GOOGLE_OAUTH_STATE_SESSION_KEY = "google_oauth_state"
 
 
+@rate_limit(key_prefix="signup", limit=10, window_seconds=3600)
 def signup_view(request):
     if request.user.is_authenticated:
         return redirect(next_step_url_name(request.user))
@@ -63,6 +66,7 @@ def signup_view(request):
     return render(request, "accounts/signup.html", {"form": form})
 
 
+@rate_limit(key_prefix="login", limit=20, window_seconds=900)
 def login_view(request):
     if request.user.is_authenticated:
         return redirect(next_step_url_name(request.user))
@@ -100,6 +104,7 @@ def login_view(request):
     return render(request, "accounts/login.html", {"form": form})
 
 
+@rate_limit(key_prefix="verify_login", limit=30, window_seconds=900)
 def verify_login_pin(request):
     pending_user_id = request.session.get(PENDING_LOGIN_SESSION_KEY)
     if not pending_user_id:
@@ -130,6 +135,7 @@ def verify_login_pin(request):
     return render(request, "accounts/verify_login.html", {"email": user.email})
 
 
+@rate_limit(key_prefix="forgot_password", limit=8, window_seconds=3600)
 def forgot_password_view(request):
     if request.method == "POST":
         email = request.POST.get("email", "").strip()
@@ -143,6 +149,7 @@ def forgot_password_view(request):
     return render(request, "accounts/forgot_password.html")
 
 
+@rate_limit(key_prefix="reset_password", limit=30, window_seconds=900)
 def reset_password_view(request):
     pending_user_id = request.session.get(PENDING_RESET_SESSION_KEY)
     if not pending_user_id:

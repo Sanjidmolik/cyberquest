@@ -12,14 +12,14 @@ Public site branding also appears as **CyberShield Academy**.
 - **AI question bank** — Optional Gemini-powered question generation (server-side API key only)
 - **Accounts** — Email signup/login, Google OAuth, email 2FA, and TOTP authenticator support
 - **Dashboard, badges, leaderboard, notifications**
-- **Certificates** — Eligibility after completing published courses and required games; HTML view + WeasyPrint PDF download with QR verification
+- **Certificates** — Eligibility after all 5 core games at ≥80% overall; PyMuPDF PDF generation, admin templates, QR verification
 
 ## Tech stack
 
 - Python 3 / **Django 6**
 - SQLite locally; PostgreSQL on Render via `dj-database-url`
 - Frontend templates + shared theme CSS/JS
-- WeasyPrint for certificate PDFs
+- PyMuPDF + qrcode for certificate PDFs
 - WhiteNoise for static files in production
 
 ## Quick start
@@ -44,8 +44,6 @@ Activate it:
 pip install -r requirements.txt
 ```
 
-WeasyPrint on Windows may need [GTK3 runtime](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html) for certificate PDF download.
-
 ### 3. Configure environment variables
 
 Copy the example file and fill in real values locally (never commit `.env`):
@@ -63,6 +61,7 @@ Useful keys in `.env`:
 | `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | Gmail app password for mail |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google sign-in |
 | `GEMINI_API_KEY` | AI question bank (optional) |
+| `PUBLIC_BASE_URL` | Public site origin for certificate QR links (e.g. `https://your-app.onrender.com`) |
 
 ### 4. Migrate and run
 

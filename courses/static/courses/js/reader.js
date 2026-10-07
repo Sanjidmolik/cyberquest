@@ -374,6 +374,26 @@
             window.clearTimeout(resizeTimer);
             resizeTimer = window.setTimeout(relayout, 200);
         });
+
+        /* Open the cover once on first load so the book animates in without a click. */
+        autoOpenCoverOnce();
+    }
+
+    let didAutoOpen = false;
+    function autoOpenCoverOnce() {
+        if (didAutoOpen || !pageFlip) return;
+        if (!START_AT_FIRST_PAGE) return;
+        if (pageFlip.getPageCount() < 2) return;
+        if (pageFlip.getCurrentPageIndex() !== 0) return;
+        didAutoOpen = true;
+        window.setTimeout(function () {
+            if (!pageFlip || pageFlip.getCurrentPageIndex() !== 0) return;
+            if (reduced) {
+                pageFlip.turnToPage(1);
+            } else {
+                pageFlip.flipNext("top");
+            }
+        }, reduced ? 0 : 380);
     }
 
     /* ---------------------------------------------------------------

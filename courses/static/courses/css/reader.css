@@ -147,7 +147,7 @@ body.theme-dark .reader-complete-btn {
 .flip-zone:focus-visible { outline: 2px solid #1f9c53; }
 .flip-zone:disabled { opacity: 0.1; cursor: default; }
 
-.reader-logo { color: inherit; text-decoration: none; }
+.reader-logo { color: inherit; text-decoration: none; display: inline-flex; align-items: center; }
 .reader-status { text-align: center; padding: 48px 16px; }
 /* The loading message floats so it never changes the size the book is fitted to. */
 #reader-loading { position: absolute; left: 0; right: 0; top: 40%; z-index: 4; pointer-events: none; }

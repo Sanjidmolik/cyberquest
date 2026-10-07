@@ -1,11 +1,15 @@
-{% extends "shared/base.html" %}
+{% extends "dashboard/base_command.html" %}
 {% load static %}
 
 {% block title %}CyberQuest — Notifications{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}">{% endblock %}
+{% block context_name %}Notifications{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">
+<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="cq-container" style="max-width:700px;">
+<div class="cq-container command-page-inner" style="max-width:700px;">
   <div class="cq-page-card">
     <h1 class="cq-heading">🔔 Notifications</h1>
     <p class="cq-sub">Your latest activity and unlocks.</p>

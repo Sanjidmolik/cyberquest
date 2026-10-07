@@ -1,0 +1,71 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#701fd3">
+<title>{% block title %}CyberQuest — Command Center{% endblock %}</title>
+<script>
+  (function () {
+    var t = 'dark';
+    try { var s = localStorage.getItem('cq_home_theme'); if (s === 'light' || s === 'dark') t = s; } catch (e) {}
+    document.documentElement.setAttribute('data-theme', t);
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute('content', t === 'light' ? '#f7f1ff' : '#701fd3');
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=Cinzel:wght@500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
+{% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}command-child{% endblock %}">
+
+{% block top_chrome %}
+<header class="child-topbar">
+    <div class="child-topbar-left">
+        <button class="hamburger" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+        <a href="{% url 'dashboard:home' %}" class="cc-return">
+            <span class="cc-return-arrow" aria-hidden="true">◀</span>
+            <span class="cc-return-copy">
+                <span class="cc-return-kicker">Return</span>
+                <span class="cc-return-title">Command Center</span>
+            </span>
+        </a>
+        <span class="cc-context-sep" aria-hidden="true"></span>
+        <span class="cc-context">
+            <span class="cc-context-kicker">Current area</span>
+            <span class="cc-context-name">{% block context_name %}Section{% endblock %}</span>
+        </span>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to day mode" title="Switch to day mode">
+        <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.3M12 19.2v2.3M2.5 12h2.3M19.2 12h2.3M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>
+        <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5 8.6 8.6 0 1 0 20.5 14.2z"/></svg>
+        <span class="theme-label label-day">Day</span>
+        <span class="theme-label label-dark">Dark</span>
+    </button>
+</header>
+{% endblock %}
+
+<div class="app-shell {% block shell_class %}app-shell-no-right{% endblock %}">
+    {% include "dashboard/_sidebar.html" %}
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block right_panel_wrap %}{% endblock %}
+</div>
+
+<footer class="app-footer">
+    <span>STAY CURIOUS. STAY SECURE.</span>
+    <span>CYBERQUEST v1.0.0</span>
+</footer>
+
+<script src="{% static 'dashboard/js/dashboard.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

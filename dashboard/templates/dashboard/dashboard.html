@@ -1,26 +1,13 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CyberQuest — Command Center</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
-</head>
-<body>
+{% extends "dashboard/base_command.html" %}
 
-<!-- ================= TOP NAVIGATION ================= -->
+{% block title %}CyberQuest — Command Center{% endblock %}
+{% block body_class %}{% endblock %}
+{% block shell_class %}{% endblock %}
+
+{% block top_chrome %}
 <header class="topnav">
     <div class="topnav-left">
-        <a href="{% url 'pages:home' %}" class="logo-lockup" aria-label="CyberQuest home">
-        <span class="logo-mark">🛡️</span>
-        <div class="logo-text">
-            <span class="logo-title">CYBERQUEST</span>
-            <span class="logo-tagline">LEARN. PRACTICE. SECURE.</span>
-        </div>
-        </a>
+        {% include "shared/_brand.html" with brand_class="logo-lockup" logo_class="cq-logo-lockup--sm" %}
         <button class="hamburger" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
     </div>
 
@@ -30,6 +17,12 @@
     </form>
 
     <div class="topnav-right">
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to day mode" title="Switch to day mode">
+            <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.3M12 19.2v2.3M2.5 12h2.3M19.2 12h2.3M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>
+            <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5 8.6 8.6 0 1 0 20.5 14.2z"/></svg>
+            <span class="theme-label label-day">Day</span>
+            <span class="theme-label label-dark">Dark</span>
+        </button>
         <a href="{% url 'notifications:list' %}" class="icon-btn" title="Notifications">
             🔔
             {% if unread_notification_count %}<span class="badge-dot">{{ unread_notification_count }}</span>{% endif %}
@@ -49,61 +42,10 @@
         </a>
     </div>
 </header>
+{% endblock %}
 
-<div class="app-shell">
-
-    <!-- ================= LEFT SIDEBAR ================= -->
-    <aside class="sidebar" id="sidebar">
-        <p class="sidebar-title">COMMAND CENTER</p>
-        <nav class="sidebar-nav">
-            <a href="{% url 'dashboard:home' %}" class="nav-item active">
-                <span class="nav-icon">▣</span> Dashboard
-            </a>
-            <a href="#active-missions" class="nav-item">
-                <span class="nav-icon">🎯</span> Missions
-            </a>
-            <a href="{% url 'practice:center' %}" class="nav-item">
-                <span class="nav-icon">🧪</span> Practice
-            </a>
-            <a href="{% url 'courses:intro' %}" class="nav-item">
-                <span class="nav-icon">📘</span> Learn
-            </a>
-            <a href="#skill-matrix" class="nav-item">
-                <span class="nav-icon">📊</span> Progress
-            </a>
-            <a href="{% url 'achievements:list' %}" class="nav-item">
-                <span class="nav-icon">🎖️</span> Achievements
-            </a>
-            <a href="{% url 'leaderboard:list' %}" class="nav-item">
-                <span class="nav-icon">📈</span> Leaderboard
-            </a>
-            <a href="{% url 'certificates:page' %}" class="nav-item">
-                <span class="nav-icon">📜</span> Certificates
-            </a>
-            <a href="{% url 'notifications:list' %}" class="nav-item">
-                <span class="nav-icon">🔔</span> Notifications
-                {% if unread_notification_count %}<span class="nav-badge">{{ unread_notification_count }}</span>{% endif %}
-            </a>
-            <a href="{% url 'accounts:settings' %}" class="nav-item">
-                <span class="nav-icon">⚙️</span> Settings
-            </a>
-            <form method="post" action="{% url 'accounts:logout' %}" class="nav-logout-form">
-                {% csrf_token %}
-                <button type="submit" class="nav-item nav-item-btn">
-                    <span class="nav-icon">↪</span> Logout
-                </button>
-            </form>
-        </nav>
-
-        <div class="cyber-tip-card">
-            <p class="cyber-tip-title">💡 CYBER TIP</p>
-            <p class="cyber-tip-text">{{ cyber_tip }}</p>
-        </div>
-    </aside>
-
-    <!-- ================= MAIN CONTENT ================= -->
-    <main class="main-content">
-
+{% block content %}
+        <section class="dash-section" id="overview">
         <div class="page-header">
             <div>
                 <h1>Good to see you, <span class="accent-green">{{ display_name }}</span>!</h1>
@@ -120,7 +62,6 @@
             {% endif %}
         </div>
 
-        <!-- ============ PROFILE + LEVEL ============ -->
         <section class="profile-level-card">
             <div class="profile-block">
                 <div class="avatar-ring" style="--ring-percent: {{ xp_progress_percent }};">
@@ -174,9 +115,10 @@
                 </div>
             </div>
         </section>
+        </section>
 
-        <!-- ============ ACTIVE MISSIONS ============ -->
-        <div class="section-heading" id="active-missions">
+        <section class="dash-section" id="active-missions">
+        <div class="section-heading">
             <h2>ACTIVE MISSIONS</h2>
             {% if missions_locked %}
                 <span class="locked-note">🔒 Complete all courses to unlock</span>
@@ -186,7 +128,8 @@
         <div class="missions-row">
             {% for m in active_missions %}
             <a href="{% if not missions_locked %}{% url m.url_name %}{% else %}#{% endif %}"
-               class="mission-card mission-{{ m.color }} {% if missions_locked %}mission-locked{% endif %}">
+               class="mission-card mission-{{ m.color }} {% if missions_locked %}mission-locked{% elif m.attempted %}mission-played{% endif %}"
+               style="--i: {{ forloop.counter0 }};">
                 <div class="mission-card-grid"></div>
                 <span class="mission-number">{{ m.number }}</span>
                 <span class="mission-emoji">{{ m.emoji }}</span>
@@ -203,9 +146,13 @@
             </a>
             {% endfor %}
         </div>
+        </section>
 
-        <!-- ============ RECENT ACTIVITY + SKILL MATRIX ============ -->
-        <div class="two-col-row" id="skill-matrix">
+        <section class="dash-section" id="skill-matrix">
+        <div class="section-heading">
+            <h2>PROGRESS</h2>
+        </div>
+        <div class="two-col-row">
             <section class="panel-card">
                 <p class="panel-title">RECENT ACTIVITY</p>
                 {% for item in recent_activity %}
@@ -248,10 +195,10 @@
                 </div>
             </section>
         </div>
+        </section>
+{% endblock %}
 
-    </main>
-
-    <!-- ================= RIGHT PANEL ================= -->
+{% block right_panel_wrap %}
     <aside class="right-panel">
         <section class="panel-card">
             <div class="panel-title-row">
@@ -291,14 +238,4 @@
             <a href="{% url 'leaderboard:list' %}" class="view-full-btn">VIEW FULL LEADERBOARD</a>
         </section>
     </aside>
-
-</div>
-
-<footer class="app-footer">
-    <span>STAY CURIOUS. STAY SECURE.</span>
-    <span>CYBERQUEST v1.0.0</span>
-</footer>
-
-<script src="{% static 'dashboard/js/dashboard.js' %}"></script>
-</body>
-</html>
+{% endblock %}

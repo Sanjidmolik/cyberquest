@@ -1,32 +1,20 @@
+{% extends "dashboard/base_command.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Practice Center — CyberQuest</title>
-<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
-<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">
-</head>
-<body class="practice-body">
-<header class="topnav">
-    <div class="topnav-left">
-        <a href="{% url 'pages:home' %}" class="logo-title" aria-label="CyberQuest home">CYBERQUEST</a>
-        <span class="logo-tagline">PRACTICE CENTER</span>
-    </div>
-    <div class="topnav-right practice-nav-links">
-        <a href="{% url 'practice:cyber_dna' %}">Cyber DNA</a>
-        <a href="{% url 'practice:history' %}">History</a>
-        <a href="{% url 'dashboard:home' %}">Dashboard</a>
-    </div>
-</header>
 
-<main class="practice-main">
+{% block title %}Practice Center — CyberQuest{% endblock %}
+{% block context_name %}Practice{% endblock %}
+{% block body_class %}command-child practice-body{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">{% endblock %}
+
+{% block content %}
     <div class="page-header">
         <div>
             <h1>Practice <span class="accent-green">Center</span></h1>
             <p class="page-subtitle">Adaptive drills across five cybersecurity domains.</p>
+        </div>
+        <div class="practice-subnav">
+            <a href="{% url 'practice:cyber_dna' %}">Cyber DNA</a>
+            <a href="{% url 'practice:history' %}">History</a>
         </div>
     </div>
 
@@ -69,6 +57,4 @@
         </article>
         {% endfor %}
     </div>
-</main>
-</body>
-</html>
+{% endblock %}

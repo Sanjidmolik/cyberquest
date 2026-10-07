@@ -208,3 +208,36 @@ class ProfileSettingsTests(TestCase):
         self.assertRedirects(off, self.url)
         self.user.refresh_from_db()
         self.assertFalse(self.user.email_2fa_enabled)
+
+
+class VerificationCodeSecurityTests(TestCase):
+    def setUp(self):
+        self.user = UserModel.objects.create_user(
+            email="codes@gmail.com",
+            password="securepass1",
+            username="codesuser",
+            ethical_agreement=True,
+        )
+
+    def test_code_uses_secrets_and_is_single_use(self):
+        from accounts.codes import check_code, generate_code
+
+        record = generate_code(self.user, purpose="login_2fa")
+        self.assertEqual(len(record.code), 6)
+        self.assertTrue(record.code.isdigit())
+        self.assertTrue(check_code(self.user, purpose="login_2fa", submitted_code=record.code))
+        self.assertFalse(check_code(self.user, purpose="login_2fa", submitted_code=record.code))
+
+    def test_code_burns_after_too_many_failures(self):
+        from accounts.codes import MAX_ATTEMPTS, check_code, generate_code
+
+        record = generate_code(self.user, purpose="password_reset")
+        for _ in range(MAX_ATTEMPTS):
+            self.assertFalse(
+                check_code(self.user, purpose="password_reset", submitted_code="000000")
+            )
+        record.refresh_from_db()
+        self.assertTrue(record.is_used)
+        self.assertFalse(
+            check_code(self.user, purpose="password_reset", submitted_code=record.code)
+        )

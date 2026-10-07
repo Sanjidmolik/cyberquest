@@ -2,6 +2,8 @@
    CyberQuest shared theme — matches homepage (CyberShield)
    Dark default = #701fd3 | Light = #f7f1ff
    ========================================================== */
+@import url("brand-logo.css");
+
 :root {
   --purple: #6614d8;
   --purple-deep: #520ea3;
@@ -117,8 +119,9 @@ body.cq-shell::before {
   background: var(--nav-bg-scrolled);
   box-shadow: 0 10px 40px -10px var(--nav-shadow);
 }
-.cq-logo {
-  display: flex;
+.cq-logo,
+.cq-brand-link {
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   font-weight: 700;
@@ -348,6 +351,8 @@ body.cq-shell::before {
 .cq-shell h2,
 .cq-shell h3,
 .cq-logo,
+.cq-logo-word,
+.cq-logo-cq,
 .cq-heading,
 .cq-section-title,
 .cq-footer h4,
@@ -359,6 +364,7 @@ body.cq-shell::before {
 .cq-shell h1,
 .cq-shell h2,
 .cq-logo,
+.cq-logo-word,
 .cq-heading {
   line-height: 1.2;
   text-shadow:
@@ -383,6 +389,7 @@ body.cq-shell::before {
 [data-theme="light"] .cq-shell h1,
 [data-theme="light"] .cq-shell h2,
 [data-theme="light"] .cq-logo,
+[data-theme="light"] .cq-logo-word,
 [data-theme="light"] .cq-heading {
   text-shadow:
     1px 1px 0 rgb(47 20 97 / 0.18),

@@ -1,10 +1,12 @@
-{% extends "shared/base.html" %}
+{% extends "dashboard/base_command.html" %}
 {% load static %}
 
 {% block title %}Leaderboard — CyberQuest{% endblock %}
+{% block context_name %}Leaderboard{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">{% endblock %}
 
 {% block content %}
-<div class="cq-container" style="max-width:650px;">
+<div class="cq-container command-page-inner" style="max-width:650px;">
   <div class="cq-page-card">
     <h1 class="cq-heading">🏆 Leaderboard</h1>
     <p class="cq-sub">Top players ranked by XP.</p>

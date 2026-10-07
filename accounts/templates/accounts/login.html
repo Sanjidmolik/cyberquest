@@ -18,6 +18,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'accounts/css/login_v2.css' %}">
+    <link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
 </head>
 <body>
 
@@ -47,7 +48,7 @@
     <section class="lq-card" aria-labelledby="login-title">
 
         <div class="lq-aside">
-            <a href="{% url 'pages:home' %}" class="lq-brand lq-text-3d"><span class="lq-logo"><svg class="lq-icon"><use href="#i-shield"/></svg></span>CyberQuest</a>
+            {% include "shared/_brand.html" with brand_class="lq-brand" logo_class="cq-logo-lockup--lg" %}
             <div class="lq-aside-copy">
                 <p class="lq-eyebrow lq-text-3d">Welcome back</p>
                 <h2 class="lq-text-3d">Level up your cyber skills.</h2>
@@ -57,7 +58,7 @@
         </div>
 
         <div class="lq-main">
-            <a href="{% url 'pages:home' %}" class="lq-mbrand lq-text-3d"><span class="lq-logo"><svg class="lq-icon"><use href="#i-shield"/></svg></span>CyberQuest</a>
+            {% include "shared/_brand.html" with brand_class="lq-mbrand" %}
 
             <header class="lq-head">
                 <p class="lq-hello lq-text-3d">Good to see you again</p>

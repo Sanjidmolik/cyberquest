@@ -6,6 +6,7 @@
 <title>{% if course %}{{ course.title }} — CyberQuest{% else %}CyberQuest learning{% endif %}</title>
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'courses/css/reader.css' %}">
+<link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
 {% if uses_pdf %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 {% endif %}
@@ -13,7 +14,7 @@
 <body>
 
 <div class="reader-topbar">
-    <a href="{% url 'pages:home' %}" class="reader-logo" aria-label="CyberQuest home">CyberQuest</a>
+    {% include "shared/_brand.html" with brand_class="reader-logo" logo_class="cq-logo-lockup--sm" %}
     <a href="{% url 'courses:intro' %}" class="reader-back">Back to Learning</a>
     {% if course %}
     <a href="{% url 'courses:detail' course.code %}" class="reader-back">Back to Course</a>
