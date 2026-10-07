@@ -1,22 +1,25 @@
+{% extends "shared/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Set up 2FA — CyberQuest</title>
-    <link rel="stylesheet" href="{% static 'accounts/css/settings.css' %}">
-</head>
-<body class="cq-settings-body">
-<div class="cq-settings-shell">
-    <h1>Set up two-factor authentication</h1>
-    <p>Scan this QR code with an authenticator app, or enter the secret manually. CyberQuest stays off until a code is verified.</p>
-    <img src="{{ qr_data_uri }}" alt="Authenticator QR code" width="220" height="220">
-    <p>Manual secret: <code>{{ secret }}</code></p>
-    <form method="post" action="{% url 'accounts:totp_confirm' %}">{% csrf_token %}
+
+{% block title %}Set up 2FA — CyberQuest{% endblock %}
+
+{% block content %}
+<div class="cq-container" style="max-width:560px;">
+  <div class="cq-page-card">
+    <h1 class="cq-heading">Set up two-factor authentication</h1>
+    <p class="cq-sub">Scan this QR code with an authenticator app, or enter the secret manually. CyberQuest stays off until a code is verified.</p>
+
+    <img src="{{ qr_data_uri }}" alt="Authenticator QR code" width="220" height="220" style="margin:1rem auto;background:#fff;padding:0.75rem;border-radius:12px;">
+    <p class="cq-body">Manual secret: <code>{{ secret }}</code></p>
+
+    <form method="post" action="{% url 'accounts:totp_confirm' %}">
+      {% csrf_token %}
+      <div class="cq-field">
         <label for="code">Authenticator code</label>
-        <input id="code" name="code" autocomplete="one-time-code" required>
-        <button type="submit">Verify and enable</button>
+        <input id="code" class="cq-input" name="code" autocomplete="one-time-code" required>
+      </div>
+      <button type="submit" class="cq-btn" style="width:100%;">Verify and enable</button>
     </form>
+  </div>
 </div>
-</body>
-</html>
+{% endblock %}

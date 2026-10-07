@@ -54,6 +54,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     last_active_date = models.DateField(blank=True, null=True)
     totp_enabled = models.BooleanField(default=False)
     totp_secret = models.CharField(max_length=64, blank=True, default="")
+    email_2fa_enabled = models.BooleanField(
+        default=False,
+        help_text="When on, password login emails a 6-digit code. Off unless the user turns it on.",
+    )
 
     def record_daily_activity(self):
         """

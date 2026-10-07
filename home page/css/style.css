@@ -139,7 +139,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: "Comic Neue", "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
   line-height: 1.55;
   overflow-x: hidden;
 }
@@ -220,7 +220,8 @@ main, footer { position: relative; z-index: 1; }
   --glow: rgba(102,20,216,.6);
   position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 12px 24px; border-radius: 12px; border: 0;
-  font-size: 15px; font-weight: 500; color: #fff;
+  font-size: 15px; font-weight: 400; letter-spacing: 0.04em; color: #fff;
+  font-family: Bangers, "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
   background: var(--btn-bg);
   overflow: hidden; isolation: isolate;
   transition: translate .35s var(--ease), scale .2s var(--ease), box-shadow .35s var(--ease);
@@ -261,12 +262,41 @@ main, footer { position: relative; z-index: 1; }
   background: var(--eyebrow-bg); border: 1px solid var(--border);
 }
 .eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--lilac); box-shadow: 0 0 10px var(--lilac); }
-h1, h2, h3 { margin: 0; font-weight: 500; letter-spacing: -.02em; line-height: 1.12; }
+h1, h2, h3, .logo, .footer-grid h4, .word {
+  margin: 0;
+  font-family: Bangers, "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-shadow:
+    1px 1px 0 rgb(0 0 0 / 0.35),
+    2px 2px 0 rgb(0 0 0 / 0.3),
+    3px 3px 0 rgb(0 0 0 / 0.25),
+    4px 4px 0 rgb(0 0 0 / 0.2);
+}
+.hero p.lead, .sub {
+  text-shadow:
+    1px 1px 0 rgb(0 0 0 / 0.28),
+    2px 2px 0 rgb(0 0 0 / 0.2);
+}
+.cert h3, .cert .name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-shadow: none;
+}
 .h-section { font-size: clamp(30px, 4.6vw, 52px); text-align: center; }
 .sub { color: var(--muted); max-width: 620px; margin: 16px auto 0; text-align: center; }
 .grad-text {
+  font-family: Bangers, "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
   background: var(--grad-text); background-size: 200% auto;
   -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: none;
+  filter:
+    drop-shadow(1px 1px 0 rgb(0 0 0 / 0.35))
+    drop-shadow(2px 2px 0 rgb(0 0 0 / 0.28))
+    drop-shadow(3px 3px 0 rgb(0 0 0 / 0.22))
+    drop-shadow(4px 4px 0 rgb(0 0 0 / 0.16));
   animation: shimmer 6s linear infinite;
 }
 @keyframes shimmer { to { background-position: -200% center; } }
@@ -546,7 +576,7 @@ section { position: relative; padding: 120px 0; }
 /* ---------------- Footer ---------------- */
 footer { border-top: 1px solid var(--foot-line); padding: 50px 0 36px; margin-top: 60px; }
 .footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 30px; }
-.footer-grid h4 { margin: 0 0 12px; font-weight: 600; font-size: 15px; }
+.footer-grid h4 { margin: 0 0 12px; font-size: 15px; }
 .footer-grid ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .footer-grid a { color: var(--muted); transition: color .25s; }
 .footer-grid a:hover { color: var(--lilac); }
@@ -645,6 +675,42 @@ footer { border-top: 1px solid var(--foot-line); padding: 50px 0 36px; margin-to
   --btn-bg: #3d0d85;
   --border: rgba(255, 255, 255, .28);
   --border-strong: rgba(255, 255, 255, .65);
+}
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] .logo,
+[data-theme="light"] .footer-grid h4,
+[data-theme="light"] .word,
+[data-theme="light"] .hero p.lead,
+[data-theme="light"] .sub {
+  text-shadow:
+    1px 1px 0 rgb(47 20 97 / 0.18),
+    2px 2px 0 rgb(47 20 97 / 0.18),
+    3px 3px 0 rgb(47 20 97 / 0.16),
+    4px 4px 0 rgb(47 20 97 / 0.12);
+}
+[data-theme="light"] .grad-text {
+  filter:
+    drop-shadow(1px 1px 0 rgb(47 20 97 / 0.22))
+    drop-shadow(2px 2px 0 rgb(47 20 97 / 0.18))
+    drop-shadow(3px 3px 0 rgb(47 20 97 / 0.14))
+    drop-shadow(4px 4px 0 rgb(47 20 97 / 0.1));
+}
+[data-theme="light"] .cta h2,
+[data-theme="light"] .cta .word {
+  text-shadow:
+    1px 1px 0 rgb(0 0 0 / 0.35),
+    2px 2px 0 rgb(0 0 0 / 0.3),
+    3px 3px 0 rgb(0 0 0 / 0.25),
+    4px 4px 0 rgb(0 0 0 / 0.2);
+}
+[data-theme="light"] .cta .grad-text {
+  filter:
+    drop-shadow(1px 1px 0 rgb(0 0 0 / 0.35))
+    drop-shadow(2px 2px 0 rgb(0 0 0 / 0.28))
+    drop-shadow(3px 3px 0 rgb(0 0 0 / 0.22))
+    drop-shadow(4px 4px 0 rgb(0 0 0 / 0.16));
 }
 
 /* ---------------- Theme toggle (Dark / Day) ---------------- */

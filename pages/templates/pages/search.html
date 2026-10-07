@@ -1,50 +1,45 @@
+﻿{% extends "shared/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Search — CyberQuest</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'pages/css/pages.css' %}">
-</head>
-<body>
-<nav class="navbar cq-navbar px-4">
-    <a href="{% url 'pages:home' %}" class="navbar-brand cq-brand" aria-label="CyberQuest home">← CyberQuest</a>
-</nav>
 
-<div class="container py-5" style="max-width: 700px;">
-    <h1 class="cq-heading mb-4">🔍 Search</h1>
+{% block title %}Search — CyberQuest{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'pages/css/pages.css' %}">{% endblock %}
 
-    <form method="get" class="mb-4">
-        <input type="text" name="q" class="cq-input" placeholder="Search courses and games..."
-               value="{{ query }}" autofocus>
+{% block content %}
+<div class="cq-container" style="max-width:720px;">
+  <div class="cq-page-card">
+    <h1 class="cq-heading">Search</h1>
+    <p class="cq-sub">Find courses and games across CyberQuest.</p>
+
+    <form method="get" class="cq-field">
+      <input type="text" name="q" class="cq-input" placeholder="Search courses and games..." value="{{ query }}" autofocus>
     </form>
 
     {% if query %}
-        {% if not has_results %}
-            <p class="text-muted">No results for "{{ query }}".</p>
-        {% endif %}
+      {% if not has_results %}
+        <p class="cq-body">No results for "{{ query }}".</p>
+      {% endif %}
 
-        {% if course_results %}
-            <h5 class="mt-4 mb-2" style="color:#8b949e;">Courses</h5>
-            {% for c in course_results %}
-                <a href="{% url 'courses:detail' c.code %}" class="cq-search-result">
-                    <strong>{{ c.title }}</strong>
-                    <p class="small text-muted mb-0">{{ c.short_description }}</p>
-                </a>
-            {% endfor %}
-        {% endif %}
+      {% if course_results %}
+        <h2 class="cq-section-title">Courses</h2>
+        {% for c in course_results %}
+          <a href="{% url 'courses:detail' c.code %}" class="cq-search-result" style="margin-bottom:0.65rem;">
+            <strong>{{ c.title }}</strong>
+            <p class="cq-body small" style="margin:0.35rem 0 0;">{{ c.short_description }}</p>
+          </a>
+        {% endfor %}
+      {% endif %}
 
-        {% if game_results %}
-            <h5 class="mt-4 mb-2" style="color:#8b949e;">Games</h5>
-            {% for g in game_results %}
-                <a href="{% url g.url_name %}" class="cq-search-result">
-                    <strong>{{ g.emoji }} {{ g.name }}</strong>
-                    <p class="small text-muted mb-0">{{ g.description }}</p>
-                </a>
-            {% endfor %}
-        {% endif %}
+      {% if game_results %}
+        <h2 class="cq-section-title" style="margin-top:1.5rem;">Games</h2>
+        {% for g in game_results %}
+          <a href="{% url g.url_name %}" class="cq-search-result" style="margin-bottom:0.65rem;">
+            <strong>{{ g.emoji }} {{ g.name }}</strong>
+            <p class="cq-body small" style="margin:0.35rem 0 0;">{{ g.description }}</p>
+          </a>
+        {% endfor %}
+      {% endif %}
     {% endif %}
+  </div>
 </div>
-</body>
-</html>
+{% endblock %}
+

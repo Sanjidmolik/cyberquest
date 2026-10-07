@@ -30,7 +30,7 @@ def send_welcome_email(user):
 
 
 def send_login_2fa_email(user, code):
-    """Sent every time a user logs in, as the second authentication factor."""
+    """Sent on password login only when the user has turned email codes on."""
     subject = "Your CyberQuest verification code"
     message = (
         f"Hi {user.display_name()},\n\n"

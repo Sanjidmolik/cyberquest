@@ -1,191 +1,174 @@
+{% extends "shared/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberQuest — Profile Settings</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'accounts/css/settings.css' %}">
-</head>
-<body class="cq-settings-body">
 
-<div class="cq-settings-shell">
+{% block title %}CyberQuest — Profile Settings{% endblock %}
 
-    <div class="cq-settings-topbar">
-        <a href="{% url 'pages:home' %}" class="cq-settings-brand" aria-label="CyberQuest home">
-            <span class="cq-settings-brand-mark">🛡️</span>
-            <span>
-                <span class="cq-settings-brand-title">CYBERQUEST</span>
-                <span class="cq-settings-brand-sub">PROFILE SETTINGS</span>
-            </span>
-        </a>
-        <a href="{% url 'dashboard:home' %}" class="cq-settings-back">← Back to Dashboard</a>
+{% block content %}
+<div class="cq-container" style="max-width:760px;">
+  <div class="cq-page-card" style="margin-bottom:1rem;">
+    <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center;">
+      <div>
+        <h1 class="cq-heading" style="margin-bottom:0.35rem;">Profile Settings</h1>
+        <p class="cq-sub" style="margin:0;">Manage your personal information and profile picture.</p>
+      </div>
+      <a href="{% url 'dashboard:home' %}" class="cq-btn cq-btn-ghost cq-btn-sm">← Dashboard</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <p class="cq-msg cq-msg-{{ message.tags }}">{{ message }}</p>
+    {% endfor %}
+  {% endif %}
+
+  {% if google_linked %}
+    <p class="cq-body">This account is linked with Google. You can still update your profile details below.</p>
+  {% endif %}
+
+  <div class="cq-page-card" style="margin-bottom:1rem;">
+    <h2 class="cq-section-title">Profile Picture</h2>
+    <div class="cq-avatar-row">
+      {% if request.user.profile_picture %}
+        <img src="{{ request.user.profile_picture.url }}" class="cq-avatar" id="avatar-preview" alt="Current profile picture">
+      {% else %}
+        <div class="cq-avatar cq-avatar-fallback" id="avatar-fallback">{{ request.user.display_name|slice:":1"|upper }}</div>
+        <img src="" class="cq-avatar" id="avatar-preview" alt="Profile picture preview" hidden>
+      {% endif %}
+      <div>
+        <p class="cq-body" style="margin-bottom:0.75rem;">JPG, PNG, WEBP, or GIF · max 5 MB</p>
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+          <label for="id_profile_picture" class="cq-btn cq-btn-ghost cq-btn-sm" style="cursor:pointer;">Change Photo</label>
+          {% if request.user.profile_picture %}
+          <form method="post" onsubmit="return confirm('Remove your profile picture? This cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" name="remove_photo" value="1" class="cq-btn cq-btn-ghost cq-btn-sm" style="color:var(--danger);border-color:rgba(251,113,133,.45);">Remove Photo</button>
+          </form>
+          {% endif %}
+        </div>
+        {% if form.profile_picture.errors %}<p class="cq-msg cq-msg-error">{{ form.profile_picture.errors.0 }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {{ form.profile_picture }}
+
+    <div class="cq-page-card" style="margin-bottom:1rem;">
+      <h2 class="cq-section-title">Personal Information</h2>
+
+      <div class="cq-field">
+        <label for="{{ form.full_name.id_for_label }}">Full Name</label>
+        {{ form.full_name }}
+        {% if form.full_name.errors %}<p class="cq-msg cq-msg-error">{{ form.full_name.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="cq-field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+        {% if form.username.errors %}<p class="cq-msg cq-msg-error">{{ form.username.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="cq-field">
+        <span style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.9rem;">Email</span>
+        <div class="cq-readonly">
+          <strong>{{ user_email }}</strong>
+          <span class="cq-body" style="margin:0;font-size:0.8rem;">Email is used for login</span>
+        </div>
+      </div>
+
+      <div class="cq-field">
+        <label for="{{ form.date_of_birth.id_for_label }}">Date of Birth</label>
+        {{ form.date_of_birth }}
+        {% if form.date_of_birth.errors %}<p class="cq-msg cq-msg-error">{{ form.date_of_birth.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="cq-field">
+        <label for="{{ form.cyber_class.id_for_label }}">Cyber Class</label>
+        {{ form.cyber_class }}
+        {% if form.cyber_class.errors %}<p class="cq-msg cq-msg-error">{{ form.cyber_class.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="cq-field">
+        <label for="{{ form.skill_level.id_for_label }}">Skill Level</label>
+        {{ form.skill_level }}
+        {% if form.skill_level.errors %}<p class="cq-msg cq-msg-error">{{ form.skill_level.errors.0 }}</p>{% endif %}
+      </div>
     </div>
 
-    <div class="cq-settings-header">
-        <h1>⚙ Profile Settings</h1>
-        <p>Manage your personal information and profile picture.</p>
+    {% if form.non_field_errors %}
+      <p class="cq-msg cq-msg-error">{% for error in form.non_field_errors %}{{ error }}{% endfor %}</p>
+    {% endif %}
+
+    <div style="display:flex;justify-content:flex-end;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+      <a href="{% url 'dashboard:home' %}" class="cq-btn cq-btn-ghost">Cancel</a>
+      <button type="submit" class="cq-btn">Save Changes</button>
     </div>
+  </form>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="cq-settings-alert cq-settings-alert-{{ message.tags }}" role="alert">{{ message }}</div>
-        {% endfor %}
+  <div class="cq-page-card" style="margin-bottom:1rem;">
+    <h2 class="cq-heading" style="font-size:1.5rem;">Email login code</h2>
+    <p class="cq-body">Status: <strong>{% if email_2fa_enabled %}On{% else %}Off{% endif %}</strong></p>
+    <p class="cq-body">Off by default. Turn this on if you want a 6-digit code emailed to you every time you sign in with a password.</p>
+    {% if totp_enabled %}
+    <p class="cq-body">Your authenticator app is on, so that code is used instead of email.</p>
     {% endif %}
-
-    {% if google_linked %}
-        <p class="cq-settings-google-note">This account is linked with Google. You can still update your profile details below.</p>
-    {% endif %}
-
-    {# ---- Profile picture preview + remove (separate POST for safe deletion) ---- #}
-    <section class="cq-settings-card">
-        <h2 class="cq-settings-card-title">PROFILE PICTURE</h2>
-        <div class="cq-settings-avatar-row">
-            {% if request.user.profile_picture %}
-                <img src="{{ request.user.profile_picture.url }}"
-                     class="cq-settings-avatar"
-                     id="avatar-preview"
-                     alt="Current profile picture">
-            {% else %}
-                <div class="cq-settings-avatar-fallback" id="avatar-fallback">
-                    {{ request.user.display_name|slice:":1"|upper }}
-                </div>
-                <img src="" class="cq-settings-avatar" id="avatar-preview" alt="Profile picture preview" hidden>
-            {% endif %}
-
-            <div class="cq-settings-avatar-actions">
-                <p class="cq-settings-avatar-hint">JPG, PNG, WEBP, or GIF · max 5 MB</p>
-                <div class="cq-settings-btn-row">
-                    <label for="id_profile_picture" class="cq-settings-btn cq-settings-btn-secondary">
-                        Change Photo
-                    </label>
-                    {% if request.user.profile_picture %}
-                    <form method="post" onsubmit="return confirm('Remove your profile picture? This cannot be undone.');">
-                        {% csrf_token %}
-                        <button type="submit" name="remove_photo" value="1" class="cq-settings-btn cq-settings-btn-danger">
-                            Remove Photo
-                        </button>
-                    </form>
-                    {% endif %}
-                </div>
-                {% if form.profile_picture.errors %}
-                    <div class="cq-settings-error">{{ form.profile_picture.errors.0 }}</div>
-                {% endif %}
-            </div>
-        </div>
-    </section>
-
-    {# ---- Personal information form ---- #}
-    <form method="post" enctype="multipart/form-data" novalidate>
-        {% csrf_token %}
-
-        {# Hidden file input lives in the main form so uploads save with the rest #}
-        {{ form.profile_picture }}
-
-        <section class="cq-settings-card">
-            <h2 class="cq-settings-card-title">PERSONAL INFORMATION</h2>
-
-            <div class="cq-settings-field">
-                <label class="cq-settings-label" for="{{ form.full_name.id_for_label }}">Full Name</label>
-                {{ form.full_name }}
-                {% if form.full_name.errors %}
-                    <div class="cq-settings-error">{{ form.full_name.errors.0 }}</div>
-                {% endif %}
-            </div>
-
-            <div class="cq-settings-field">
-                <label class="cq-settings-label" for="{{ form.username.id_for_label }}">Username</label>
-                {{ form.username }}
-                {% if form.username.errors %}
-                    <div class="cq-settings-error">{{ form.username.errors.0 }}</div>
-                {% endif %}
-            </div>
-
-            <div class="cq-settings-field">
-                <span class="cq-settings-label">Email</span>
-                <div class="cq-settings-readonly">
-                    <span class="cq-settings-readonly-value">{{ user_email }}</span>
-                    <span class="cq-settings-readonly-hint">Email is used for login</span>
-                </div>
-            </div>
-
-            <div class="cq-settings-field">
-                <label class="cq-settings-label" for="{{ form.date_of_birth.id_for_label }}">Date of Birth</label>
-                {{ form.date_of_birth }}
-                {% if form.date_of_birth.errors %}
-                    <div class="cq-settings-error">{{ form.date_of_birth.errors.0 }}</div>
-                {% endif %}
-            </div>
-
-            <div class="cq-settings-field">
-                <label class="cq-settings-label" for="{{ form.cyber_class.id_for_label }}">Cyber Class</label>
-                {{ form.cyber_class }}
-                {% if form.cyber_class.errors %}
-                    <div class="cq-settings-error">{{ form.cyber_class.errors.0 }}</div>
-                {% endif %}
-            </div>
-
-            <div class="cq-settings-field">
-                <label class="cq-settings-label" for="{{ form.skill_level.id_for_label }}">Skill Level</label>
-                {{ form.skill_level }}
-                {% if form.skill_level.errors %}
-                    <div class="cq-settings-error">{{ form.skill_level.errors.0 }}</div>
-                {% endif %}
-            </div>
-        </section>
-
-        {% if form.non_field_errors %}
-            <div class="cq-settings-alert cq-settings-alert-error">
-                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
-            </div>
-        {% endif %}
-
-        <div class="cq-settings-actions">
-            <a href="{% url 'dashboard:home' %}" class="cq-settings-btn cq-settings-btn-secondary">Cancel</a>
-            <button type="submit" class="cq-settings-btn cq-settings-btn-primary">Save Changes</button>
-        </div>
+    {% if has_password %}
+    <form method="post" action="{% url 'accounts:email_2fa_toggle' %}">
+      {% csrf_token %}
+      {% if email_2fa_enabled %}
+      <button type="submit" name="enabled" value="0" class="cq-btn cq-btn-ghost" style="color:var(--danger);border-color:rgba(251,113,133,.45);">Turn off email codes</button>
+      {% else %}
+      <button type="submit" name="enabled" value="1" class="cq-btn">Turn on email codes</button>
+      {% endif %}
     </form>
+    {% else %}
+    <p class="cq-body">This account signs in with Google, so an email code is not used.</p>
+    {% endif %}
+  </div>
 
-    <section class="cq-settings-header" aria-labelledby="totp-heading">
-        <h2 id="totp-heading">Two-factor authentication</h2>
-        <p>Status: <strong>{% if totp_enabled %}Enabled{% else %}Disabled{% endif %}</strong></p>
-        <p>Use an authenticator app. Enabling asks for a code before it turns on. Turning it off requires your password or a current authenticator code.</p>
-        {% if not totp_enabled %}
-        <form method="post" action="{% url 'accounts:totp_start' %}">{% csrf_token %}
-            <button type="submit">Enable 2FA</button>
-        </form>
-        {% else %}
-        <form method="post" action="{% url 'accounts:totp_disable' %}">{% csrf_token %}
-            <label for="disable-password">Password</label>
-            <input id="disable-password" name="password" type="password" autocomplete="current-password">
-            <label for="disable-code">Or authenticator code</label>
-            <input id="disable-code" name="code" inputmode="numeric" autocomplete="one-time-code">
-            <button type="submit">Disable 2FA</button>
-        </form>
-        {% endif %}
-    </section>
+  <div class="cq-page-card">
+    <h2 class="cq-heading" style="font-size:1.5rem;">Authenticator app</h2>
+    <p class="cq-body">Status: <strong>{% if totp_enabled %}Enabled{% else %}Disabled{% endif %}</strong></p>
+    <p class="cq-body">Optional. Use an authenticator app. Enabling asks for a code before it turns on. Turning it off requires your password or a current authenticator code.</p>
 
+    {% if not totp_enabled %}
+    <form method="post" action="{% url 'accounts:totp_start' %}">
+      {% csrf_token %}
+      <button type="submit" class="cq-btn">Enable 2FA</button>
+    </form>
+    {% else %}
+    <form method="post" action="{% url 'accounts:totp_disable' %}">
+      {% csrf_token %}
+      <div class="cq-field">
+        <label for="disable-password">Password</label>
+        <input id="disable-password" class="cq-input" name="password" type="password" autocomplete="current-password">
+      </div>
+      <div class="cq-field">
+        <label for="disable-code">Or authenticator code</label>
+        <input id="disable-code" class="cq-input" name="code" inputmode="numeric" autocomplete="one-time-code">
+      </div>
+      <button type="submit" class="cq-btn cq-btn-ghost" style="color:var(--danger);border-color:rgba(251,113,133,.45);">Disable 2FA</button>
+    </form>
+    {% endif %}
+  </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 (function () {
-    var input = document.getElementById("id_profile_picture");
-    var preview = document.getElementById("avatar-preview");
-    var fallback = document.getElementById("avatar-fallback");
-    if (!input || !preview) return;
-
-    input.addEventListener("change", function () {
-        var file = input.files && input.files[0];
-        if (!file) return;
-        if (!file.type.startsWith("image/")) return;
-        var url = URL.createObjectURL(file);
-        preview.src = url;
-        preview.hidden = false;
-        if (fallback) fallback.hidden = true;
-    });
+  var input = document.getElementById("id_profile_picture");
+  var preview = document.getElementById("avatar-preview");
+  var fallback = document.getElementById("avatar-fallback");
+  if (!input || !preview) return;
+  input.addEventListener("change", function () {
+    var file = input.files && input.files[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    preview.src = URL.createObjectURL(file);
+    preview.hidden = false;
+    if (fallback) fallback.hidden = true;
+  });
 })();
 </script>
-</body>
-</html>
+{% endblock %}

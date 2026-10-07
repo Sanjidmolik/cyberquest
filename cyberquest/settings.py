@@ -89,7 +89,7 @@ ROOT_URLCONF = 'cyberquest.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "home page"],
+        'DIRS': [BASE_DIR / "templates", BASE_DIR / "home page"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -154,6 +154,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 STATICFILES_DIRS = [
+    BASE_DIR / "static",
     ("home_page", BASE_DIR / "home page"),
     ("vendor/page-flip", BASE_DIR / "node_modules" / "page-flip" / "dist" / "js"),
 ]

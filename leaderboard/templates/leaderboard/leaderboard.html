@@ -1,44 +1,33 @@
+{% extends "shared/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Leaderboard — CyberQuest</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
-        .cq-navbar { background: #161b22; border-bottom: 1px solid #30363d; padding: 14px 24px; }
-        .cq-brand { color: #39ff88; text-decoration: none; font-weight: 700; }
-        .cq-row { display: flex; align-items: center; gap: 16px; background: #161b22; border: 1px solid #30363d;
-                  border-radius: 8px; padding: 12px 18px; margin-bottom: 8px; }
-        .cq-rank { font-weight: 800; width: 40px; color: #8b949e; }
-        .cq-rank-1 { color: #ffd23f; } .cq-rank-2 { color: #c0c0c0; } .cq-rank-3 { color: #cd7f32; }
-        .cq-row-name { flex-grow: 1; font-weight: 600; }
-        .cq-row-xp { color: #39ff88; font-weight: 700; }
-        .cq-my-rank { background: rgba(57,255,136,0.08); border-radius: 8px; padding: 10px 18px; margin-top: 20px; }
-    </style>
-</head>
-<body>
-<nav class="cq-navbar"><a href="{% url 'pages:home' %}" class="cq-brand" aria-label="CyberQuest home">CyberQuest</a></nav>
 
-<div class="container py-5" style="max-width: 650px;">
-    <h1 class="mb-4">🏆 Leaderboard</h1>
+{% block title %}Leaderboard — CyberQuest{% endblock %}
+
+{% block content %}
+<div class="cq-container" style="max-width:650px;">
+  <div class="cq-page-card">
+    <h1 class="cq-heading">🏆 Leaderboard</h1>
+    <p class="cq-sub">Top players ranked by XP.</p>
 
     {% for u in top_users %}
-    <div class="cq-row">
-        <span class="cq-rank {% if forloop.counter == 1 %}cq-rank-1{% elif forloop.counter == 2 %}cq-rank-2{% elif forloop.counter == 3 %}cq-rank-3{% endif %}">
-            #{{ forloop.counter }}
-        </span>
-        <span class="cq-row-name">{{ u.username }} <span class="text-muted small">Lvl {{ u.level }}</span></span>
-        <span class="cq-row-xp">{{ u.xp }} XP</span>
+    <div class="cq-row" style="display:flex;align-items:center;gap:16px;margin-bottom:0.5rem;">
+      <span class="cq-rank {% if forloop.counter == 1 %}cq-rank-1{% elif forloop.counter == 2 %}cq-rank-2{% elif forloop.counter == 3 %}cq-rank-3{% endif %}" style="font-weight:800;width:40px;{% if forloop.counter == 1 %}color:#ffd23f;{% elif forloop.counter == 2 %}color:#c0c0c0;{% elif forloop.counter == 3 %}color:#cd7f32;{% else %}color:var(--muted);{% endif %}">
+        #{{ forloop.counter }}
+      </span>
+      <span class="cq-row-name" style="flex-grow:1;font-weight:600;">
+        {{ u.username }} <span class="cq-body small" style="display:inline;margin:0;">Lvl {{ u.level }}</span>
+      </span>
+      <span class="cq-row-xp">{{ u.xp }} XP</span>
     </div>
     {% empty %}
-    <p class="text-muted">No ranked players yet.</p>
+    <p class="cq-body">No ranked players yet.</p>
     {% endfor %}
 
     {% if my_rank %}
-        <div class="cq-my-rank">Your current rank: <strong>#{{ my_rank }}</strong></div>
+      <div class="cq-my-rank" style="margin-top:1.25rem;padding:0.75rem 1.1rem;border-radius:12px;">
+        Your current rank: <strong>#{{ my_rank }}</strong>
+      </div>
     {% endif %}
+  </div>
 </div>
-</body>
-</html>
+{% endblock %}

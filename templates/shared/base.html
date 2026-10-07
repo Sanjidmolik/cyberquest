@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#701fd3">
+  <script>
+    (function () {
+      var t = "dark";
+      try {
+        var s = localStorage.getItem("cq_home_theme");
+        if (s === "light" || s === "dark") t = s;
+      } catch (e) {}
+      document.documentElement.setAttribute("data-theme", t);
+      var m = document.querySelector('meta[name="theme-color"]');
+      if (m) m.setAttribute("content", t === "light" ? "#f7f1ff" : "#701fd3");
+    })();
+  </script>
+  <title>{% block title %}CyberQuest{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="cq-shell">
+  {% include "shared/_nav.html" %}
+  <main class="cq-main">
+    {% block content %}{% endblock %}
+  </main>
+  {% include "shared/_footer.html" %}
+  <script src="{% static 'shared/js/theme.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,22 +1,28 @@
+{% extends "shared/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Confirm authenticator — CyberQuest</title>
-    <link rel="stylesheet" href="{% static 'accounts/css/login.css' %}">
-</head>
-<body>
-<div class="cq-login-wrapper d-flex align-items-center justify-content-center">
-    <div class="cq-login-card p-4" style="max-width:480px;">
-        <h1 class="cq-title" style="font-size:1.6rem;">Authenticator code</h1>
-        <p>Enter the code from your authenticator app, or a recovery code, for {{ email }}.</p>
-        {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}{% endif %}
-        <form method="post">{% csrf_token %}
-            <div class="cq-field"><label for="code">Code</label><input class="cq-input" id="code" name="code" autocomplete="one-time-code" required></div>
-            <button class="cq-btn" type="submit">Continue</button>
-        </form>
-    </div>
+
+{% block title %}Confirm authenticator — CyberQuest{% endblock %}
+
+{% block content %}
+<div class="cq-container" style="max-width:480px;">
+  <div class="cq-page-card">
+    <h1 class="cq-heading">Authenticator code</h1>
+    <p class="cq-sub">Enter the code from your authenticator app, or a recovery code, for {{ email }}.</p>
+
+    {% if messages %}
+      {% for message in messages %}
+        <p class="cq-msg cq-msg-{{ message.tags }}">{{ message }}</p>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="cq-field">
+        <label for="code">Code</label>
+        <input class="cq-input" id="code" name="code" autocomplete="one-time-code" required>
+      </div>
+      <button class="cq-btn" type="submit" style="width:100%;">Continue</button>
+    </form>
+  </div>
 </div>
-</body>
-</html>
+{% endblock %}

@@ -1,128 +1,86 @@
+{% extends "shared/base.html" %}
 {% load static %}
-<!--
-  accounts/templates/accounts/signup.html
-  -------------------------------------------
-  Registration page. Collects: Username, Email, Password, Date of Birth,
-  Cyber Class/Role, Skill Level, Ethical Agreement.
--->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>CyberQuest — Sign Up</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'accounts/css/login.css' %}">
-</head>
-<body>
 
-<div class="cq-login-wrapper d-flex align-items-center justify-content-center py-5">
-    <div class="cq-login-card p-4" style="max-width: 560px;">
+{% block title %}CyberQuest — Sign Up{% endblock %}
 
-        <h1 class="cq-title text-center mb-4">Join CyberQuest</h1>
-        <p class="text-center text-muted mb-4">Create your account to start training</p>
+{% block content %}
+<div class="cq-container" style="max-width:560px;">
+  <div class="cq-page-card">
+    <h1 class="cq-heading">Join CyberQuest</h1>
+    <p class="cq-sub">Create your account to start training.</p>
 
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
+    {% if messages %}
+      {% for message in messages %}
+        <p class="cq-msg cq-msg-{{ message.tags }}">{{ message }}</p>
+      {% endfor %}
+    {% endif %}
 
-        <form method="post" novalidate>
-            {% csrf_token %}
+    <form method="post" novalidate>
+      {% csrf_token %}
 
-            <div class="mb-3">
-                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
-                {{ form.username }}
-                <div class="form-text" style="color:#6b7c8c;">{{ form.username.help_text }}</div>
-                {% if form.username.errors %}
-                    <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
-                {% endif %}
-            </div>
+      <div class="cq-field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+        {% if form.username.help_text %}<p class="cq-body" style="font-size:0.85rem;margin:0.35rem 0 0;">{{ form.username.help_text }}</p>{% endif %}
+        {% if form.username.errors %}<p class="cq-msg cq-msg-error">{{ form.username.errors.0 }}</p>{% endif %}
+      </div>
 
-            <div class="mb-3">
-                <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
-                {{ form.email }}
-                {% if form.email.errors %}
-                    <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
-                {% endif %}
-            </div>
+      <div class="cq-field">
+        <label for="{{ form.email.id_for_label }}">Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}<p class="cq-msg cq-msg-error">{{ form.email.errors.0 }}</p>{% endif %}
+      </div>
 
-            <div class="row">
-                <div class="col-6 mb-3">
-                    <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
-                    {{ form.password }}
-                    {% if form.password.errors %}
-                        <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
-                    {% endif %}
-                </div>
-                <div class="col-6 mb-3">
-                    <label for="{{ form.confirm_password.id_for_label }}" class="form-label">Confirm Password</label>
-                    {{ form.confirm_password }}
-                    {% if form.confirm_password.errors %}
-                        <div class="text-danger small mt-1">{{ form.confirm_password.errors.0 }}</div>
-                    {% endif %}
-                </div>
-            </div>
+      <div class="cq-field">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        {{ form.password }}
+        {% if form.password.errors %}<p class="cq-msg cq-msg-error">{{ form.password.errors.0 }}</p>{% endif %}
+      </div>
 
-            <div class="mb-4">
-                <label for="{{ form.date_of_birth.id_for_label }}" class="form-label">Date of Birth</label>
-                {{ form.date_of_birth }}
-                {% if form.date_of_birth.errors %}
-                    <div class="text-danger small mt-1">{{ form.date_of_birth.errors.0 }}</div>
-                {% endif %}
-            </div>
+      <div class="cq-field">
+        <label for="{{ form.confirm_password.id_for_label }}">Confirm Password</label>
+        {{ form.confirm_password }}
+        {% if form.confirm_password.errors %}<p class="cq-msg cq-msg-error">{{ form.confirm_password.errors.0 }}</p>{% endif %}
+      </div>
 
-            <!-- Cyber Class / Role -- shown as selectable cards, not plain radio dots -->
-            <div class="mb-4">
-                <label class="form-label d-block mb-2">Choose Your Cyber Class</label>
-                <div class="cq-class-grid">
-                    {% for radio in form.cyber_class %}
-                        <label class="cq-class-card">
-                            {{ radio.tag }}
-                            <span>{{ radio.choice_label }}</span>
-                        </label>
-                    {% endfor %}
-                </div>
-                {% if form.cyber_class.errors %}
-                    <div class="text-danger small mt-1">{{ form.cyber_class.errors.0 }}</div>
-                {% endif %}
-            </div>
+      <div class="cq-field">
+        <label for="{{ form.date_of_birth.id_for_label }}">Date of Birth</label>
+        {{ form.date_of_birth }}
+        {% if form.date_of_birth.errors %}<p class="cq-msg cq-msg-error">{{ form.date_of_birth.errors.0 }}</p>{% endif %}
+      </div>
 
-            <!-- Skill Level -- simple radio buttons -->
-            <div class="mb-4">
-                <label class="form-label d-block mb-2">Skill Level</label>
-                <div class="d-flex gap-3 flex-wrap">
-                    {% for radio in form.skill_level %}
-                        <label class="cq-radio-pill">
-                            {{ radio.tag }}
-                            <span>{{ radio.choice_label }}</span>
-                        </label>
-                    {% endfor %}
-                </div>
-                {% if form.skill_level.errors %}
-                    <div class="text-danger small mt-1">{{ form.skill_level.errors.0 }}</div>
-                {% endif %}
-            </div>
+      <div class="cq-field">
+        <label>Choose Your Cyber Class</label>
+        <div class="cq-choice-grid">
+          {% for radio in form.cyber_class %}
+            <label class="cq-choice-card">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+          {% endfor %}
+        </div>
+        {% if form.cyber_class.errors %}<p class="cq-msg cq-msg-error">{{ form.cyber_class.errors.0 }}</p>{% endif %}
+      </div>
 
-            <!-- Ethical Agreement -- mandatory checkbox -->
-            <div class="mb-4 form-check">
-                {{ form.ethical_agreement }}
-                <label for="{{ form.ethical_agreement.id_for_label }}" class="form-check-label small" style="color:#eafcff;">
-                    {{ form.ethical_agreement.label }}
-                </label>
-                {% if form.ethical_agreement.errors %}
-                    <div class="text-danger small mt-1">{{ form.ethical_agreement.errors.0 }}</div>
-                {% endif %}
-            </div>
+      <div class="cq-field">
+        <label>Skill Level</label>
+        <div class="cq-choice-row">
+          {% for radio in form.skill_level %}
+            <label class="cq-choice-pill">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+          {% endfor %}
+        </div>
+        {% if form.skill_level.errors %}<p class="cq-msg cq-msg-error">{{ form.skill_level.errors.0 }}</p>{% endif %}
+      </div>
 
-            <button type="submit" class="btn cq-btn w-100">Create Account</button>
-        </form>
+      <div class="cq-field cq-check-row">
+        {{ form.ethical_agreement }}
+        <label for="{{ form.ethical_agreement.id_for_label }}">{{ form.ethical_agreement.label }}</label>
+      </div>
+      {% if form.ethical_agreement.errors %}<p class="cq-msg cq-msg-error">{{ form.ethical_agreement.errors.0 }}</p>{% endif %}
 
-        <p class="text-center small mt-4">
-            Already have an account? <a href="{% url 'accounts:login' %}" class="cq-signup-link">Log in</a>
-        </p>
-    </div>
+      <button type="submit" class="cq-btn" style="width:100%;">Create Account</button>
+    </form>
+
+    <p class="cq-body" style="margin:1.25rem 0 0;text-align:center;">
+      Already have an account? <a href="{% url 'accounts:login' %}" style="color:var(--lilac);font-weight:700;">Log in</a>
+    </p>
+  </div>
 </div>
-
-</body>
-</html>
+{% endblock %}

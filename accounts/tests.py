@@ -191,3 +191,20 @@ class ProfileSettingsTests(TestCase):
         })
         self.user.refresh_from_db()
         self.assertEqual(self.user.email, "recruit@gmail.com")
+
+    def test_email_login_code_is_off_until_chosen(self):
+        self.client.force_login(self.user)
+        page = self.client.get(self.url)
+        self.assertContains(page, "Email login code")
+        self.assertContains(page, "Turn on email codes")
+        self.assertFalse(self.user.email_2fa_enabled)
+
+        on = self.client.post(reverse("accounts:email_2fa_toggle"), {"enabled": "1"})
+        self.assertRedirects(on, self.url)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.email_2fa_enabled)
+
+        off = self.client.post(reverse("accounts:email_2fa_toggle"), {"enabled": "0"})
+        self.assertRedirects(off, self.url)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.email_2fa_enabled)

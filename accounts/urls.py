@@ -12,6 +12,7 @@ urlpatterns = [
     path("reset-password/", views.reset_password_view, name="reset_password"),
     path("logout/", views.logout_view, name="logout"),
     path("settings/", views.profile_settings, name="settings"),
+    path("settings/email-2fa/", views.email_2fa_toggle, name="email_2fa_toggle"),
     path("settings/2fa/start/", views.totp_start, name="totp_start"),
     path("settings/2fa/confirm/", views.totp_confirm, name="totp_confirm"),
     path("settings/2fa/disable/", views.totp_disable, name="totp_disable"),

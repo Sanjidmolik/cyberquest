@@ -1,4 +1,4 @@
-.practice-body { min-height: 100vh; }
+﻿.practice-body { min-height: 100vh; }
 .practice-main { max-width: 1100px; margin: 0 auto; padding: 24px; }
 .practice-nav-links { display: flex; gap: 16px; font-size: 0.85rem; }
 .practice-nav-links a { color: var(--text-muted); }
@@ -24,9 +24,11 @@
     border: none;
     border-radius: var(--radius-sm);
     padding: 9px 14px;
-    font-weight: 700;
-    font-size: 0.78rem;
-    letter-spacing: 0.4px;
+    font-family: Bangers, "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
+    font-weight: 400;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    text-shadow: 1px 1px 0 rgb(0 0 0 / 0.22), 2px 2px 0 rgb(0 0 0 / 0.16);
     cursor: pointer;
     text-align: center;
 }

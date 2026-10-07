@@ -11,7 +11,8 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Profile", {"fields": ("username", "full_name", "date_of_birth", "cyber_class", "skill_level",
-                                 "ethical_agreement", "google_linked", "profile_picture")}),
+                                 "ethical_agreement", "google_linked", "profile_picture",
+                                 "email_2fa_enabled", "totp_enabled")}),
         ("Gamification", {"fields": ("xp", "level")}),
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser")}),
     )

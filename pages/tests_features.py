@@ -83,8 +83,19 @@ class TotpTests(TestCase):
         self.assertEqual(allowed.status_code, 302)
         self.assertIn("_auth_user_id", self.client.session)
 
-    def test_disabled_totp_keeps_email_challenge(self):
+    def test_login_skips_email_code_unless_opted_in(self):
+        from accounts.routing import next_step_url_name
+
         self.client.logout()
+        response = self.client.post(reverse("accounts:login"), {
+            "email": "recruit@gmail.com", "password": "securepass1",
+        })
+        self.assertRedirects(response, reverse(next_step_url_name(self.user)))
+        self.assertIn("_auth_user_id", self.client.session)
+
+        self.client.logout()
+        self.user.email_2fa_enabled = True
+        self.user.save(update_fields=["email_2fa_enabled"])
         response = self.client.post(reverse("accounts:login"), {
             "email": "recruit@gmail.com", "password": "securepass1",
         })

@@ -1,45 +1,89 @@
 /*
   accounts/static/accounts/css/settings.css
-  -----------------------------------------
-  Profile Settings page — matches the dashboard command-center theme
-  (dark navy, glass cards, cyan/teal accents) without redesigning the app.
+  Profile / 2FA settings — matches login comic + #701fd3 / white theme.
 */
 
 :root {
-    --bg-main: #050A0F;
-    --bg-secondary: #0A1119;
-    --bg-card: #0D1720;
-    --border-subtle: rgba(148, 176, 199, 0.14);
-    --border-strong: rgba(148, 176, 199, 0.28);
-    --text-primary: #EAF2F8;
-    --text-muted: #7C8CA0;
-    --accent-green: #2EE6A6;
-    --accent-cyan: #38C6F4;
-    --accent-teal: #35D0C0;
-    --accent-red: #F0526B;
+    --bg-main: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-card: #ffffff;
+    --border-subtle: rgb(112 31 211 / 0.12);
+    --border-strong: rgb(112 31 211 / 0.28);
+    --text-primary: #020617;
+    --text-muted: #64748b;
+    --accent: #701fd3;
+    --accent-soft: #5a18ad;
+    --accent-red: #ef4444;
     --radius-lg: 16px;
     --radius-md: 12px;
-    --radius-sm: 8px;
+    --radius-sm: 10px;
+}
+
+html[data-theme="night"] {
+    --bg-main: #701fd3;
+    --bg-secondary: #5a18ad;
+    --bg-card: #4a15a0;
+    --border-subtle: rgb(255 255 255 / 0.14);
+    --border-strong: rgb(255 255 255 / 0.28);
+    --text-primary: #ffffff;
+    --text-muted: #d8c4f7;
+    --accent: #e9d5ff;
+    --accent-soft: #ffffff;
 }
 
 * { box-sizing: border-box; }
 
+html { background: var(--bg-main); }
+
 body.cq-settings-body {
     margin: 0;
     min-height: 100vh;
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
+    font-family: "Comic Neue", "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
+    font-size: 15px;
     color: var(--text-primary);
     background: var(--bg-main);
     background-image:
-        radial-gradient(circle at 15% 0%, rgba(46, 230, 166, 0.06), transparent 40%),
-        radial-gradient(circle at 85% 15%, rgba(56, 198, 244, 0.05), transparent 40%);
+        radial-gradient(circle at 15% 0%, rgb(112 31 211 / 0.08), transparent 40%),
+        radial-gradient(circle at 85% 15%, rgb(112 31 211 / 0.06), transparent 40%);
 }
+html[data-theme="night"] body.cq-settings-body {
+    background-image:
+        radial-gradient(circle at 15% 0%, rgb(255 255 255 / 0.1), transparent 40%),
+        radial-gradient(circle at 85% 15%, rgb(0 0 0 / 0.2), transparent 40%);
+}
+
+.cq-theme-btn {
+    position: fixed;
+    right: 1.25rem;
+    top: 1.25rem;
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgb(112 31 211 / 0.25);
+    background: rgb(112 31 211 / 0.08);
+    padding: 0.5rem 1rem;
+    color: #701fd3;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+}
+html[data-theme="night"] .cq-theme-btn {
+    border-color: rgb(255 255 255 / 0.25);
+    background: rgb(0 0 0 / 0.15);
+    color: #fff;
+}
+.cq-theme-btn svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .cq-settings-shell {
     max-width: 760px;
     margin: 0 auto;
-    padding: 28px 20px 48px;
+    padding: 5rem 20px 48px;
 }
 
 .cq-settings-topbar {
@@ -57,46 +101,73 @@ body.cq-settings-body {
     color: inherit;
     text-decoration: none;
 }
+.cq-settings-brand:hover { opacity: 0.92; }
 
 .cq-settings-brand-mark {
-    font-size: 1.25rem;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.75rem;
+    background: #701fd3;
+    color: #fff;
+    font-size: 1rem;
+}
+html[data-theme="night"] .cq-settings-brand-mark {
+    background: #fff;
+    color: #701fd3;
 }
 
 .cq-settings-brand-title {
-    font-weight: 800;
-    letter-spacing: 1.5px;
-    font-size: 0.95rem;
+    font-family: Bangers, "Comic Sans MS", cursive, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    font-size: 1.25rem;
+    text-shadow:
+        1px 1px 0 rgb(47 20 97 / 0.18),
+        2px 2px 0 rgb(47 20 97 / 0.14);
+}
+html[data-theme="night"] .cq-settings-brand-title {
+    text-shadow: 1px 1px 0 rgb(0 0 0 / 0.3), 2px 2px 0 rgb(0 0 0 / 0.25);
 }
 
 .cq-settings-brand-sub {
     display: block;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
     letter-spacing: 1px;
+    font-weight: 700;
 }
 
 .cq-settings-back {
-    color: var(--accent-cyan);
+    color: var(--accent);
     text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 700;
 }
+.cq-settings-back:hover { text-decoration: underline; }
 
-.cq-settings-back:hover {
-    text-decoration: underline;
-}
-
-.cq-settings-header h1 {
+.cq-settings-header h1,
+.cq-settings-header h2 {
     margin: 0 0 6px;
-    font-size: 1.55rem;
-    font-weight: 800;
-    letter-spacing: 0.3px;
+    font-family: Bangers, "Comic Sans MS", cursive, sans-serif;
+    font-size: 2rem;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-shadow:
+        1px 1px 0 rgb(47 20 97 / 0.18),
+        2px 2px 0 rgb(47 20 97 / 0.18),
+        3px 3px 0 rgb(47 20 97 / 0.14);
+}
+html[data-theme="night"] .cq-settings-header h1,
+html[data-theme="night"] .cq-settings-header h2 {
+    text-shadow: 1px 1px 0 rgb(0 0 0 / 0.35), 2px 2px 0 rgb(0 0 0 / 0.28), 3px 3px 0 rgb(0 0 0 / 0.22);
 }
 
 .cq-settings-header p {
     margin: 0 0 24px;
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: 1rem;
 }
 
 .cq-settings-card {
@@ -105,14 +176,16 @@ body.cq-settings-body {
     border-radius: var(--radius-lg);
     padding: 24px;
     margin-bottom: 18px;
+    box-shadow: 0 12px 30px rgb(112 31 211 / 0.08);
 }
 
 .cq-settings-card-title {
     margin: 0 0 18px;
-    font-size: 0.78rem;
-    letter-spacing: 1.4px;
-    color: var(--text-muted);
-    font-weight: 700;
+    font-family: Bangers, "Comic Sans MS", cursive, sans-serif;
+    font-size: 1.15rem;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    font-weight: 400;
 }
 
 .cq-settings-avatar-row {
@@ -127,8 +200,8 @@ body.cq-settings-body {
     height: 112px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid var(--accent-cyan);
-    box-shadow: 0 0 0 4px rgba(56, 198, 244, 0.12);
+    border: 3px solid #701fd3;
+    box-shadow: 0 0 0 4px rgb(112 31 211 / 0.12);
     background: var(--bg-secondary);
     display: block;
 }
@@ -137,15 +210,24 @@ body.cq-settings-body {
     width: 112px;
     height: 112px;
     border-radius: 50%;
-    border: 3px solid var(--accent-green);
-    box-shadow: 0 0 0 4px rgba(46, 230, 166, 0.12);
-    background: linear-gradient(135deg, rgba(46, 230, 166, 0.25), rgba(56, 198, 244, 0.18));
-    color: var(--accent-green);
+    border: 3px solid #701fd3;
+    box-shadow: 0 0 0 4px rgb(112 31 211 / 0.12);
+    background: linear-gradient(135deg, rgb(112 31 211 / 0.25), rgb(90 24 173 / 0.18));
+    color: #701fd3;
     font-size: 2.4rem;
     font-weight: 800;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+html[data-theme="night"] .cq-settings-avatar,
+html[data-theme="night"] .cq-settings-avatar-fallback {
+    border-color: #fff;
+    box-shadow: 0 0 0 4px rgb(255 255 255 / 0.15);
+}
+html[data-theme="night"] .cq-settings-avatar-fallback {
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
 }
 
 .cq-settings-avatar-actions {
@@ -157,7 +239,7 @@ body.cq-settings-body {
 .cq-settings-avatar-hint {
     margin: 0;
     color: var(--text-muted);
-    font-size: 0.78rem;
+    font-size: 0.85rem;
 }
 
 .cq-settings-file {
@@ -176,46 +258,48 @@ body.cq-settings-body {
     gap: 8px;
     border-radius: var(--radius-sm);
     padding: 10px 16px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 700;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.02em;
     cursor: pointer;
     border: 1px solid transparent;
     text-decoration: none;
     font-family: inherit;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    transition: transform 0.15s ease, filter 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 
 .cq-settings-btn-primary {
-    background: linear-gradient(90deg, var(--accent-teal), var(--accent-cyan));
-    color: #041018;
-    border-color: transparent;
+    background: #701fd3;
+    color: #fff;
+    box-shadow: 0 4px 0 rgb(47 20 97 / 0.28);
 }
-
-.cq-settings-btn-primary:hover {
-    filter: brightness(1.06);
+html[data-theme="night"] .cq-settings-btn-primary {
+    background: #fff;
+    color: #701fd3;
+    box-shadow: 0 4px 0 rgb(0 0 0 / 0.2);
 }
+.cq-settings-btn-primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
 
 .cq-settings-btn-secondary {
     background: transparent;
     color: var(--text-primary);
     border-color: var(--border-strong);
 }
-
 .cq-settings-btn-secondary:hover {
-    border-color: var(--accent-cyan);
-    color: var(--accent-cyan);
+    border-color: #701fd3;
+    color: #701fd3;
+}
+html[data-theme="night"] .cq-settings-btn-secondary:hover {
+    border-color: #fff;
+    color: #fff;
 }
 
 .cq-settings-btn-danger {
-    background: rgba(240, 82, 107, 0.1);
+    background: rgb(239 68 68 / 0.1);
     color: var(--accent-red);
-    border-color: rgba(240, 82, 107, 0.35);
+    border-color: rgb(239 68 68 / 0.35);
 }
-
-.cq-settings-btn-danger:hover {
-    background: rgba(240, 82, 107, 0.18);
-}
+.cq-settings-btn-danger:hover { background: rgb(239 68 68 / 0.18); }
 
 .cq-settings-btn-row {
     display: flex;
@@ -224,72 +308,71 @@ body.cq-settings-body {
     margin-top: 8px;
 }
 
-.cq-settings-field {
-    margin-bottom: 18px;
-}
-
-.cq-settings-field:last-child {
-    margin-bottom: 0;
-}
+.cq-settings-field { margin-bottom: 18px; }
+.cq-settings-field:last-child { margin-bottom: 0; }
 
 .cq-settings-label {
     display: block;
     margin-bottom: 7px;
-    font-size: 0.72rem;
-    letter-spacing: 1.1px;
-    text-transform: uppercase;
-    color: var(--accent-cyan);
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    color: var(--accent);
     font-weight: 700;
 }
 
 .cq-settings-input {
     width: 100%;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-secondary);
     border: 1px solid var(--border-strong);
     color: var(--text-primary);
     border-radius: var(--radius-sm);
     padding: 11px 14px;
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     font-family: inherit;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-
 .cq-settings-input:focus {
     outline: none;
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 0 3px rgba(56, 198, 244, 0.15);
+    border-color: #701fd3;
+    box-shadow: 0 0 0 3px rgb(112 31 211 / 0.15);
 }
-
+html[data-theme="night"] .cq-settings-input {
+    background: rgb(255 255 255 / 0.08);
+}
+html[data-theme="night"] .cq-settings-input:focus {
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgb(255 255 255 / 0.15);
+}
 .cq-settings-input option {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
+    background: #fff;
+    color: #020617;
 }
 
 .cq-settings-readonly {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    background: rgba(255, 255, 255, 0.025);
+    background: var(--bg-secondary);
     border: 1px dashed var(--border-strong);
     border-radius: var(--radius-sm);
     padding: 12px 14px;
 }
+html[data-theme="night"] .cq-settings-readonly { background: rgb(255 255 255 / 0.06); }
 
 .cq-settings-readonly-value {
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-primary);
     word-break: break-all;
 }
-
 .cq-settings-readonly-hint {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
 }
 
 .cq-settings-error {
     margin-top: 6px;
     color: var(--accent-red);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
 }
 
 .cq-settings-actions {
@@ -304,37 +387,131 @@ body.cq-settings-body {
     border-radius: var(--radius-sm);
     padding: 12px 14px;
     margin-bottom: 18px;
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     border: 1px solid var(--border-subtle);
-    background: rgba(56, 198, 244, 0.08);
+    background: rgb(112 31 211 / 0.08);
     color: var(--text-primary);
 }
-
 .cq-settings-alert-success {
-    border-color: rgba(46, 230, 166, 0.35);
-    background: rgba(46, 230, 166, 0.1);
+    border-color: rgb(112 31 211 / 0.35);
+    background: rgb(112 31 211 / 0.1);
 }
-
 .cq-settings-alert-error,
 .cq-settings-alert-danger {
-    border-color: rgba(240, 82, 107, 0.4);
-    background: rgba(240, 82, 107, 0.1);
+    border-color: rgb(239 68 68 / 0.4);
+    background: rgb(239 68 68 / 0.1);
 }
-
-.cq-settings-alert-info {
-    border-color: rgba(56, 198, 244, 0.35);
-}
+.cq-settings-alert-info { border-color: rgb(112 31 211 / 0.35); }
 
 .cq-settings-google-note {
     margin: 0 0 18px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
 }
 
+.cq-settings-header form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 28rem;
+}
+.cq-settings-header input {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    font: inherit;
+}
+.cq-settings-header button[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    border: 0;
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    background: #701fd3;
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+html[data-theme="night"] .cq-settings-header button[type="submit"] {
+    background: #fff;
+    color: #701fd3;
+}
+
+.cq-settings-shell > img {
+    display: block;
+    margin: 1rem 0;
+    border-radius: 0.75rem;
+    background: #fff;
+    padding: 0.75rem;
+}
+.cq-settings-shell code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: rgb(112 31 211 / 0.1);
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.35rem;
+}
+.cq-settings-shell ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+    margin: 1rem 0 1.5rem;
+}
+.cq-settings-shell li code {
+    display: inline-block;
+    padding: 0.45rem 0.7rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+}
+.cq-settings-shell > a {
+    color: var(--accent);
+    font-weight: 700;
+    text-decoration: none;
+}
+.cq-settings-shell > a:hover { text-decoration: underline; }
+.cq-settings-shell > form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 28rem;
+    margin-top: 1rem;
+}
+.cq-settings-shell > form label { font-weight: 700; color: var(--accent); }
+.cq-settings-shell > form input {
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    font: inherit;
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+.cq-settings-shell > form button {
+    width: fit-content;
+    border: 0;
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    background: #701fd3;
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+html[data-theme="night"] .cq-settings-shell > form button {
+    background: #fff;
+    color: #701fd3;
+}
+
 @media (max-width: 600px) {
-    .cq-settings-shell { padding: 18px 14px 36px; }
+    .cq-settings-shell { padding: 4.5rem 14px 36px; }
     .cq-settings-avatar-row { justify-content: center; text-align: center; }
     .cq-settings-avatar-actions { width: 100%; align-items: center; }
     .cq-settings-actions { justify-content: stretch; }
     .cq-settings-actions .cq-settings-btn { flex: 1; }
+    .cq-settings-topbar { flex-direction: column; align-items: flex-start; }
 }

@@ -86,10 +86,15 @@ def login_view(request):
                     request.session[PENDING_LOGIN_SESSION_KEY] = user.pk
                     request.session["pending_auth"] = "totp"
                     return redirect("accounts:verify_totp")
-                code = generate_code(user, purpose="login_2fa")
-                send_login_2fa_email(user, code.code)
-                request.session[PENDING_LOGIN_SESSION_KEY] = user.pk
-                return redirect("accounts:verify_login")
+                if user.email_2fa_enabled:
+                    code = generate_code(user, purpose="login_2fa")
+                    send_login_2fa_email(user, code.code)
+                    request.session[PENDING_LOGIN_SESSION_KEY] = user.pk
+                    return redirect("accounts:verify_login")
+                login(request, user, backend="accounts.backends.EmailAuthBackend")
+                user.record_daily_activity()
+                messages.success(request, f"Welcome back, {user.email}!")
+                return redirect(next_step_url_name(user))
     else:
         form = LoginForm()
     return render(request, "accounts/login.html", {"form": form})
@@ -223,6 +228,8 @@ def profile_settings(request):
         "user_email": user.email,
         "google_linked": user.google_linked,
         "totp_enabled": user.totp_enabled,
+        "email_2fa_enabled": user.email_2fa_enabled,
+        "has_password": user.has_usable_password(),
     })
 
 
@@ -401,6 +408,25 @@ def verify_totp_login(request):
             _totp_register_failure(request)
             messages.error(request, "Incorrect authenticator or recovery code.")
     return render(request, "accounts/verify_totp.html", {"email": user.email})
+
+
+@login_required(login_url="/accounts/login/")
+def email_2fa_toggle(request):
+    """Turn the email login code on or off. Off unless the user chooses it."""
+    if request.method != "POST":
+        return redirect("accounts:settings")
+    user = request.user
+    turn_on = request.POST.get("enabled") == "1"
+    if turn_on and not user.has_usable_password():
+        messages.error(request, "Email login codes only apply when you sign in with a password.")
+        return redirect("accounts:settings")
+    user.email_2fa_enabled = turn_on
+    user.save(update_fields=["email_2fa_enabled"])
+    if turn_on:
+        messages.success(request, "Email login codes are on. The next password sign-in will email you a code.")
+    else:
+        messages.success(request, "Email login codes are off. Password sign-in no longer asks for a code.")
+    return redirect("accounts:settings")
 
 
 @login_required(login_url="/accounts/login/")

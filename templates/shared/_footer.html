@@ -1,0 +1,40 @@
+<footer class="cq-footer">
+  <div class="cq-container-wide cq-footer-grid">
+    <div>
+      <h4>CyberQuest</h4>
+      <p class="cq-body">Learn cybersecurity through practice, missions, and real-world simulations.</p>
+    </div>
+    <div>
+      <h4>Learn</h4>
+      <ul>
+        <li><a href="{% url 'courses:intro' %}">Courses</a></li>
+        <li><a href="{% url 'practice:center' %}">Practice</a></li>
+        <li><a href="{% url 'achievements:list' %}">Achievements</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Account</h4>
+      <ul>
+        {% if user.is_authenticated %}
+        <li><a href="{% url 'dashboard:home' %}">Dashboard</a></li>
+        <li><a href="{% url 'accounts:settings' %}">Settings</a></li>
+        <li><a href="{% url 'certificates:page' %}">Certificate</a></li>
+        {% else %}
+        <li><a href="{% url 'accounts:login' %}">Login</a></li>
+        <li><a href="{% url 'accounts:signup' %}">Register</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <ul>
+        <li><a href="{% url 'pages:about' %}">About</a></li>
+        <li><a href="{% url 'pages:contact' %}">Contact</a></li>
+        <li><a href="{% url 'pages:home' %}">Home</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="cq-container-wide">
+    <p class="cq-copy">© CyberQuest — Stay curious. Stay secure.</p>
+  </div>
+</footer>
