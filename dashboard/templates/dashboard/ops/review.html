@@ -1,0 +1,35 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+{% for bank in banks %}
+<section class="ops-panel">
+  <h2>{{ bank.title }} · <span class="ops-badge ops-s-{{ bank.status|lower }}">{{ bank.get_status_display }}</span></h2>
+  <form method="post" action="{% url 'ops:approve_bank' bank.pk %}">
+    {% csrf_token %}
+    <button type="submit" onclick="return confirm('Approve this bank and its review sets?')">Approve bank and review sets</button>
+  </form>
+  {% for qset in bank.question_sets.all %}
+    {% if qset.status == "REVIEW" %}
+    <article class="ops-review">
+      <p>Set {{ qset.set_number }} · {{ qset.get_set_type_display }} · <span class="ops-badge ops-s-review">{{ qset.get_status_display }}</span></p>
+      <ul>
+        {% for question in qset.questions.all %}
+        <li>
+          <strong>{{ question.prompt }}</strong>
+          <ol>{% for option in question.options %}<li>{% if forloop.counter0 == question.correct_index %}✓ {% endif %}{{ option }}</li>{% endfor %}</ol>
+          <p>{{ question.explanation }}</p>
+          {% if question.source_excerpt %}<p><small>Source: {{ question.source_excerpt }}</small></p>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      <form method="post" action="{% url 'ops:reject_set' qset.pk %}">
+        {% csrf_token %}
+        <button class="ops-btn-danger" type="submit" onclick="return confirm('Reject this question set?')">Reject this set</button>
+      </form>
+    </article>
+    {% endif %}
+  {% endfor %}
+</section>
+{% empty %}
+<p class="ops-empty">No question banks are waiting for review.</p>
+{% endfor %}
+{% endblock %}

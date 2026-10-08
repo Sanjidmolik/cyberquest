@@ -1,0 +1,15 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead><tr><th>Game</th><th>Attempts</th><th>Players</th><th>Mean score</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr><td>{{ row.name }}</td><td>{{ row.attempts }}</td><td>{{ row.players }}</td><td>{{ row.avg_score }}%</td></tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="4">No attempts yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

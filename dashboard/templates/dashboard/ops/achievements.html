@@ -1,0 +1,13 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead><tr><th>Badge</th><th>Code</th><th>Active</th><th>Earned</th></tr></thead>
+  <tbody>{% for badge in badges %}<tr><td>{{ badge.icon_emoji }} {{ badge.name }}</td><td>{{ badge.code }}</td><td>{% if badge.is_active %}<span class="ops-badge ops-s-active">Active</span>{% else %}<span class="ops-badge ops-s-inactive">Inactive</span>{% endif %}</td><td>{{ badge.earned }}</td></tr>{% empty %}<tr><td class="ops-empty" colspan="4">No badges.</td></tr>{% endfor %}</tbody>
+</table>
+</div>
+<section class="ops-panel">
+  <h2>Recent awards</h2>
+  <ul class="ops-list">{% for row in recent %}<li>{{ row.user.email }} · {{ row.badge.name }} · {{ row.earned_at|date:"Y-m-d" }}</li>{% empty %}<li class="ops-empty">None yet.</li>{% endfor %}</ul>
+</section>
+{% endblock %}

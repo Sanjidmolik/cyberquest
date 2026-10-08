@@ -1,0 +1,25 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p><a href="{% url 'ops:students' %}">Back to students</a></p>
+<section class="ops-panel">
+  <h2>Profile</h2>
+  <p>{{ learner.display_name }} · {{ learner.email }}</p>
+  <p>Joined {{ learner.date_joined|date:"Y-m-d" }} · {% if learner.is_active %}<span class="ops-badge ops-s-active">Active</span>{% else %}<span class="ops-badge ops-s-inactive">Inactive</span>{% endif %} · Level {{ learner.level }} · {{ learner.xp }} XP</p>
+</section>
+<section class="ops-panel">
+  <h2>Learning</h2>
+  <p class="ops-note">{{ reading }} saved reading positions.</p>
+  <ul class="ops-list">{% for row in courses %}<li>{{ row.course.code }} — {{ row.course.title }} · {{ row.completed_at|date:"Y-m-d" }}</li>{% empty %}<li class="ops-empty">No course completions.</li>{% endfor %}</ul>
+</section>
+<section class="ops-panel">
+  <h2>Performance</h2>
+  <ul class="ops-list">{% for row in attempts %}<li>{{ row.game_key }} · {{ row.n }} attempts</li>{% empty %}<li class="ops-empty">No game attempts.</li>{% endfor %}</ul>
+  <ul class="ops-list">{% for row in practices %}<li>{{ row.domain }} {{ row.activity_type }} · {{ row.percent }}% · <span class="ops-badge{% if row.status == 'completed' %} ops-s-completed{% endif %}">{{ row.get_status_display }}</span></li>{% empty %}<li class="ops-empty">No practice sessions.</li>{% endfor %}</ul>
+</section>
+<section class="ops-panel">
+  <h2>Badges and certificate</h2>
+  <ul class="ops-list">{% for row in badges %}<li>{{ row.badge.name }} · {{ row.earned_at|date:"Y-m-d" }}</li>{% empty %}<li class="ops-empty">No badges.</li>{% endfor %}</ul>
+  <p>Eligibility (existing rules): {% if eligible %}<span class="ops-badge ops-s-good">Eligible</span>{% else %}<span class="ops-badge">Not eligible</span>{% endif %}</p>
+  {% if certificate %}<p>Issued {{ certificate.certificate_id }} · score {{ certificate.score }}% · {{ certificate.issued_at|date:"Y-m-d" }}</p>{% else %}<p class="ops-note">No certificate issued.</p>{% endif %}
+</section>
+{% endblock %}

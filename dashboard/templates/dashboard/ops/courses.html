@@ -1,0 +1,21 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead><tr><th>Course</th><th>Published</th><th>Readers</th><th>Completions</th><th>Share of students</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.course.code }} · {{ row.course.title }}</td>
+      <td>{% if row.course.is_published %}<span class="ops-badge ops-s-published">Published</span>{% else %}<span class="ops-badge ops-s-draft">Unpublished</span>{% endif %}</td>
+      <td>{{ row.readers }}</td>
+      <td>{{ row.completed }}</td>
+      <td>{{ row.percent }}%</td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="5">No published courses.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

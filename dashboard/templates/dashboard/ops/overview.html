@@ -1,0 +1,86 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<section class="ops-kpis ops-kpis-overview">
+  <article class="ops-kpi">
+    <div class="ops-kpi-top"><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 19c1.5-3 3.8-4.5 7-4.5S17.5 16 19 19"/></svg><span class="ops-kpi-label">Students</span></div>
+    <strong>{{ kpis.total_students }}</strong>
+    <small>{{ kpis.new_students }} joined this week · <span class="ops-delta{% if kpis.student_delta > 0 %} is-up{% elif kpis.student_delta < 0 %} is-down{% endif %}">{{ kpis.student_delta|stringformat:"+d" }}</span> vs prior week</small>
+  </article>
+  <article class="ops-kpi">
+    <div class="ops-kpi-top"><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg><span class="ops-kpi-label">Active in 7 days</span></div>
+    <strong>{{ kpis.active_students }}</strong>
+    <small>Distinct non-staff logins recorded</small>
+  </article>
+  <article class="ops-kpi">
+    <div class="ops-kpi-top"><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h7a3 3 0 0 1 3 3V19a2.5 2.5 0 0 0-2.5-2.5H4zM20 5.5h-7a3 3 0 0 0-3 3V19a2.5 2.5 0 0 1 2.5-2.5H20z"/></svg><span class="ops-kpi-label">Published courses</span></div>
+    <strong>{{ kpis.published_courses }}</strong>
+    <small>{{ kpis.completion_rate }}% of student-course slots completed</small>
+  </article>
+  <article class="ops-kpi">
+    <div class="ops-kpi-top"><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg><span class="ops-kpi-label">Game attempts</span></div>
+    <strong>{{ kpis.game_attempts }}</strong>
+    <small><span class="ops-delta{% if kpis.attempt_delta > 0 %} is-up{% elif kpis.attempt_delta < 0 %} is-down{% endif %}">{{ kpis.attempt_delta|stringformat:"+d" }}</span> vs the previous 7 days</small>
+  </article>
+  <article class="ops-kpi">
+    <div class="ops-kpi-top"><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M7 16V10M12 16V5M17 16v-6"/></svg><span class="ops-kpi-label">Practice sessions</span></div>
+    <strong>{{ kpis.practice_sessions }}</strong>
+    <small>All stored practice attempts</small>
+  </article>
+  <article class="ops-kpi">
+    <div class="ops-kpi-top"><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 9 16.5 19 7"/></svg><span class="ops-kpi-label">Mean attempt score</span></div>
+    <strong>{{ kpis.mean_attempt_score }}%</strong>
+    <small>Average of stored game attempt percentages</small>
+  </article>
+  <article class="ops-kpi">
+    <div class="ops-kpi-top"><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="14" rx="1"/><path d="M9 21l3-2 3 2v-6"/></svg><span class="ops-kpi-label">Certificates issued</span></div>
+    <strong>{{ kpis.certificates_issued }}</strong>
+    <small>Frozen issued records</small>
+  </article>
+  <article class="ops-kpi">
+    <div class="ops-kpi-top"><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/></svg><span class="ops-kpi-label">Banks awaiting review</span></div>
+    <strong>{{ kpis.banks_in_review }}</strong>
+    <small>{{ kpis.open_contact }} open contact messages</small>
+  </article>
+</section>
+<section class="ops-panel ops-panel-chart">
+  <h2>Registrations <span>· {{ kpis.window_label }}</span></h2>
+  <div class="ops-chart">
+    <div class="ops-bars" role="img" aria-label="New students per day, {{ kpis.window_label }}">
+      {% for bar in signups %}
+        <span style="height: {{ bar.height }}%" title="{{ bar.label }}: {{ bar.n }}"></span>
+      {% endfor %}
+    </div>
+    <div class="ops-bar-labels" aria-hidden="true">
+      {% for bar in signups %}<span>{{ bar.label }}</span>{% endfor %}
+    </div>
+  </div>
+</section>
+<section class="ops-panel">
+  <h2>Recent activity</h2>
+  {% if activity %}
+  <ol class="ops-feed">
+    {% for row in activity %}
+    <li>
+      <span class="ops-badge">{{ row.kind }}</span>
+      <div>
+        <strong>{{ row.who }}</strong>
+        <p>{{ row.detail }}</p>
+      </div>
+      <time datetime="{{ row.when|date:'c' }}">{{ row.when|date:"Y-m-d H:i" }}</time>
+      {% if row.status == "Active" or row.status == "Completed" or row.status == "Earned" or row.status == "Issued" or row.status == "Resolved" %}
+        <span class="ops-badge ops-s-good">{{ row.status }}</span>
+      {% elif row.status == "Inactive" %}
+        <span class="ops-badge ops-s-bad">{{ row.status }}</span>
+      {% elif row.status == "Open" %}
+        <span class="ops-badge ops-s-warn">{{ row.status }}</span>
+      {% else %}
+        <span class="ops-badge">{{ row.status }}</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="ops-empty">No activity recorded yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

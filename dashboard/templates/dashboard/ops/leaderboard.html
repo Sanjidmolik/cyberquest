@@ -1,0 +1,21 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead><tr><th>Rank</th><th>Student</th><th>Level</th><th>XP</th></tr></thead>
+  <tbody>
+    {% for user in page_obj %}
+    <tr>
+      <td>{{ page_obj.start_index|add:forloop.counter0 }}</td>
+      <td><a href="{% url 'ops:student' user.pk %}">{{ user.display_name }}</a></td>
+      <td>{{ user.level }}</td>
+      <td>{{ user.xp }}</td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="4">No ranked students.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% include "dashboard/ops/_pager.html" %}
+{% endblock %}

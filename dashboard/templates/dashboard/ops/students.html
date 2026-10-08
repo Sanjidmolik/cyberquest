@@ -1,0 +1,34 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<form class="ops-filters" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Name or email" aria-label="Filter students">
+  <select name="status" aria-label="Account status">
+    <option value="">All statuses</option>
+    <option value="active"{% if status == "active" %} selected{% endif %}>Active</option>
+    <option value="inactive"{% if status == "inactive" %} selected{% endif %}>Inactive</option>
+  </select>
+  <button type="submit">Filter</button>
+</form>
+<div class="ops-table-wrap">
+<table class="ops-table ops-table-students">
+  <thead><tr><th>Student</th><th>Joined</th><th>Level</th><th>XP</th><th>Courses</th><th>Games</th><th>Practice</th><th>Status</th></tr></thead>
+  <tbody>
+    {% for user in page_obj %}
+    <tr>
+      <td><a href="{% url 'ops:student' user.pk %}">{{ user.display_name }}</a><br><small>{{ user.email }}</small></td>
+      <td>{{ user.date_joined|date:"Y-m-d" }}</td>
+      <td>{{ user.level }}</td>
+      <td>{{ user.xp }}</td>
+      <td>{{ user.course_done }}</td>
+      <td>{{ user.attempts }}</td>
+      <td>{{ user.practices }}</td>
+      <td>{% if user.is_active %}<span class="ops-badge ops-s-active">Active</span>{% else %}<span class="ops-badge ops-s-inactive">Inactive</span>{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="8">No students match.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% include "dashboard/ops/_pager.html" %}
+{% endblock %}

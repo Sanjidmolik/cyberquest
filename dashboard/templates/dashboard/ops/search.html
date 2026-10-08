@@ -1,0 +1,10 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+{% if not q %}<p class="ops-empty">Enter a search above.</p>{% else %}
+<section class="ops-panel"><h2>Students</h2><ul class="ops-list">{% for user in people %}<li><a href="{% url 'ops:student' user.pk %}">{{ user.display_name }}</a> · {{ user.email }}</li>{% empty %}<li class="ops-empty">None</li>{% endfor %}</ul></section>
+<section class="ops-panel"><h2>Courses</h2><ul class="ops-list">{% for row in course_hits %}<li>{{ row.course.code }} · {{ row.course.title }}</li>{% empty %}<li class="ops-empty">None</li>{% endfor %}</ul></section>
+<section class="ops-panel"><h2>Question banks</h2><ul class="ops-list">{% for bank in banks %}<li>{{ bank.title }} · <span class="ops-badge ops-s-{{ bank.status|lower }}">{{ bank.get_status_display }}</span></li>{% empty %}<li class="ops-empty">None</li>{% endfor %}</ul></section>
+<section class="ops-panel"><h2>Certificates</h2><ul class="ops-list">{% for cert in certs %}<li>{{ cert.certificate_id }} · {{ cert.recipient_name }}</li>{% empty %}<li class="ops-empty">None</li>{% endfor %}</ul></section>
+<section class="ops-panel"><h2>Contact</h2><ul class="ops-list">{% for msg in contact_hits %}<li>{{ msg.name }} · {{ msg.email }}</li>{% empty %}<li class="ops-empty">None</li>{% endfor %}</ul></section>
+{% endif %}
+{% endblock %}

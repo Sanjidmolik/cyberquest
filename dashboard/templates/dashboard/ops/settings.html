@@ -1,0 +1,15 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<section class="ops-panel">
+  <h2>Platform status</h2>
+  <ul class="ops-status">
+    <li><span>Application</span><span class="ops-badge ops-s-good">Running</span></li>
+    <li><span>Database</span>{% if db_ok %}<span class="ops-badge ops-s-good">Reachable</span>{% else %}<span class="ops-badge ops-s-bad">Unreachable</span>{% endif %}</li>
+    <li{% if debug %} class="is-warn"{% endif %}><span>Debug mode</span>{% if debug %}<span class="ops-badge ops-s-bad">On</span>{% else %}<span class="ops-badge ops-s-good">Off</span>{% endif %}</li>
+    <li><span>Pending migrations</span><span class="ops-badge">{% if pending_migrations == None %}Unknown{% else %}{{ pending_migrations }}{% endif %}</span></li>
+  </ul>
+  {% if debug %}<p class="ops-warn-note">Debug mode is on. Treat this environment as development, not a locked-down deployment.</p>{% endif %}
+  <p class="ops-secret">Secret values are not shown here.</p>
+  <p><a href="{% url 'admin:index' %}">Open Django Admin</a> for database-level editing.</p>
+</section>
+{% endblock %}

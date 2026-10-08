@@ -1,0 +1,27 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<form class="ops-filters" method="get">
+  <select name="state" aria-label="Message state">
+    <option value="">All</option>
+    <option value="open"{% if state == "open" %} selected{% endif %}>Open</option>
+    <option value="resolved"{% if state == "resolved" %} selected{% endif %}>Resolved</option>
+  </select>
+  <button type="submit">Filter</button>
+</form>
+{% for msg in page_obj %}
+<article class="ops-panel">
+  <h2>{{ msg.name }} · {{ msg.email }}</h2>
+  <p>{{ msg.message }}</p>
+  <p><small>{{ msg.submitted_at|date:"Y-m-d H:i" }} · {% if msg.is_resolved %}<span class="ops-badge ops-s-resolved">Resolved</span>{% else %}<span class="ops-badge ops-s-open">Open</span>{% endif %}</small></p>
+  <form method="post" action="{% url 'ops:resolve_contact' msg.pk %}">
+    {% csrf_token %}
+    {% if msg.is_resolved %}
+      <input type="hidden" name="resolved" value="0"><button class="ops-btn-quiet" type="submit">Mark open</button>
+    {% else %}
+      <input type="hidden" name="resolved" value="1"><button type="submit">Mark resolved</button>
+    {% endif %}
+  </form>
+</article>
+{% empty %}<p class="ops-empty">No messages.</p>{% endfor %}
+{% include "dashboard/ops/_pager.html" %}
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note">{{ issued_total }} issued certificates. Eligibility rules are unchanged.</p>
+<form class="ops-filters" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="ID, name, or email" aria-label="Search certificates">
+  <button type="submit">Search</button>
+</form>
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead><tr><th>ID</th><th>Recipient</th><th>Email</th><th>Score</th><th>Issued</th></tr></thead>
+  <tbody>
+    {% for cert in page_obj %}
+    <tr><td>{{ cert.certificate_id }}</td><td>{{ cert.recipient_name }}</td><td>{{ cert.user.email }}</td><td>{{ cert.score }}%</td><td>{{ cert.issued_at|date:"Y-m-d" }}</td></tr>
+    {% empty %}<tr><td class="ops-empty" colspan="5">None issued.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% include "dashboard/ops/_pager.html" %}
+{% endblock %}

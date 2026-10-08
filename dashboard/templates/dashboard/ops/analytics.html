@@ -1,0 +1,18 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<section class="ops-panel">
+  <h2>New students, 30 days</h2>
+  <div class="ops-chart">
+    <div class="ops-bars" role="img" aria-label="New students over 30 days">{% for bar in signups %}<span style="height: {{ bar.height }}%" title="{{ bar.label }}: {{ bar.n }}"></span>{% endfor %}</div>
+    <div class="ops-bar-labels" aria-hidden="true">{% for bar in signups %}<span>{{ bar.label }}</span>{% endfor %}</div>
+  </div>
+</section>
+<section class="ops-panel">
+  <h2>Games</h2>
+  <ul class="ops-list">{% for row in games %}<li>{{ row.name }} · {{ row.attempts }} attempts · {{ row.avg_score }}% mean</li>{% empty %}<li class="ops-empty">No attempts.</li>{% endfor %}</ul>
+</section>
+<section class="ops-panel">
+  <h2>Practice domains</h2>
+  <ul class="ops-list">{% for row in practice %}<li>{{ row.domain }} · {{ row.rate }}% completed · mean {{ row.avg_score }}</li>{% empty %}<li class="ops-empty">No sessions.</li>{% endfor %}</ul>
+</section>
+{% endblock %}

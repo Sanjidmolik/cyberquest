@@ -1,0 +1,22 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note">{{ unread }} unread notifications across the platform.</p>
+<form class="ops-filters" method="post">
+  {% csrf_token %}
+  <input type="email" name="email" required placeholder="Student email" aria-label="Student email">
+  <input type="text" name="message" required maxlength="255" placeholder="Message" aria-label="Message">
+  <input type="text" name="link_url" placeholder="/dashboard/" aria-label="Optional internal link">
+  <button type="submit">Send</button>
+</form>
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead><tr><th>User</th><th>Message</th><th>Link</th><th>Read</th><th>When</th></tr></thead>
+  <tbody>
+    {% for note in page_obj %}
+    <tr><td>{{ note.user.email }}</td><td>{{ note.message }}</td><td>{{ note.link_url }}</td><td>{% if note.is_read %}<span class="ops-badge ops-s-resolved">Read</span>{% else %}<span class="ops-badge ops-s-open">Unread</span>{% endif %}</td><td>{{ note.created_at|date:"Y-m-d H:i" }}</td></tr>
+    {% empty %}<tr><td class="ops-empty" colspan="5">None.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% include "dashboard/ops/_pager.html" %}
+{% endblock %}

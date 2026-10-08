@@ -1,0 +1,42 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead><tr><th>Domain</th><th>Sessions</th><th>Completed</th><th>Rate</th><th>Players</th><th>Mean completed score</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td class="ops-domain">{{ row.domain }}</td>
+      <td class="ops-num">{{ row.sessions }}</td>
+      <td class="ops-num">{{ row.completed }}</td>
+      <td>
+        <div class="ops-meter" role="img" aria-label="Completion rate {{ row.rate }} percent"><span style="width: {{ row.rate }}%"></span></div>
+        <span class="ops-num">{{ row.rate }}%</span>
+      </td>
+      <td class="ops-num">{{ row.players }}</td>
+      <td class="ops-num">{{ row.avg_score }}</td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="6">No practice sessions.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+<section class="ops-panel">
+  <h2>Latest sessions</h2>
+  {% if recent %}
+  <ol class="ops-feed ops-sessions">
+    {% for row in recent %}
+    <li>
+      <span class="ops-badge">{{ row.domain }}</span>
+      <strong>{{ row.user.email }}</strong>
+      <span class="ops-badge{% if row.status == 'completed' %} ops-s-completed{% endif %}">{{ row.get_status_display }}</span>
+      <span class="ops-num">{{ row.percent }}%</span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="ops-empty">No recent sessions.</p>
+  {% endif %}
+</section>
+{% endblock %}
