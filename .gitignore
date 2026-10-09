@@ -1,13 +1,25 @@
 # Virtual environment
 venv/
+.venv/
+venv-*/
 
 # Python cache
 __pycache__/
 *.pyc
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 
-# Database
+# Local databases and backups. Django migrations stay tracked.
 db.sqlite3
+db.sqlite3-journal
 test_db.sqlite3
+*.sqlite3
+*.sqlite3-journal
+*.sql
+*.dump
+*.bak
 
 # VS Code
 .vscode/
@@ -16,11 +28,39 @@ test_db.sqlite3
 .DS_Store
 Thumbs.db
 
-# Environment secrets
+# Environment secrets and private keys. .env.example stays tracked.
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+
+# Logs and local exports that may contain personal data.
+# Do not ignore every CSV or spreadsheet; only local export folders.
+*.log
+/exports/
 
 # Node.js dependencies
 node_modules/
 
 # Django collected static files
 staticfiles/
+
+# User-uploaded media. Named course and certificate source files stay trackable.
+media/issued_certificates/
+media/profile_pictures/*
+!media/profile_pictures/dragon.png
+media/course_ebooks/*
+!media/course_ebooks/The_Phishing_Detectives_Handbook.pdf
+!media/course_ebooks/course1.pdf
+media/certificate_templates/*
+!media/certificate_templates/CyberQuest_Certificate_of_Achievement.pdf
+!media/certificate_templates/a.pdf
+!media/certificate_templates/b.pdf
+!media/certificate_templates/bg.jpg
+!media/certificate_templates/design.png
+!media/certificate_templates/new.png
