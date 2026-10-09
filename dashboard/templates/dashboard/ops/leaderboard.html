@@ -1,18 +1,54 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
+<p class="ops-note">Rankings follow the student leaderboard: active accounts with a username, highest XP first. Equal XP keeps the earlier account ahead. Students see the top 20. This list continues through every ranked account. Search and filters do not change those ranks.</p>
+<section class="ops-kpis">
+  <article class="ops-kpi"><strong>{{ summary.total }}</strong><span>Ranked accounts</span></article>
+  <article class="ops-kpi"><strong>{{ summary.highest }}</strong><span>Highest XP</span></article>
+  <article class="ops-kpi"><strong>{{ summary.average }}</strong><span>Average XP</span></article>
+</section>
+<form class="ops-filters" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Username, name, or email" aria-label="Search leaderboard">
+  <input type="text" name="level" value="{{ level }}" inputmode="numeric" placeholder="Level" aria-label="Level">
+  <select name="activity" aria-label="Activity">
+    <option value="">Any activity</option>
+    <option value="recent"{% if activity == "recent" %} selected{% endif %}>Active in the last 7 days</option>
+    <option value="never"{% if activity == "never" %} selected{% endif %}>No activity yet</option>
+  </select>
+  <button type="submit">Filter</button>
+</form>
+{% if filtered %}
+<p class="ops-note">This is a filtered list. The rank column is still each account’s overall position.</p>
+{% endif %}
 <div class="ops-table-wrap">
 <table class="ops-table">
-  <thead><tr><th>Rank</th><th>Student</th><th>Level</th><th>XP</th></tr></thead>
+  <thead>
+    <tr>
+      <th>Rank</th>
+      <th>Student</th>
+      <th>Level</th>
+      <th>XP</th>
+      <th>Last active</th>
+    </tr>
+  </thead>
   <tbody>
     {% for user in page_obj %}
     <tr>
-      <td>{{ page_obj.start_index|add:forloop.counter0 }}</td>
-      <td><a href="{% url 'ops:student' user.pk %}">{{ user.display_name }}</a></td>
-      <td>{{ user.level }}</td>
-      <td>{{ user.xp }}</td>
+      <td class="ops-num">{{ user.board_rank }}</td>
+      <td>
+        {% if not user.is_staff and not user.is_superuser %}
+        <a href="{% url 'ops:student' user.pk %}">{{ user.username }}</a>
+        {% else %}
+        {{ user.username }}
+        {% endif %}
+        {% if user.full_name %}<br><small>{{ user.full_name }}</small>{% endif %}
+        {% if user.is_staff or user.is_superuser %}<br><small>Staff account on the student leaderboard</small>{% endif %}
+      </td>
+      <td class="ops-num">{{ user.level }}</td>
+      <td class="ops-num">{{ user.xp }}</td>
+      <td>{% if user.last_active_date %}{{ user.last_active_date|date:"Y-m-d" }}{% else %}—{% endif %}</td>
     </tr>
     {% empty %}
-    <tr><td class="ops-empty" colspan="4">No ranked students.</td></tr>
+    <tr><td class="ops-empty" colspan="5">No ranked accounts match.</td></tr>
     {% endfor %}
   </tbody>
 </table>

@@ -1,18 +1,12 @@
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from courses.progress import has_completed_all_courses
+from django.shortcuts import render
 from .analytics import analytics_payload
 from .utils import get_dashboard_context, build_radar_points
 
 
 @login_required(login_url="/accounts/login/")
 def dashboard_home(request):
-    if not has_completed_all_courses(request.user):
-        messages.error(request, "Please complete the course introduction first.")
-        return redirect("courses:intro")
-
     context = get_dashboard_context(request.user)
     percentages = [s["percent"] for s in context["skill_matrix"]]
     data_points, label_points, grid_rings = build_radar_points(percentages)

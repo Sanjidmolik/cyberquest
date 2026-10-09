@@ -97,11 +97,12 @@ body.cq-shell::before {
 .cq-container-wide { width: min(1180px, 100% - 32px); margin: 0 auto; position: relative; z-index: 1; }
 
 .cq-nav {
-  position: fixed;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(1100px, 100% - 24px);
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  width: min(1100px, calc(100% - 32px));
+  margin: 14px auto 0;
   z-index: 50;
   display: flex;
   align-items: center;
@@ -115,9 +116,9 @@ body.cq-shell::before {
   -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
 .cq-nav.scrolled {
-  top: 8px;
-  background: var(--nav-bg-scrolled);
-  box-shadow: 0 10px 40px -10px var(--nav-shadow);
+  top: auto;
+  background: var(--nav-bg);
+  box-shadow: 0 10px 28px -12px var(--nav-shadow);
 }
 .cq-logo,
 .cq-brand-link {
@@ -225,7 +226,7 @@ body.cq-shell::before {
 .cq-main {
   position: relative;
   z-index: 1;
-  padding: 6.5rem 0 3rem;
+  padding: 1.25rem 0 3rem;
 }
 .cq-page-card {
   background: var(--card-bg);
@@ -410,18 +411,15 @@ body.cq-shell::before {
 @media (max-width: 900px) {
   .cq-nav-links { display: none; }
   .cq-nav-toggle { display: flex; }
+  .cq-nav.open { flex-wrap: wrap; }
   .cq-nav.open .cq-nav-links,
   .cq-nav.open .cq-nav-auth {
     display: flex;
     flex-direction: column;
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    right: 0;
-    background: var(--nav-bg-scrolled);
-    border: 1px solid var(--nav-edge);
-    border-radius: 16px;
-    padding: 0.75rem;
+    align-items: stretch;
+    position: static;
+    flex: 1 1 100%;
+    padding: 0.35rem 0 0;
   }
   .cq-footer-grid { grid-template-columns: 1fr 1fr; }
 }
@@ -537,4 +535,40 @@ body.cq-shell::before {
 @media (max-width: 560px) {
   .cq-footer-grid { grid-template-columns: 1fr; }
   .cq-nav-auth .cq-nav-link { display: none; }
+}
+
+/* Keyboard focus for signup and other themed pages. Existing :focus shadows stay.
+   The shell input rule is more specific than a plain class, so it is repeated here. */
+.cq-shell input.cq-input:focus-visible,
+.cq-shell textarea.cq-input:focus-visible,
+.cq-shell select.cq-input:focus-visible,
+a:focus-visible,
+button:focus-visible,
+.cq-btn:focus-visible,
+.cq-input:focus-visible,
+.cq-theme-toggle:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.cq-choice-card:focus-within,
+.cq-choice-pill:focus-within,
+.cq-check-row:focus-within {
+  outline: 3px solid #f5e9ff;
+  outline-offset: 3px;
+}
+[data-theme="light"] .cq-shell input.cq-input:focus-visible,
+[data-theme="light"] .cq-shell textarea.cq-input:focus-visible,
+[data-theme="light"] .cq-shell select.cq-input:focus-visible,
+[data-theme="light"] a:focus-visible,
+[data-theme="light"] button:focus-visible,
+[data-theme="light"] .cq-btn:focus-visible,
+[data-theme="light"] .cq-input:focus-visible,
+[data-theme="light"] .cq-theme-toggle:focus-visible,
+[data-theme="light"] input:focus-visible,
+[data-theme="light"] select:focus-visible,
+[data-theme="light"] textarea:focus-visible,
+[data-theme="light"] .cq-choice-card:focus-within,
+[data-theme="light"] .cq-choice-pill:focus-within,
+[data-theme="light"] .cq-check-row:focus-within {
+  outline-color: #4c1d95;
 }

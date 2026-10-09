@@ -1,0 +1,24 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'ops:settings' %}">Back to settings</a></p>
+<p class="ops-note">This creates another superuser with Django's password hasher. Students cannot open this page. Privilege flags are not taken from the form.</p>
+<section class="ops-panel">
+  <h2>New administrator</h2>
+  <form class="ops-reply" method="post" action="{% url 'ops:create_administrator' %}">
+    {% csrf_token %}
+    <label for="admin-email">Email</label>
+    <input id="admin-email" type="email" name="email" value="{{ posted.email }}" required autocomplete="off">
+    {% if errors.email %}<p class="ops-field-error">{{ errors.email }}</p>{% endif %}
+    <label for="admin-username">Username</label>
+    <input id="admin-username" type="text" name="username" value="{{ posted.username }}" required maxlength="50" autocomplete="off">
+    {% if errors.username %}<p class="ops-field-error">{{ errors.username }}</p>{% endif %}
+    <label for="admin-password">Password</label>
+    <input id="admin-password" type="password" name="password" required autocomplete="new-password">
+    {% if errors.password %}<p class="ops-field-error">{{ errors.password }}</p>{% endif %}
+    <label for="admin-confirm">Confirm password</label>
+    <input id="admin-confirm" type="password" name="confirm" required autocomplete="new-password">
+    {% if errors.confirm %}<p class="ops-field-error">{{ errors.confirm }}</p>{% endif %}
+    <button type="submit">Create administrator</button>
+  </form>
+</section>
+{% endblock %}

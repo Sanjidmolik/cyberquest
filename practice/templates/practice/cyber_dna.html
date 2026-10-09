@@ -6,17 +6,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cyber DNA — CyberQuest</title>
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<script>
+(function () {
+  var t = "dark";
+  try { var s = localStorage.getItem("cq_home_theme"); if (s === "light" || s === "dark") t = s; } catch (e) {}
+  document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
 <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'shared/css/chrome.css' %}?v=nav3">
+<link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
 <link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">
 </head>
 <body class="practice-body">
-<header class="topnav">
-    <div class="topnav-left">
-        <a href="{% url 'practice:center' %}" class="logo-title">← PRACTICE</a>
-        <span class="logo-tagline">CYBER DNA</span>
-    </div>
-</header>
+{% include "shared/_nav.html" %}
+{% include "shared/_toasts.html" %}
 <main class="practice-main">
+    <p class="practice-back"><a href="{% url 'practice:center' %}">← Back to Practice</a></p>
     <section class="panel-card">
         <p class="panel-title">CYBER DNA</p>
         {% for d in cyber_dna.domains %}
@@ -62,5 +68,7 @@
     </section>
     {% endif %}
 </main>
+<script src="{% static 'shared/js/theme.js' %}"></script>
+<script src="{% static 'shared/js/chrome.js' %}?v=nav2"></script>
 </body>
 </html>

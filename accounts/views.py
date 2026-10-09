@@ -22,12 +22,13 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.core.files.base import ContentFile
 import requests
 
 from cyberquest.ratelimit import rate_limit
 
-from .forms import LoginForm, SignupForm, ProfileSettingsForm, CompleteProfileForm
+from .forms import AdminLoginForm, LoginForm, SignupForm, ProfileSettingsForm, CompleteProfileForm
 from .routing import next_step_url_name
 from .codes import generate_code, check_code
 from .emails import send_welcome_email, send_login_2fa_email, send_password_reset_email
@@ -38,6 +39,17 @@ UserModel = get_user_model()
 PENDING_LOGIN_SESSION_KEY = "pending_2fa_user_id"
 PENDING_RESET_SESSION_KEY = "pending_reset_user_id"
 GOOGLE_OAUTH_STATE_SESSION_KEY = "google_oauth_state"
+
+
+def _safe_next(request, fallback):
+    target = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    if target and url_has_allowed_host_and_scheme(
+        url=target,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return target
+    return fallback
 
 
 @rate_limit(key_prefix="signup", limit=10, window_seconds=3600)
@@ -102,6 +114,39 @@ def login_view(request):
     else:
         form = LoginForm()
     return render(request, "accounts/login.html", {"form": form})
+
+
+@rate_limit(key_prefix="admin_login", limit=20, window_seconds=900)
+def admin_login_view(request):
+    """Password sign-in for superusers. Students and staff are not signed in here."""
+    fallback = reverse("ops:overview")
+    if request.user.is_authenticated:
+        if request.user.is_superuser:
+            return redirect(_safe_next(request, fallback))
+        return redirect(next_step_url_name(request.user))
+
+    form = AdminLoginForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        email = form.cleaned_data["email"]
+        password = form.cleaned_data["password"]
+        try:
+            user = UserModel.objects.get(email__iexact=email)
+        except UserModel.DoesNotExist:
+            user = None
+        if user is None or not user.has_usable_password() or not user.check_password(password):
+            messages.error(request, "Invalid email or password.")
+        elif not user.is_active:
+            messages.error(request, "This administrator account is suspended.")
+        elif not user.is_superuser:
+            messages.error(request, "This sign-in is only for CyberQuest administrators.")
+        else:
+            login(request, user, backend="accounts.backends.EmailAuthBackend")
+            user.record_daily_activity()
+            return redirect(_safe_next(request, fallback))
+    return render(request, "accounts/admin_login.html", {
+        "form": form,
+        "next": request.POST.get("next") or request.GET.get("next") or "",
+    })
 
 
 @rate_limit(key_prefix="verify_login", limit=30, window_seconds=900)
@@ -315,6 +360,9 @@ def google_login_callback(request):
                     )
             except requests.RequestException:
                 pass
+    elif not user.google_linked:
+        user.google_linked = True
+        user.save(update_fields=["google_linked"])
 
     if not user.is_active:
         messages.error(request, "Your account has been suspended. Please contact support if you believe this is a mistake.")
@@ -353,18 +401,23 @@ def complete_profile_view(request):
         return redirect(next_step_url_name(request.user))
 
     if request.method == "POST":
-        form = CompleteProfileForm(request.POST)
+        form = CompleteProfileForm(request.POST, user=request.user)
         if form.is_valid():
             user = request.user
+            chosen = form.cleaned_data.get("username") or ""
+            fields = ["date_of_birth", "cyber_class", "skill_level", "ethical_agreement"]
             user.date_of_birth = form.cleaned_data["date_of_birth"]
             user.cyber_class = form.cleaned_data["cyber_class"]
             user.skill_level = form.cleaned_data["skill_level"]
             user.ethical_agreement = form.cleaned_data["ethical_agreement"]
-            user.save(update_fields=["date_of_birth", "cyber_class", "skill_level", "ethical_agreement"])
+            if chosen:
+                user.username = chosen
+                fields.append("username")
+            user.save(update_fields=fields)
             messages.success(request, "Profile complete!")
             return redirect(next_step_url_name(user))
     else:
-        form = CompleteProfileForm()
+        form = CompleteProfileForm(user=request.user, initial={"username": request.user.username or ""})
 
     return render(request, "accounts/complete_profile.html", {"form": form})
 

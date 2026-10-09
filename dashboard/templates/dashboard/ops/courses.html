@@ -1,19 +1,73 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
+<div class="ops-page-head">
+  <p class="ops-note">Create and update learning courses. Published courses appear for students. Drafts stay hidden. Removing a course is not available here, because student progress is kept.</p>
+  <a class="ops-create" href="{% url 'ops:course_create' %}">Create course</a>
+</div>
+
+<div class="ops-kpis">
+  <div class="ops-kpi"><strong>{{ summary.total }}</strong><span>Courses</span></div>
+  <div class="ops-kpi"><strong>{{ summary.published }}</strong><span>Published</span></div>
+  <div class="ops-kpi"><strong>{{ summary.drafts }}</strong><span>Drafts</span></div>
+  <div class="ops-kpi"><strong>{{ summary.completions }}</strong><span>Student completions</span></div>
+</div>
+
+<form class="ops-filters" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Title, code, or summary" aria-label="Search courses">
+  <select name="status" aria-label="Course status">
+    <option value="">All statuses</option>
+    <option value="published"{% if status == "published" %} selected{% endif %}>Published</option>
+    <option value="draft"{% if status == "draft" %} selected{% endif %}>Draft</option>
+  </select>
+  <button type="submit">Filter</button>
+</form>
+
 <div class="ops-table-wrap">
 <table class="ops-table">
-  <thead><tr><th>Course</th><th>Published</th><th>Readers</th><th>Completions</th><th>Share of students</th></tr></thead>
+  <thead>
+    <tr>
+      <th>Course</th>
+      <th>Status</th>
+      <th>Material</th>
+      <th>Order</th>
+      <th>Opened</th>
+      <th>Completed</th>
+      <th>Completion</th>
+      <th></th>
+    </tr>
+  </thead>
   <tbody>
     {% for row in rows %}
     <tr>
-      <td>{{ row.course.code }} · {{ row.course.title }}</td>
-      <td>{% if row.course.is_published %}<span class="ops-badge ops-s-published">Published</span>{% else %}<span class="ops-badge ops-s-draft">Unpublished</span>{% endif %}</td>
+      <td>
+        <a href="{% url 'ops:course_edit' row.course.code %}">{{ row.course.title }}</a>
+        <br><small>{{ row.course.code }}</small>
+      </td>
+      <td>
+        {% if row.course.is_published %}
+        <span class="ops-badge ops-s-published">Published</span>
+        {% else %}
+        <span class="ops-badge ops-s-draft">Draft</span>
+        {% endif %}
+      </td>
+      <td>{{ row.material }}</td>
+      <td>{{ row.course.order }}</td>
       <td>{{ row.readers }}</td>
       <td>{{ row.completed }}</td>
       <td>{{ row.percent }}%</td>
+      <td>
+        <form method="post" action="{% url 'ops:course_publish' row.course.code %}">
+          {% csrf_token %}
+          {% if row.course.is_published %}
+          <button class="ops-btn-quiet" type="submit" name="action" value="unpublish">Unpublish</button>
+          {% else %}
+          <button type="submit" name="action" value="publish">Publish</button>
+          {% endif %}
+        </form>
+      </td>
     </tr>
     {% empty %}
-    <tr><td class="ops-empty" colspan="5">No published courses.</td></tr>
+    <tr><td class="ops-empty" colspan="8">No courses match.</td></tr>
     {% endfor %}
   </tbody>
 </table>

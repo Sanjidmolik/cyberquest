@@ -235,6 +235,9 @@ def build_console_context(session, scenario) -> dict:
 
     required = scenario.get("required_evidence") or []
     collected_required = [k for k in required if k in revealed_keys]
+    mapping = (scenario.get("scene") or {}).get("evidence_nodes") or {}
+    active_nodes = [mapping[k] for k in revealed_keys if k in mapping]
+    focus_node = mapping.get(revealed_keys[-1]) if revealed_keys else None
 
     return {
         "phase": state["phase"],
@@ -249,4 +252,6 @@ def build_console_context(session, scenario) -> dict:
         "collected_labels": _labels_for(scenario, collected_required),
         "log": session.decisions or [],
         "consequence": state.get("consequence"),
+        "active_nodes": active_nodes,
+        "focus_node": focus_node,
     }

@@ -1,42 +1,80 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
+<p class="ops-note">These practice scenarios are built into CyberQuest. This screen shows what students see and how often they use it. Wording, scoring, and which scenario comes next are managed by the development team.</p>
+<form class="ops-filters" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Title, objective, or case code" aria-label="Search scenarios">
+  <select name="domain" aria-label="Domain">
+    <option value="">All domains</option>
+    {% for value, label in domains %}
+    <option value="{{ value }}"{% if domain == value %} selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="type" aria-label="Type">
+    <option value="">All types</option>
+    <option value="simulation"{% if activity == "simulation" %} selected{% endif %}>Simulation</option>
+    <option value="incident"{% if activity == "incident" %} selected{% endif %}>Incident</option>
+  </select>
+  <select name="difficulty" aria-label="Difficulty">
+    <option value="">All difficulties</option>
+    <option value="beginner"{% if difficulty == "beginner" %} selected{% endif %}>Beginner</option>
+    <option value="intermediate"{% if difficulty == "intermediate" %} selected{% endif %}>Intermediate</option>
+    <option value="advanced"{% if difficulty == "advanced" %} selected{% endif %}>Advanced</option>
+  </select>
+  <button type="submit">Filter</button>
+</form>
 <div class="ops-table-wrap">
 <table class="ops-table">
-  <thead><tr><th>Domain</th><th>Sessions</th><th>Completed</th><th>Rate</th><th>Players</th><th>Mean completed score</th></tr></thead>
-  <tbody>
-    {% for row in rows %}
+  <thead>
     <tr>
-      <td class="ops-domain">{{ row.domain }}</td>
-      <td class="ops-num">{{ row.sessions }}</td>
-      <td class="ops-num">{{ row.completed }}</td>
-      <td>
-        <div class="ops-meter" role="img" aria-label="Completion rate {{ row.rate }} percent"><span style="width: {{ row.rate }}%"></span></div>
-        <span class="ops-num">{{ row.rate }}%</span>
-      </td>
-      <td class="ops-num">{{ row.players }}</td>
-      <td class="ops-num">{{ row.avg_score }}</td>
+      <th>Scenario</th>
+      <th>Domain</th>
+      <th>Type</th>
+      <th>Difficulty</th>
+      <th>Completed</th>
+      <th>Students</th>
+      <th>Average score</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in scenarios %}
+    <tr>
+      <td><a href="{% url 'ops:practice_scenario' row.key %}">{{ row.title }}</a></td>
+      <td>{{ row.domain_label }}</td>
+      <td>{{ row.activity_label }}</td>
+      <td>{{ row.difficulty_label }}</td>
+      <td class="ops-num">{{ row.usage.completed }}</td>
+      <td class="ops-num">{{ row.usage.students }}</td>
+      <td class="ops-num">{{ row.usage.avg_score }}</td>
     </tr>
     {% empty %}
-    <tr><td class="ops-empty" colspan="6">No practice sessions.</td></tr>
+    <tr><td class="ops-empty" colspan="7">No scenarios match these filters.</td></tr>
     {% endfor %}
   </tbody>
 </table>
 </div>
 <section class="ops-panel">
-  <h2>Latest sessions</h2>
-  {% if recent %}
-  <ol class="ops-feed ops-sessions">
-    {% for row in recent %}
-    <li>
-      <span class="ops-badge">{{ row.domain }}</span>
-      <strong>{{ row.user.email }}</strong>
-      <span class="ops-badge{% if row.status == 'completed' %} ops-s-completed{% endif %}">{{ row.get_status_display }}</span>
-      <span class="ops-num">{{ row.percent }}%</span>
-    </li>
-    {% endfor %}
-  </ol>
-  {% else %}
-  <p class="ops-empty">No recent sessions.</p>
-  {% endif %}
+  <h2>Domain activity</h2>
+  <div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead><tr><th>Domain</th><th>Sessions</th><th>Completed</th><th>Rate</th><th>Players</th><th>Mean completed score</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td class="ops-domain">{{ row.domain }}</td>
+        <td class="ops-num">{{ row.sessions }}</td>
+        <td class="ops-num">{{ row.completed }}</td>
+        <td>
+          <div class="ops-meter" role="img" aria-label="Completion rate {{ row.rate }} percent"><span style="width: {{ row.rate }}%"></span></div>
+          <span class="ops-num">{{ row.rate }}%</span>
+        </td>
+        <td class="ops-num">{{ row.players }}</td>
+        <td class="ops-num">{{ row.avg_score }}</td>
+      </tr>
+      {% empty %}
+      <tr><td class="ops-empty" colspan="6">No practice sessions yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
 </section>
 {% endblock %}

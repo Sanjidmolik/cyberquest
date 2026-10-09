@@ -1,0 +1,51 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'ops:contact' %}">Back to messages</a></p>
+<div class="ops-page-head">
+  <div>
+    <h2>{{ msg.name }}</h2>
+    <p>
+      {% if msg.is_resolved %}
+      <span class="ops-badge ops-s-resolved">Resolved</span>
+      {% else %}
+      <span class="ops-badge ops-s-open">Open</span>
+      {% endif %}
+    </p>
+  </div>
+  <form method="post" action="{% url 'ops:resolve_contact' msg.pk %}">
+    {% csrf_token %}
+    {% if msg.is_resolved %}
+    <input type="hidden" name="resolved" value="0">
+    <button class="ops-btn-quiet" type="submit">Mark open</button>
+    {% else %}
+    <input type="hidden" name="resolved" value="1">
+    <button type="submit">Mark resolved</button>
+    {% endif %}
+  </form>
+</div>
+<section class="ops-panel">
+  <h2>Message</h2>
+  <ul class="ops-list">
+    <li>{{ msg.message|linebreaksbr }}</li>
+    <li><strong>Submitted</strong><br>{{ msg.submitted_at|date:"Y-m-d H:i" }}</li>
+  </ul>
+  <p class="ops-note">Marking this message resolved does not send an email.</p>
+</section>
+<section class="ops-panel">
+  <h2>Reply by email</h2>
+  <p class="ops-note">The reply goes to the stored sender address. It does not change open or resolved, and CyberQuest does not keep a copy of the reply.</p>
+  <form class="ops-reply" method="post" action="{% url 'ops:reply_contact' msg.pk %}">
+    {% csrf_token %}
+    <label for="contact-reply">Message to {{ msg.email }}</label>
+    <textarea id="contact-reply" name="reply" required maxlength="4000" rows="6"></textarea>
+    <button type="submit">Send reply</button>
+  </form>
+</section>
+<section class="ops-panel">
+  <h2>Sender</h2>
+  <ul class="ops-list">
+    <li><strong>Name</strong><br>{{ msg.name }}</li>
+    <li><strong>Email</strong><br>{{ msg.email }}</li>
+  </ul>
+</section>
+{% endblock %}

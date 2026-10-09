@@ -1,0 +1,67 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'ops:certificates' %}">Back to certificates</a></p>
+<div class="ops-page-head">
+  <div>
+    <h2>{{ certificate.certificate_id }}</h2>
+    <p>
+      {% if certificate.ready %}
+      <span class="ops-badge ops-s-issued">Ready</span>
+      {% else %}
+      <span class="ops-badge ops-s-draft">Incomplete</span>
+      {% endif %}
+      <span class="ops-badge">{{ certificate.score }}%</span>
+    </p>
+  </div>
+  {% if certificate.can_issue %}
+  <form method="post" action="{% url 'ops:certificate_issue' certificate.student_id %}">
+    {% csrf_token %}
+    <button type="submit">Issue certificate</button>
+  </form>
+  {% endif %}
+</div>
+<section class="ops-panel">
+  <h2>Certificate</h2>
+  <ul class="ops-list">
+    <li><strong>Certificate ID</strong><br>{{ certificate.certificate_id }}</li>
+    <li><strong>Name on certificate</strong><br>{{ certificate.recipient_name }}</li>
+    <li><strong>Score on certificate</strong><br>{{ certificate.score }}%</li>
+    <li><strong>Issue date</strong><br>{{ certificate.issued_at|date:"Y-m-d" }}</li>
+  </ul>
+</section>
+<section class="ops-panel">
+  <h2>Student</h2>
+  <ul class="ops-list">
+    <li><strong>Name</strong><br>{{ certificate.student_name|default:certificate.recipient_name }}</li>
+    {% if certificate.username %}<li><strong>Username</strong><br>{{ certificate.username }}</li>{% endif %}
+    <li><strong>Email</strong><br>{{ certificate.email }}</li>
+  </ul>
+</section>
+<section class="ops-panel">
+  <h2>Eligibility</h2>
+  <p>
+    {% if certificate.eligibility.eligible %}
+    <span class="ops-badge ops-s-good">Eligible</span>
+    {% else %}
+    <span class="ops-badge">Not eligible</span>
+    {% endif %}
+  </p>
+  <p class="ops-note">{{ certificate.eligibility.message }}</p>
+  <ul class="ops-list">
+    <li>Current score {{ certificate.eligibility.overall_score }}% · {{ certificate.eligibility.level_label }}</li>
+    <li>{{ certificate.eligibility.games_completed }} of {{ certificate.eligibility.games_required }} required games · minimum {{ certificate.eligibility.min_score }}%</li>
+    {% for row in certificate.eligibility.game_rows %}
+    <li>{{ row.label }} · {% if row.completed %}{{ row.percent }}%{% else %}Not played{% endif %}</li>
+    {% endfor %}
+  </ul>
+</section>
+<section class="ops-panel">
+  <h2>Verification</h2>
+  {% if certificate.ready %}
+  <p><a href="{{ certificate.verify_url }}">View verification</a></p>
+  <p class="ops-note">This is the public address encoded in the certificate QR code.</p>
+  {% else %}
+  <p class="ops-note">Public verification accepts this certificate after its PDF is stored.</p>
+  {% endif %}
+</section>
+{% endblock %}

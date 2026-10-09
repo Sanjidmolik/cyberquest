@@ -20,7 +20,9 @@
   {% if messages %}
   <ul class="cq-messages">
     {% for message in messages %}
+    {% if "XP earned" not in message.message and "Level up!" not in message.message and "badge unlocked" not in message.message %}
     <li class="{{ message.tags }}">{{ message }}</li>
+    {% endif %}
     {% endfor %}
   </ul>
   {% endif %}

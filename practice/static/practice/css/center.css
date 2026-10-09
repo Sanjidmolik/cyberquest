@@ -1,0 +1,278 @@
+/* Practice Center layout. Theme colours come from shared/css/theme.css.
+   Day/night uses the homepage view-transition in home_page/js/theme.js. */
+
+/* Shared theme.css pins .cq-nav. Keep that for other pages; this page scrolls with the document. */
+#pc-nav,
+.cq-main > .cq-container-wide {
+  width: min(1100px, calc(100% - 32px));
+  margin-left: auto;
+  margin-right: auto;
+}
+#pc-nav {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  transform: none;
+  margin-top: 14px;
+  margin-bottom: 0;
+  align-items: center;
+}
+#pc-nav .cq-nav-links,
+#pc-nav .cq-nav-tools,
+#pc-nav .cq-brand-link { align-items: center; }
+#pc-nav.scrolled { margin-top: 0; }
+.cq-main { padding-top: 1rem; }
+.cq-heading { margin-bottom: .25rem; }
+.cq-sub { margin-bottom: .85rem; max-width: 46rem; }
+
+.pc-rec, .pc-detail, .pc-card, .pc-topic {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.pc-rec, .pc-detail { border-radius: var(--radius); box-shadow: 0 18px 40px rgba(32, 3, 78, .22); }
+.pc-rec { padding: .8rem 1rem .9rem; margin: 0 0 .85rem; }
+.pc-rec .cq-section-title { margin-bottom: .2rem; }
+.pc-rec h2 { margin: 0; font-size: 1.45rem; }
+.pc-rec p { margin: .15rem 0 0; color: var(--muted); }
+.pc-why { color: var(--text) !important; }
+
+.pc-topics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: .85rem 0;
+}
+.pc-topic {
+  border-radius: 14px;
+  padding: 8px 10px;
+  text-align: left;
+  box-shadow: none;
+  cursor: pointer;
+  min-width: 0;
+}
+.pc-topic span, .pc-topic small { display: block; }
+.pc-topic span { font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-topic small {
+  color: var(--muted);
+  font-family: "Comic Neue", cursive, sans-serif;
+  letter-spacing: 0;
+  text-shadow: none;
+  font-size: .75rem;
+}
+.pc-topic.is-active, .pc-card.is-active {
+  border-color: var(--border-strong);
+  box-shadow: inset 0 0 0 1px rgba(181, 125, 236, .45);
+}
+.pc-card.is-active { transform: none; }
+.pc-topic:focus-visible, .pc-card:focus-visible, .cq-btn:focus-visible, .theme-toggle:focus-visible {
+  outline: 2px solid var(--lilac);
+  outline-offset: 3px;
+}
+
+.pc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+  gap: 16px;
+  align-items: start;
+}
+.pc-cards { min-width: 0; }
+.pc-card-list { display: grid; gap: 10px; align-content: start; align-items: stretch; }
+.pc-card-list[hidden] { display: none !important; }
+.pc-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  align-content: start;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 16px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+  transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);
+}
+.pc-card:hover { transform: translateY(-2px); border-color: var(--lilac); }
+.pc-card:active { transform: translateY(0); }
+.pc-card-kicker, .pc-card-meta, .pc-card-done, .pc-card-summary {
+  font-family: "Comic Neue", cursive, sans-serif;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+.pc-card-kicker { color: var(--lilac); font-size: .75rem; }
+.pc-card-title { font-size: 1.05rem; line-height: 1.15; }
+.pc-card-summary {
+  color: var(--muted);
+  font-size: .86rem;
+  line-height: 1.35;
+}
+.pc-card-meta, .pc-card-done { font-size: .75rem; }
+.pc-card-done { color: var(--lilac); font-weight: 700; min-height: 1.15em; }
+
+.pc-detail { padding: .85rem .95rem 1rem; }
+.pc-domain-status { margin: 0 0 .15rem; color: var(--lilac); font-weight: 700; font-size: .82rem; }
+.pc-detail .cq-section-title { margin: 0 0 .1rem; }
+.pc-detail h2 { margin: 0 0 .3rem; font-size: clamp(1.35rem, 2vw, 1.8rem); }
+.pc-detail > p { margin: 0 0 .55rem; color: var(--muted); }
+.pc-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 .7rem;
+  align-items: stretch;
+}
+.pc-facts div {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, .06);
+  min-width: 0;
+  min-height: 100%;
+}
+.pc-facts dt {
+  color: var(--lilac);
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.pc-facts dd { margin: 2px 0 0; font-size: .9rem; line-height: 1.35; overflow-wrap: break-word; }
+.pc-state { margin: 0 0 .7rem !important; font-weight: 700; color: var(--text) !important; font-size: .88rem; }
+.pc-detail form { margin: 0; }
+.pc-detail .cq-btn { width: auto; min-width: 15rem; }
+
+.pc-stage {
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  margin: 0 0 .7rem;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(231, 179, 255, .22), transparent 58%),
+    var(--panel-bg);
+  perspective: 900px;
+}
+.pc-floor {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 12px 10px;
+  box-sizing: border-box;
+  transform: rotateX(8deg);
+  transform-style: preserve-3d;
+  transition: opacity .16s var(--ease);
+}
+.pc-floor.is-out { opacity: 0; }
+.pc-node {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  width: min(220px, 86%);
+  max-width: 86%;
+  padding: 5px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--card-solid);
+  color: var(--text);
+  font-size: .75rem;
+  text-align: center;
+  font-family: "Comic Neue", cursive, sans-serif;
+  text-shadow: none;
+  transform: translateZ(10px);
+}
+.pc-node.is-alert {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px rgba(251, 113, 133, .35);
+  animation: pc-pulse 2.4s ease-in-out infinite;
+}
+.pc-link {
+  width: 1px;
+  height: 14px;
+  background: var(--lilac);
+  opacity: .55;
+  animation: pc-line 2.6s ease-in-out infinite;
+}
+.pc-packet {
+  position: absolute;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: var(--lilac);
+  animation: pc-down 5s linear infinite;
+}
+@keyframes pc-pulse { 50% { box-shadow: 0 0 0 3px rgba(251, 113, 133, .2); } }
+@keyframes pc-line { 50% { opacity: .9; } }
+@keyframes pc-down { from { top: 16%; } to { top: 80%; } }
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px 0 11px;
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: "Comic Neue", cursive, sans-serif;
+  text-shadow: none;
+  letter-spacing: 0;
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+[data-theme="light"] .theme-toggle { background: rgba(112, 31, 211, .08); }
+.theme-toggle svg { width: 18px; height: 18px; flex: none; }
+[data-theme="dark"] .ico-moon, [data-theme="dark"] .label-dark,
+[data-theme="light"] .ico-sun, [data-theme="light"] .label-day { display: none; }
+:root:not([data-theme]) .ico-moon, :root:not([data-theme]) .label-dark { display: none; }
+
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *::after {
+  transition: background-color .45s ease, background .45s ease, color .45s ease, border-color .45s ease, box-shadow .45s ease, fill .45s ease !important;
+}
+
+@media (max-width: 1099px) {
+  .pc-topics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pc-layout { grid-template-columns: 1fr; }
+  .pc-card-list { grid-template-columns: 1fr 1fr; }
+  .pc-detail .cq-btn { width: 100%; }
+}
+@media (max-width: 900px) {
+  #pc-nav { flex-wrap: wrap; row-gap: 8px; }
+  #pc-nav .cq-nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    position: static;
+    top: auto;
+    left: auto;
+    right: auto;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+}
+@media (max-width: 700px) {
+  .pc-topics, .pc-card-list { grid-template-columns: 1fr; }
+  .pc-stage { aspect-ratio: 4 / 3; }
+  .cq-main, .cq-container-wide, #pc-nav { overflow-x: hidden; }
+  .theme-label { display: none; }
+  .theme-toggle { width: 38px; padding: 0; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-packet, .pc-link, .pc-node.is-alert { animation: none; }
+  .pc-floor, .pc-card { transition: none; }
+  .pc-card:hover, .pc-card.is-active { transform: none; }
+}

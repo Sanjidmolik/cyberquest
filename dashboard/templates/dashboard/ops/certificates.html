@@ -1,19 +1,76 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
-<p class="ops-note">{{ issued_total }} issued certificates. Eligibility rules are unchanged.</p>
+<p class="ops-note">Issued certificates use the existing certificate records. A certificate is ready for public verification once its PDF is stored. Eligibility and issuance use the same rules as the student certificate page.</p>
+<section class="ops-kpis">
+  <article class="ops-kpi"><strong>{{ summary.issued }}</strong><span>Ready certificates</span></article>
+  <article class="ops-kpi"><strong>{{ summary.recent }}</strong><span>Issued this week</span></article>
+  <article class="ops-kpi"><strong>{{ summary.waiting }}</strong><span>Eligible, not issued</span></article>
+</section>
 <form class="ops-filters" method="get">
-  <input type="search" name="q" value="{{ q }}" placeholder="ID, name, or email" aria-label="Search certificates">
-  <button type="submit">Search</button>
+  <input type="search" name="q" value="{{ q }}" placeholder="Certificate ID, name, username, or email" aria-label="Search certificates">
+  <select name="window" aria-label="Issue date">
+    <option value="">Any issue date</option>
+    <option value="7"{% if window == "7" %} selected{% endif %}>Last 7 days</option>
+    <option value="30"{% if window == "30" %} selected{% endif %}>Last 30 days</option>
+  </select>
+  <select name="readiness" aria-label="Certificate readiness">
+    <option value="">All records</option>
+    <option value="ready"{% if readiness == "ready" %} selected{% endif %}>Ready</option>
+    <option value="incomplete"{% if readiness == "incomplete" %} selected{% endif %}>Incomplete</option>
+  </select>
+  <button type="submit">Filter</button>
 </form>
 <div class="ops-table-wrap">
 <table class="ops-table">
-  <thead><tr><th>ID</th><th>Recipient</th><th>Email</th><th>Score</th><th>Issued</th></tr></thead>
+  <thead>
+    <tr>
+      <th>Certificate ID</th>
+      <th>Student</th>
+      <th>Issue date</th>
+      <th>Score</th>
+      <th>Status</th>
+    </tr>
+  </thead>
   <tbody>
     {% for cert in page_obj %}
-    <tr><td>{{ cert.certificate_id }}</td><td>{{ cert.recipient_name }}</td><td>{{ cert.user.email }}</td><td>{{ cert.score }}%</td><td>{{ cert.issued_at|date:"Y-m-d" }}</td></tr>
-    {% empty %}<tr><td class="ops-empty" colspan="5">None issued.</td></tr>{% endfor %}
+    <tr>
+      <td><a href="{% url 'ops:certificate' cert.pk %}">{{ cert.certificate_id }}</a></td>
+      <td>
+        {{ cert.recipient_name }}
+        <br><small>{{ cert.user.email }}{% if cert.user.username %} · {{ cert.user.username }}{% endif %}</small>
+      </td>
+      <td>{{ cert.issued_at|date:"Y-m-d" }}</td>
+      <td class="ops-num">{{ cert.score }}%</td>
+      <td>
+        {% if cert.pdf_file %}
+        <span class="ops-badge ops-s-issued">Ready</span>
+        {% else %}
+        <span class="ops-badge ops-s-draft">Incomplete</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="5">No certificates match.</td></tr>
+    {% endfor %}
   </tbody>
 </table>
 </div>
 {% include "dashboard/ops/_pager.html" %}
+<section class="ops-panel">
+  <h2>Eligible students without a ready certificate</h2>
+  <ul class="ops-list">
+    {% for learner in waiting %}
+    <li>
+      <strong>{{ learner.full_name|default:learner.display_name }}</strong>
+      <br><small>{{ learner.email }}</small>
+      <form method="post" action="{% url 'ops:certificate_issue' learner.pk %}">
+        {% csrf_token %}
+        <button type="submit">Issue certificate</button>
+      </form>
+    </li>
+    {% empty %}
+    <li class="ops-empty">No eligible student is waiting.</li>
+    {% endfor %}
+  </ul>
+</section>
 {% endblock %}

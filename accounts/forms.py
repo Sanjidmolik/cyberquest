@@ -45,6 +45,12 @@ class SignupForm(forms.Form):
         return cleaned_data
 
 
+class AdminLoginForm(forms.Form):
+    """Administrator sign-in. Does not apply the student email-domain rule."""
+    email = forms.EmailField()
+    password = forms.CharField(widget=forms.PasswordInput)
+
+
 class LoginForm(forms.Form):
     email = forms.EmailField(widget=forms.EmailInput(attrs={"class": "cq-input", "autofocus": True}))
     password = forms.CharField(widget=forms.PasswordInput(attrs={"class": "cq-input"}))
@@ -170,6 +176,10 @@ class CompleteProfileForm(forms.Form):
     fields the OAuth flow doesn't provide: DOB, class, skill level, and
     explicit acceptance of the ethical use agreement).
     """
+    username = forms.CharField(
+        label="Username", max_length=50, required=False,
+        widget=forms.TextInput(attrs={"class": "cq-input"}),
+    )
     date_of_birth = forms.DateField(widget=forms.DateInput(attrs={"class": "cq-input", "type": "date"}))
     cyber_class = forms.ChoiceField(choices=UserModel.CYBER_CLASS_CHOICES, widget=forms.RadioSelect)
     skill_level = forms.ChoiceField(choices=UserModel.SKILL_LEVEL_CHOICES, widget=forms.RadioSelect)
@@ -177,6 +187,21 @@ class CompleteProfileForm(forms.Form):
         label="I agree to use CyberQuest's tools and techniques ethically and legally.",
         required=True,
         error_messages={"required": "You must accept the ethical use agreement to continue."})
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_username(self):
+        username = (self.cleaned_data.get("username") or "").strip()
+        if not username:
+            return ""
+        qs = UserModel.objects.filter(username__iexact=username)
+        if self.user is not None and getattr(self.user, "pk", None):
+            qs = qs.exclude(pk=self.user.pk)
+        if qs.exists():
+            raise ValidationError("That username is already taken.")
+        return username
 
     def clean_date_of_birth(self):
         dob = self.cleaned_data.get("date_of_birth")

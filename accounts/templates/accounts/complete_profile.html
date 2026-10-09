@@ -11,12 +11,20 @@
 
     {% if messages %}
       {% for message in messages %}
+        {% if "XP earned" not in message.message and "Level up!" not in message.message and "badge unlocked" not in message.message %}
         <p class="cq-msg cq-msg-{{ message.tags }}">{{ message }}</p>
+        {% endif %}
       {% endfor %}
     {% endif %}
 
     <form method="post" novalidate>
       {% csrf_token %}
+
+      <div class="cq-field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+        {% if form.username.errors %}<p class="cq-msg cq-msg-error">{{ form.username.errors.0 }}</p>{% endif %}
+      </div>
 
       <div class="cq-field">
         <label for="{{ form.date_of_birth.id_for_label }}">Date of Birth</label>

@@ -1,27 +1,57 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
+<p class="ops-note">These are messages sent from the public contact form. Mark one resolved after it has been handled. This screen does not send a reply.</p>
+<section class="ops-kpis">
+  <article class="ops-kpi"><strong>{{ summary.total }}</strong><span>Messages</span></article>
+  <article class="ops-kpi"><strong>{{ summary.open }}</strong><span>Open</span></article>
+  <article class="ops-kpi"><strong>{{ summary.resolved }}</strong><span>Resolved</span></article>
+</section>
 <form class="ops-filters" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Name, email, or message" aria-label="Search messages">
   <select name="state" aria-label="Message state">
-    <option value="">All</option>
+    <option value="">Open and resolved</option>
     <option value="open"{% if state == "open" %} selected{% endif %}>Open</option>
     <option value="resolved"{% if state == "resolved" %} selected{% endif %}>Resolved</option>
   </select>
+  <select name="window" aria-label="Submitted">
+    <option value="">Any date</option>
+    <option value="7"{% if window == "7" %} selected{% endif %}>Last 7 days</option>
+    <option value="30"{% if window == "30" %} selected{% endif %}>Last 30 days</option>
+  </select>
   <button type="submit">Filter</button>
 </form>
-{% for msg in page_obj %}
-<article class="ops-panel">
-  <h2>{{ msg.name }} · {{ msg.email }}</h2>
-  <p>{{ msg.message }}</p>
-  <p><small>{{ msg.submitted_at|date:"Y-m-d H:i" }} · {% if msg.is_resolved %}<span class="ops-badge ops-s-resolved">Resolved</span>{% else %}<span class="ops-badge ops-s-open">Open</span>{% endif %}</small></p>
-  <form method="post" action="{% url 'ops:resolve_contact' msg.pk %}">
-    {% csrf_token %}
-    {% if msg.is_resolved %}
-      <input type="hidden" name="resolved" value="0"><button class="ops-btn-quiet" type="submit">Mark open</button>
-    {% else %}
-      <input type="hidden" name="resolved" value="1"><button type="submit">Mark resolved</button>
-    {% endif %}
-  </form>
-</article>
-{% empty %}<p class="ops-empty">No messages.</p>{% endfor %}
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead>
+    <tr>
+      <th>From</th>
+      <th>Message</th>
+      <th>Submitted</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for msg in page_obj %}
+    <tr>
+      <td>
+        <a href="{% url 'ops:contact_message' msg.pk %}">{{ msg.name }}</a>
+        <br><small>{{ msg.email }}</small>
+      </td>
+      <td>{{ msg.message|truncatechars:120 }}</td>
+      <td>{{ msg.submitted_at|date:"Y-m-d H:i" }}</td>
+      <td>
+        {% if msg.is_resolved %}
+        <span class="ops-badge ops-s-resolved">Resolved</span>
+        {% else %}
+        <span class="ops-badge ops-s-open">Open</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="4">No messages match.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
 {% include "dashboard/ops/_pager.html" %}
 {% endblock %}

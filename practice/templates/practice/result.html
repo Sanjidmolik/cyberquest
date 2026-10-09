@@ -6,24 +6,58 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Simulation Result — {{ scenario.incident_code }}</title>
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script>
+(function () {
+  var t = "dark";
+  try { var s = localStorage.getItem("cq_home_theme"); if (s === "light" || s === "dark") t = s; } catch (e) {}
+  document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
 <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'shared/css/chrome.css' %}?v=nav3">
+<link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
 <link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">
 </head>
 <body class="practice-body">
-<header class="topnav">
-    <div class="topnav-left">
-        <a href="{% url 'practice:center' %}" class="logo-title">← PRACTICE</a>
-        <span class="logo-tagline">{{ scenario.environment|upper }}</span>
-    </div>
-</header>
+{% include "shared/_nav.html" %}
+{% include "shared/_toasts.html" %}
 
 <main class="practice-main">
+    <p class="practice-back"><a href="{% url 'practice:center' %}">← Back to Practice</a></p>
     <section class="panel-card result-hero">
         <p class="panel-title">SIMULATION RESULT</p>
+        <p class="result-kicker">{{ domain.full_label }} · {{ scenario.title }}</p>
         <h1>{{ session.score }}/100</h1>
         <p>{{ session.result_summary }}</p>
-        {% if session.xp_awarded %}<p class="accent-green">+{{ session.xp_awarded }} XP</p>{% endif %}
+        <p class="result-xp{% if session.xp_awarded %} is-awarded{% endif %}">+{{ session.xp_awarded }} XP</p>
     </section>
+
+    <section class="panel-card result-loop" aria-label="Progression">
+        <p class="panel-title">SCORE → XP → CYBER DNA → NEXT PRACTICE</p>
+        <ol>
+            <li><span>Score</span><strong>{{ session.score }}/100</strong></li>
+            <li><span>XP</span><strong>+{{ session.xp_awarded }} XP</strong></li>
+            <li>
+                <span>Cyber DNA</span>
+                {% if competency.improved %}
+                <strong>{{ competency.label }} improved</strong>
+                {% else %}
+                <strong>{{ competency.label }} unchanged</strong>
+                {% endif %}
+            </li>
+            {% if recommendation %}
+            <li><span>Next</span><strong>{{ recommendation.domain.full_label }}</strong></li>
+            {% endif %}
+        </ol>
+    </section>
+
+    {% if competency.improved %}
+    <section class="panel-card result-gain">
+        <p class="panel-title">{{ competency.label }}</p>
+        <p class="result-shift">{{ competency.previous }}% → {{ competency.current }}%</p>
+        <p class="result-xp is-awarded">+{{ competency.delta }} competency points</p>
+    </section>
+    {% endif %}
 
     {% if consequence %}
     <section class="panel-card consequence-banner quality-{{ consequence.quality }}">
@@ -35,6 +69,7 @@
     <div class="result-grid">
         <section class="panel-card">
             <p class="panel-title">INVESTIGATION</p>
+            <p class="result-kicker">What you did</p>
             <p>Investigation points earned: <strong>{{ investigation_score }}</strong></p>
             <ul class="check-list">
                 {% for e in evidence_status %}
@@ -46,6 +81,7 @@
         </section>
         <section class="panel-card">
             <p class="panel-title">DECISION & RESPONSE</p>
+            <p class="result-kicker">What you earned</p>
             <p>Decision: <strong>{{ consequence.decision_label|default:"—" }}</strong></p>
             <p>Response: <strong>{{ consequence.response|default:"—" }}</strong></p>
             {% if consequence.missing_penalty %}
@@ -54,12 +90,12 @@
         </section>
     </div>
 
-    <div class="two-col-row">
-        <section class="panel-card">
+    <div class="two-col-row result-feedback">
+        <section class="panel-card result-strength">
             <p class="panel-title">FEEDBACK — STRENGTHS</p>
             <p>{{ session.strengths }}</p>
         </section>
-        <section class="panel-card">
+        <section class="panel-card result-improve">
             <p class="panel-title">FEEDBACK — IMPROVE</p>
             <p>{{ session.improvements }}</p>
         </section>
@@ -68,6 +104,7 @@
     {% if recommendation %}
     <section class="panel-card next-practice-card">
         <p class="panel-title">NEXT RECOMMENDATION</p>
+        <p class="result-kicker">{{ recommendation.domain.full_label }}</p>
         <h2>{{ recommendation.activity_label }}</h2>
         <p>{{ recommendation.reason }}</p>
         <form method="post" action="{% url 'practice:start' recommendation.domain_slug %}">
@@ -85,5 +122,7 @@
         <a class="practice-btn" href="{% url 'practice:center' %}">Practice Center</a>
     </div>
 </main>
+<script src="{% static 'shared/js/theme.js' %}"></script>
+<script src="{% static 'shared/js/chrome.js' %}?v=nav2"></script>
 </body>
 </html>

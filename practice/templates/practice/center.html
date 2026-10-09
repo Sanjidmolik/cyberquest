@@ -1,60 +1,124 @@
-{% extends "dashboard/base_command.html" %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#701fd3">
+<script>
+(function () {
+  var t = "dark";
+  try { var s = localStorage.getItem("cq_home_theme"); if (s === "light" || s === "dark") t = s; } catch (e) {}
+  document.documentElement.setAttribute("data-theme", t);
+  var m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute("content", t === "light" ? "#f7f1ff" : "#701fd3");
+})();
+</script>
+<title>Practice Center — CyberQuest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">
+<link rel="stylesheet" href="{% static 'shared/css/chrome.css' %}?v=nav3">
+<link rel="stylesheet" href="{% static 'practice/css/center.css' %}?v=nav2">
+</head>
+<body class="cq-shell">
+<nav class="cq-nav" id="pc-nav">
+  {% include "shared/_brand.html" %}
+  <ul class="cq-nav-links">
+    <li><a class="cq-nav-link" href="{% url 'dashboard:home' %}">Dashboard</a></li>
+    <li><a class="cq-nav-link" href="{% url 'courses:intro' %}">Courses</a></li>
+    <li><a class="cq-nav-link active" href="{% url 'practice:center' %}">Practice</a></li>
+    <li><a class="cq-nav-link" href="{% url 'practice:cyber_dna' %}">Cyber DNA</a></li>
+    <li><a class="cq-nav-link" href="{% url 'practice:history' %}">History</a></li>
+  </ul>
+  <div class="cq-nav-tools">
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to day mode" title="Switch to day mode">
+      <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.3M12 19.2v2.3M2.5 12h2.3M19.2 12h2.3M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>
+      <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5 8.6 8.6 0 1 0 20.5 14.2z"/></svg>
+      <span class="theme-label label-day">Day</span>
+      <span class="theme-label label-dark">Dark</span>
+    </button>
+    <a class="cq-btn cq-btn-sm" href="{% url 'accounts:logout' %}">Logout</a>
+  </div>
+</nav>
+{% include "shared/_toasts.html" %}
 
-{% block title %}Practice Center — CyberQuest{% endblock %}
-{% block context_name %}Practice{% endblock %}
-{% block body_class %}command-child practice-body{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">{% endblock %}
-
-{% block content %}
-    <div class="page-header">
-        <div>
-            <h1>Practice <span class="accent-green">Center</span></h1>
-            <p class="page-subtitle">Adaptive drills across five cybersecurity domains.</p>
-        </div>
-        <div class="practice-subnav">
-            <a href="{% url 'practice:cyber_dna' %}">Cyber DNA</a>
-            <a href="{% url 'practice:history' %}">History</a>
-        </div>
-    </div>
+<main class="cq-main">
+  <div class="cq-container-wide">
+    <p class="cq-section-title">Practice Center</p>
+    <h1 class="cq-heading">Choose a topic, then any scenario</h1>
+    <p class="cq-sub">Four scenarios are available in each topic. Pick one directly — recommendation is guidance, not a lock. 4 scenarios available.</p>
 
     {% if recommendation %}
-    <section class="panel-card next-practice-card">
-        <p class="panel-title">YOUR NEXT PRACTICE</p>
-        <h2>{{ recommendation.activity_label }}</h2>
-        <p>Current Competency: <strong>{{ recommendation.percent }}%</strong></p>
-        <p>Difficulty: <strong>{{ recommendation.difficulty_label|upper }}</strong></p>
-        <p class="why-text">Why: {{ recommendation.reason }}</p>
-        <form method="post" action="{% url 'practice:start' recommendation.domain_slug %}">
-            {% csrf_token %}
-            <input type="hidden" name="activity_type" value="{{ recommendation.activity }}">
-            <input type="hidden" name="difficulty" value="{{ recommendation.difficulty }}">
-            <button type="submit" class="practice-btn">START PRACTICE</button>
-        </form>
+    <section class="pc-rec" aria-label="Your next recommendation">
+      <p class="cq-section-title">Your next recommendation</p>
+      <h2>{{ recommendation.domain.full_label }}</h2>
+      <p>Your current competency: <strong id="pc-comp">{{ recommendation.percent }}%</strong></p>
+      <p id="pc-meta">Level {{ selected_domain.level }} · Recommended {{ recommendation.activity_label }}</p>
+      <p class="pc-why">{{ recommendation.reason }}</p>
     </section>
     {% endif %}
 
-    <div class="domain-grid">
-        {% for d in domains %}
-        <article class="panel-card domain-card">
-            <div class="domain-card-head">
-                <span class="domain-emoji">{{ d.emoji }}</span>
-                <h3>{{ d.full_label|upper }}</h3>
-            </div>
-            <p class="comp-line">Competency: <strong>{{ d.percent }}%</strong></p>
-            <div class="progress-track"><div class="progress-fill" style="--pct: {{ d.percent }};"></div></div>
-            <p>Level: <strong>{{ d.level }}</strong></p>
-            <p>Recommended: <strong>{{ d.difficulty_label }} {{ d.activity|title }}</strong></p>
-            <div class="domain-actions">
-                <a class="practice-btn ghost" href="{% url 'practice:domain' d.slug %}">Details</a>
-                <form method="post" action="{% url 'practice:start' d.slug %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="activity_type" value="{{ d.activity }}">
-                    <input type="hidden" name="difficulty" value="{{ d.difficulty }}">
-                    <button type="submit" class="practice-btn">START PRACTICE</button>
-                </form>
-            </div>
-        </article>
-        {% endfor %}
+    <div class="pc-topics" role="tablist" aria-label="Practice topics">
+      {% for d in catalog %}
+      <button type="button" class="pc-topic{% if d.slug == selected_domain.slug %} is-active{% endif %}" role="tab" id="topic-{{ d.slug }}" data-domain="{{ d.slug }}" aria-selected="{% if d.slug == selected_domain.slug %}true{% else %}false{% endif %}" aria-controls="cards-{{ d.slug }}">
+        <span>{{ d.emoji }} {{ d.full_label|upper }}</span>
+        <small>{{ d.percent }}% · {{ d.level }}</small>
+      </button>
+      {% endfor %}
     </div>
-{% endblock %}
+
+    <div class="pc-layout">
+      <div class="pc-cards">
+        {% for d in catalog %}
+        <div class="pc-card-list" id="cards-{{ d.slug }}" role="tabpanel" aria-labelledby="topic-{{ d.slug }}" data-domain="{{ d.slug }}" {% if d.slug != selected_domain.slug %}hidden{% endif %}>
+          {% for s in d.scenarios %}
+          <button type="button" class="pc-card{% if d.slug == selected_domain.slug and s.preferred %} is-active{% endif %}" data-domain="{{ d.slug }}" data-key="{{ s.key }}" aria-pressed="{% if d.slug == selected_domain.slug and s.preferred %}true{% else %}false{% endif %}">
+            <span class="pc-card-kicker"><b>{{ s.number }}</b> {{ s.activity_label|upper }}</span>
+            <strong class="pc-card-title">{{ s.title }}</strong>
+            <span class="pc-card-summary">{{ s.summary }}</span>
+            <span class="pc-card-meta">{{ s.difficulty_label|upper }} · ~{{ s.minutes }} min</span>
+            <span class="pc-card-done">{% if s.completed %}COMPLETED · BEST {{ s.best }}%{% endif %}</span>
+          </button>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <section class="pc-detail" aria-live="polite">
+        <div class="pc-stage" id="pc-stage" data-domain="{{ selected_domain.slug }}">
+          <div class="pc-floor" id="pc-floor">
+            {% for node in opening.scene.nodes %}
+            {% if not forloop.first %}<span class="pc-link" aria-hidden="true"></span>{% endif %}
+            <div class="pc-node{% if node.id in opening.scene.suspicious %} is-alert{% endif %}"><span>{{ node.label }}</span></div>
+            {% endfor %}
+            <span class="pc-packet" aria-hidden="true"></span>
+          </div>
+        </div>
+        <p class="pc-domain-status" id="pc-domain-status">{{ selected_domain.full_label }} · {{ selected_domain.percent }}% · {{ selected_domain.level }} · {{ selected_domain.activity_label }}</p>
+        <p class="cq-section-title" id="pc-type">{{ opening.activity_label }}</p>
+        <h2 id="pc-title">{{ opening.title }}</h2>
+        <p id="pc-summary">{{ opening.summary }}</p>
+        <dl class="pc-facts">
+          <div><dt>Type</dt><dd id="pc-activity">{{ opening.activity_label }}</dd></div>
+          <div><dt>Difficulty</dt><dd id="pc-difficulty">{{ opening.difficulty_label }}</dd></div>
+          <div><dt>Estimated time</dt><dd id="pc-time">~{{ opening.minutes }} min</dd></div>
+          <div><dt>Skills</dt><dd id="pc-skill">{{ opening.objective }}</dd></div>
+        </dl>
+        <p class="pc-state" id="pc-state">{% if opening.completed %}COMPLETED · BEST {{ opening.best }}%{% else %}Not completed yet{% endif %}</p>
+        <form method="post" action="{{ selected_domain.start_url }}" id="pc-start">
+          {% csrf_token %}
+          <input type="hidden" name="scenario_key" id="pc-key" value="{{ opening.key }}">
+          <button type="submit" class="cq-btn">START THIS SCENARIO →</button>
+        </form>
+      </section>
+    </div>
+  </div>
+</main>
+{{ catalog|json_script:"pc-catalog" }}
+<script src="{% static 'practice/js/center.js' %}"></script>
+<script src="{% static 'home_page/js/theme.js' %}"></script>
+<script src="{% static 'shared/js/chrome.js' %}?v=nav2"></script>
+</body>
+</html>

@@ -11,9 +11,6 @@
     toggle.setAttribute('aria-expanded', open);
   });
   nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => nav.classList.remove('open')));
-  const onScroll = () => nav.classList.toggle('scrolled', scrollY > 30);
-  addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
 })();
 
 /* ---------- Smooth scroll (Lenis) wired to GSAP ScrollTrigger ---------- */

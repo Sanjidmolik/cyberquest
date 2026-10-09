@@ -22,16 +22,25 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">
+  <link rel="stylesheet" href="{% static 'shared/css/chrome.css' %}?v=nav3">
   <link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
 <body class="cq-shell">
+  {% if request.resolver_match.view_name != "accounts:signup" and request.resolver_match.view_name != "accounts:admin_login" %}
   {% include "shared/_nav.html" %}
+  {% endif %}
+  {% if request.resolver_match.view_name != "accounts:login" and request.resolver_match.view_name != "accounts:signup" %}
+  {% include "shared/_toasts.html" %}
+  {% endif %}
   <main class="cq-main">
     {% block content %}{% endblock %}
   </main>
+  {% if request.resolver_match.view_name != "accounts:signup" and request.resolver_match.view_name != "accounts:admin_login" %}
   {% include "shared/_footer.html" %}
+  {% endif %}
   <script src="{% static 'shared/js/theme.js' %}"></script>
+  <script src="{% static 'shared/js/chrome.js' %}?v=nav2"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

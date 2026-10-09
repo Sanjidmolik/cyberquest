@@ -1,0 +1,56 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'ops:achievements' %}">Back to achievements</a></p>
+<div class="ops-page-head">
+  <div>
+    <h2>{{ badge.icon_emoji }} {{ badge.name }}</h2>
+    <p>
+      {% if badge.is_active %}
+      <span class="ops-badge ops-s-active">Active</span>
+      {% else %}
+      <span class="ops-badge ops-s-inactive">Inactive</span>
+      {% endif %}
+      <span class="ops-badge">{{ earned }} student{{ earned|pluralize }}</span>
+    </p>
+  </div>
+</div>
+<section class="ops-panel">
+  <h2>Badge</h2>
+  <ul class="ops-list">
+    <li><strong>Name</strong><br>{{ badge.icon_emoji }} {{ badge.name }}</li>
+    <li><strong>How it is earned</strong><br>{{ badge.description }}</li>
+  </ul>
+  <p class="ops-note">Awarding happens automatically when a student meets this badge’s existing rule. This screen cannot grant, remove, or edit badges.</p>
+</section>
+<section class="ops-panel">
+  <h2>Earned by</h2>
+  <ul class="ops-list">
+    <li><strong>Students</strong><br>{{ earned }}{% if summary.students %} of {{ summary.students }} · {% widthratio earned summary.students 100 %}%{% endif %}</li>
+    <li><strong>Latest award</strong><br>{% if latest %}{{ latest|date:"Y-m-d" }}{% else %}No student has earned this badge{% endif %}</li>
+  </ul>
+</section>
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead>
+    <tr>
+      <th>Student</th>
+      <th>Earned</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in page_obj %}
+    <tr>
+      <td>
+        <a href="{% url 'ops:student' row.user.pk %}">{{ row.user.full_name|default:row.user.display_name }}</a>
+        <br><small>{{ row.user.email }}{% if row.user.username %} · {{ row.user.username }}{% endif %}</small>
+      </td>
+      <td>{{ row.earned_at|date:"Y-m-d" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="2">No student has earned this badge.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% include "dashboard/ops/_pager.html" %}
+{% endblock %}

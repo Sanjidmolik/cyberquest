@@ -598,7 +598,90 @@ SCENARIOS = {
     },
 }
 
-DOMAIN_SCENARIO = {s["domain"]: key for key, s in SCENARIOS.items()}
+from .scenario_pool import EXTRA_SCENARIOS
+
+SCENARIOS.update(EXTRA_SCENARIOS)
+
+_ORIGINAL_META = {
+    "phishing_microsoft_disable": (
+        "simulation", "beginner",
+        "Spot a lookalike sender and a mismatched link before the mailbox user interacts.",
+        [
+            {"id": "sender", "label": "Lookalike sender", "x": 8, "y": 18, "z": 10},
+            {"id": "gateway", "label": "Mail gateway", "x": 40, "y": 32, "z": 18},
+            {"id": "user", "label": "Finance mailbox", "x": 72, "y": 20, "z": 12},
+            {"id": "link", "label": "Mismatched link", "x": 74, "y": 64, "z": 22},
+        ],
+        ["sender", "link"],
+        {"inspect_sender": "sender", "inspect_domain": "sender", "inspect_link": "link", "view_headers": "gateway", "check_timeline": "user"},
+    ),
+    "password_auth_alert": (
+        "simulation", "beginner",
+        "Read a failed-login burst and an unexpected success before choosing a lock or reset.",
+        [
+            {"id": "user", "label": "employee01", "x": 10, "y": 24, "z": 10},
+            {"id": "idp", "label": "Auth server", "x": 42, "y": 28, "z": 20},
+            {"id": "attacker", "label": "Unknown source", "x": 74, "y": 18, "z": 16},
+            {"id": "lock", "label": "Account", "x": 70, "y": 66, "z": 12},
+        ],
+        ["attacker"],
+        {"view_login_history": "idp", "inspect_source": "attacker", "check_user_activity": "user", "check_location": "attacker", "review_policy": "lock"},
+    ),
+    "network_workstation_exfil": (
+        "simulation", "beginner",
+        "Trace unusual overnight uploads from one workstation before isolating it.",
+        [
+            {"id": "internet", "label": "Internet", "x": 8, "y": 16, "z": 8},
+            {"id": "firewall", "label": "Firewall", "x": 36, "y": 30, "z": 18},
+            {"id": "lan", "label": "Internal network", "x": 62, "y": 22, "z": 12},
+            {"id": "host", "label": "WORKSTATION-07", "x": 76, "y": 62, "z": 22},
+        ],
+        ["host"],
+        {"view_traffic": "firewall", "inspect_source_host": "host", "inspect_destination": "internet", "view_timeline": "host", "check_protocol": "lan"},
+    ),
+    "crypto_message_audit": (
+        "simulation", "beginner",
+        "Audit a claimed secure-sharing workflow for key handling and transport.",
+        [
+            {"id": "sender", "label": "Sender", "x": 8, "y": 24, "z": 10},
+            {"id": "cipher", "label": "Weak cipher", "x": 38, "y": 28, "z": 20},
+            {"id": "key", "label": "Shared key", "x": 64, "y": 18, "z": 16},
+            {"id": "receiver", "label": "Anyone with link", "x": 76, "y": 64, "z": 12},
+        ],
+        ["key", "cipher"],
+        {"encryption_method": "cipher", "key_management": "key", "authentication": "receiver", "integrity_check": "cipher", "security_config": "sender"},
+    ),
+    "osint_identity_case": (
+        "simulation", "beginner",
+        "Compare public profile clues and stop when they do not support the tip.",
+        [
+            {"id": "profile", "label": "Public profile", "x": 10, "y": 20, "z": 12},
+            {"id": "name", "label": "Similar handle", "x": 40, "y": 34, "z": 16},
+            {"id": "post", "label": "Old post", "x": 70, "y": 20, "z": 10},
+            {"id": "tip", "label": "Anonymous tip", "x": 72, "y": 66, "z": 8},
+        ],
+        ["tip"],
+        {"public_profile": "profile", "website": "profile", "username_history": "name", "public_post": "post", "domain_information": "name", "verify_source": "tip", "timeline": "post"},
+    ),
+}
+
+for _key, (_activity, _difficulty, _objective, _nodes, _suspicious, _evidence) in _ORIGINAL_META.items():
+    SCENARIOS[_key]["activity_type"] = _activity
+    SCENARIOS[_key]["difficulty"] = _difficulty
+    SCENARIOS[_key]["objective"] = _objective
+    SCENARIOS[_key]["scene"] = {
+        "nodes": _nodes,
+        "suspicious": _suspicious,
+        "evidence_nodes": _evidence,
+    }
+
+DOMAIN_SCENARIO = {
+    "phishing": "phishing_microsoft_disable",
+    "password": "password_auth_alert",
+    "network": "network_workstation_exfil",
+    "cryptography": "crypto_message_audit",
+    "osint": "osint_identity_case",
+}
 
 
 def get_scenario(key):
@@ -608,3 +691,36 @@ def get_scenario(key):
 def get_domain_scenario(domain_slug):
     key = DOMAIN_SCENARIO.get(domain_slug)
     return SCENARIOS.get(key) if key else None
+
+
+def scenarios_for_domain(domain_slug, activity=None):
+    rows = [s for s in SCENARIOS.values() if s["domain"] == domain_slug]
+    if activity in ("simulation", "incident"):
+        typed = [s for s in rows if s.get("activity_type") == activity]
+        if typed:
+            return typed
+    return rows
+
+
+def choose_scenario(domain_slug, recent_keys, activity=None):
+    """
+    Pick a scenario for a domain.
+    recent_keys is newest-first. Avoid the most recent when another exists,
+    and prefer one the user has not completed.
+    """
+    pool = scenarios_for_domain(domain_slug, activity)
+    if not pool:
+        return None
+    seen = [key for key in recent_keys if any(s["key"] == key for s in pool)]
+    fresh = [s for s in pool if s["key"] not in seen]
+    if fresh:
+        return fresh[0]
+    last = seen[0] if seen else None
+    alternatives = [s for s in pool if s["key"] != last]
+    if not alternatives:
+        return pool[0]
+    for key in reversed(seen):
+        for scenario in alternatives:
+            if scenario["key"] == key:
+                return scenario
+    return alternatives[0]

@@ -4,15 +4,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#701fd3">
+<script>
+(function () {
+  var t = "dark";
+  try { var s = localStorage.getItem("cq_home_theme"); if (s === "light" || s === "dark") t = s; } catch (e) {}
+  document.documentElement.setAttribute("data-theme", t);
+  var m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute("content", t === "light" ? "#f7f1ff" : "#701fd3");
+})();
+</script>
 <title>{{ scenario.environment }} — {{ scenario.incident_code }}</title>
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
-<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">
+<link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
+<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}?v=soc5">
 </head>
 <body class="practice-body console-body">
 
 <header class="soc-topbar">
     <div class="soc-brand">
+        {% include "shared/_brand.html" with logo_class="cq-logo-lockup--sm" %}
         <a href="{% url 'practice:center' %}">← PRACTICE</a>
         <span class="soc-env">{{ scenario.environment|upper }}</span>
     </div>
@@ -26,24 +38,38 @@
 
 {% if messages %}
 <div class="console-messages">
-    {% for message in messages %}<div class="console-flash">{{ message }}</div>{% endfor %}
+    {% for message in messages %}{% if "XP earned" not in message.message and "Level up!" not in message.message and "badge unlocked" not in message.message %}<div class="console-flash">{{ message }}</div>{% endif %}{% endfor %}
 </div>
 {% endif %}
 
 {% if phase == "briefing" %}
-<main class="practice-main">
+<main class="practice-main briefing-wrap">
     <section class="panel-card briefing-card">
         <p class="panel-title">CYBERQUEST SECURITY OPERATIONS CENTER</p>
-        <h1>INCIDENT #{{ scenario.incident_code }}</h1>
-        <p class="sev-line">Severity: <strong>{{ scenario.severity }}</strong></p>
-        <p class="alert-banner">🚨 {{ scenario.title }}</p>
+        <div class="brief-head">
+            <h1>INCIDENT #{{ scenario.incident_code }}</h1>
+            <div class="brief-pills">
+                <span class="sev-pill sev-{{ scenario.severity|lower }}">{{ scenario.severity }}</span>
+                {% if is_incident %}<span class="mode-pill">INCIDENT</span>{% else %}<span class="mode-pill">SIMULATION</span>{% endif %}
+                <span class="score-pill">{{ session.score }}/100</span>
+            </div>
+        </div>
+        <p class="alert-banner">⚠ {{ scenario.title }}</p>
         <dl class="briefing-grid">
             <div><dt>Employee / Asset</dt><dd>{{ scenario.briefing.employee }}</dd></div>
             <div><dt>Department</dt><dd>{{ scenario.briefing.department }}</dd></div>
             <div><dt>Subject</dt><dd>{{ scenario.briefing.subject }}</dd></div>
             <div><dt>Time</dt><dd>{{ scenario.briefing.time }}</dd></div>
         </dl>
-        <p class="alert-text">{{ scenario.briefing.summary }}</p>
+        <div class="brief-copy">
+            <p class="brief-label">Scenario description</p>
+            <p>{{ scenario.briefing.summary }}</p>
+            {% if scenario.objective %}
+            <p class="brief-label">Objective</p>
+            <p>{{ scenario.objective }}</p>
+            {% endif %}
+        </div>
+        {% include "practice/_briefing_topo.html" %}
         {% if is_incident %}
         <ol class="flow-steps">
             <li class="active">ALERT</li><li>INVESTIGATE</li><li>COLLECT</li>
@@ -52,9 +78,9 @@
         {% endif %}
         <form method="post" action="{% url 'practice:open' session.pk %}">
             {% csrf_token %}
-            <button type="submit" class="practice-btn">
-                {% if scenario.workspace_type == "email" %}OPEN EMAIL CONSOLE
-                {% else %}INVESTIGATE INCIDENT{% endif %}
+            <button type="submit" class="practice-btn brief-go">
+                {% if scenario.workspace_type == "email" %}OPEN EMAIL CONSOLE →
+                {% else %}INVESTIGATE INCIDENT →{% endif %}
             </button>
         </form>
     </section>
@@ -62,158 +88,159 @@
 
 {% else %}
 <main class="console-shell">
+    <div class="console-main">
+        <section class="console-panel workspace-panel">
+            <header class="console-panel-head">
+                <span>WORKSPACE</span>
+                <span class="muted">{{ scenario.workspace_type|upper }}</span>
+            </header>
+            <div class="soc-topo">
+                {% include "practice/_sim_stage.html" %}
+            </div>
+        </section>
 
-    <!-- LEFT: workspace -->
-    <section class="console-panel workspace-panel">
-        <header class="console-panel-head">
-            <span>WORKSPACE</span>
-            <span class="muted">{{ scenario.workspace_type|upper }}</span>
-        </header>
-
-        {% if scenario.workspace_type == "email" %}
-        <article class="email-console">
-            <div class="email-row"><span>From</span><strong>{{ scenario.workspace.from_display }}</strong></div>
-            <div class="email-row"><span>To</span><strong>{{ scenario.workspace.to }}</strong></div>
-            <div class="email-row"><span>Subject</span><strong>{{ scenario.workspace.subject }}</strong></div>
-            <div class="email-row"><span>Time</span><strong>{{ scenario.workspace.time }}</strong></div>
+        <section class="console-panel context-panel">
+            <header class="console-panel-head"><span>INCIDENT CONTEXT</span></header>
+            {% if scenario.workspace_type == "email" %}
+            <dl class="context-list">
+                <div><dt>From</dt><dd>{{ scenario.workspace.from_display }}</dd></div>
+                <div><dt>To</dt><dd>{{ scenario.workspace.to }}</dd></div>
+                <div><dt>Subject</dt><dd>{{ scenario.workspace.subject }}</dd></div>
+                <div><dt>Time</dt><dd>{{ scenario.workspace.time }}</dd></div>
+            </dl>
             <pre class="email-body">{{ scenario.workspace.body }}</pre>
             <div class="email-link-chip">{{ scenario.workspace.link_display }}</div>
-            <p class="hint-note">Evidence is hidden until you investigate. Interpret findings yourself.</p>
-        </article>
-
-        {% elif scenario.workspace_type == "auth" %}
-        <article class="auth-console">
-            <div class="metric-grid">
-                <div><span>Account</span><strong>{{ scenario.workspace.account }}</strong></div>
-                <div><span>Failed attempts</span><strong>{{ scenario.workspace.failed_attempts }}</strong></div>
-                <div><span>Alert time</span><strong>{{ scenario.workspace.alert_time }}</strong></div>
-                <div><span>Source</span><strong>{{ scenario.workspace.source_ip }}</strong></div>
-                <div><span>Status</span><strong>{{ scenario.workspace.status }}</strong></div>
-                <div><span>MFA</span><strong>{{ scenario.workspace.mfa }}</strong></div>
-            </div>
-        </article>
-
-        {% elif scenario.workspace_type == "network" %}
-        <article class="network-console">
+            {% elif scenario.workspace_type == "auth" %}
+            <dl class="context-list">
+                <div><dt>Account</dt><dd>{{ scenario.workspace.account }}</dd></div>
+                <div><dt>Failed attempts</dt><dd>{{ scenario.workspace.failed_attempts }}</dd></div>
+                <div><dt>Alert time</dt><dd>{{ scenario.workspace.alert_time }}</dd></div>
+                <div><dt>Source</dt><dd>{{ scenario.workspace.source_ip }}</dd></div>
+                <div><dt>Status</dt><dd>{{ scenario.workspace.status }}</dd></div>
+                <div><dt>MFA</dt><dd>{{ scenario.workspace.mfa }}</dd></div>
+            </dl>
+            {% elif scenario.workspace_type == "network" %}
             <p class="net-banner">{{ scenario.workspace.alert_banner }}</p>
-            <p class="net-bytes">Outbound volume: {{ scenario.workspace.bytes_out }}</p>
-            <div class="topo">
-                <div class="topo-node">Internet</div>
-                <div class="topo-arrow">↓</div>
-                <div class="topo-node">Firewall</div>
-                <div class="topo-arrow">↓</div>
-                <div class="topo-node">Internal Network</div>
-                <div class="topo-hosts">
-                    {% for host in scenario.workspace.topology %}
-                        {% if host.name != "Internet" and host.name != "Firewall" %}
-                        <div class="topo-host {% if host.alert %}alert{% endif %}">
-                            {{ host.name }}{% if host.alert %} 🚨{% endif %}
-                        </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-        </article>
+            <dl class="context-list">
+                <div><dt>Outbound volume</dt><dd>{{ scenario.workspace.bytes_out }}</dd></div>
+                {% for host in scenario.workspace.topology %}
+                <div><dt>Host</dt><dd>{{ host.name }}{% if host.alert %} · alert{% endif %}</dd></div>
+                {% endfor %}
+            </dl>
+            {% elif scenario.workspace_type == "crypto" %}
+            <dl class="context-list">
+                <div><dt>System</dt><dd>{{ scenario.workspace.system_name }}</dd></div>
+                <div><dt>Claim</dt><dd>{{ scenario.workspace.claim }}</dd></div>
+                <div><dt>Channel</dt><dd>{{ scenario.workspace.channel }}</dd></div>
+                <div><dt>Data type</dt><dd>{{ scenario.workspace.data_type }}</dd></div>
+            </dl>
+            {% elif scenario.workspace_type == "osint" %}
+            <dl class="context-list">
+                <div><dt>Case</dt><dd>{{ scenario.workspace.case_name }}</dd></div>
+                <div><dt>Handle</dt><dd>{{ scenario.workspace.subject_handle }}</dd></div>
+                <div><dt>Claim</dt><dd>{{ scenario.workspace.claim }}</dd></div>
+                <div><dt>Rule</dt><dd>{{ scenario.workspace.rule }}</dd></div>
+            </dl>
+            {% endif %}
+        </section>
+    </div>
 
-        {% elif scenario.workspace_type == "crypto" %}
-        <article class="crypto-console">
-            <div class="metric-grid">
-                <div><span>System</span><strong>{{ scenario.workspace.system_name }}</strong></div>
-                <div><span>Claim</span><strong>{{ scenario.workspace.claim }}</strong></div>
-                <div><span>Channel</span><strong>{{ scenario.workspace.channel }}</strong></div>
-                <div><span>Data type</span><strong>{{ scenario.workspace.data_type }}</strong></div>
-            </div>
-            <p class="hint-note">Audit each control. Decide only after you understand the weakness.</p>
-        </article>
-
-        {% elif scenario.workspace_type == "osint" %}
-        <article class="osint-console">
-            <div class="metric-grid">
-                <div><span>Case</span><strong>{{ scenario.workspace.case_name }}</strong></div>
-                <div><span>Handle</span><strong>{{ scenario.workspace.subject_handle }}</strong></div>
-                <div><span>Claim</span><strong>{{ scenario.workspace.claim }}</strong></div>
-                <div><span>Rule</span><strong>{{ scenario.workspace.rule }}</strong></div>
-            </div>
-        </article>
-        {% endif %}
-
-        {% if last_reveal %}
-        <aside class="live-reveal">
-            <p class="panel-title">LATEST FINDING</p>
-            <h3>{{ last_reveal.title }}</h3>
-            {% for f in last_reveal.fields %}
-            <div class="email-row"><span>{{ f.label }}</span><strong>{{ f.value }}</strong></div>
+    <aside class="console-rail">
+        <section class="console-panel evidence-panel" aria-live="polite">
+            <header class="console-panel-head">
+                <span>EVIDENCE LOCKER</span>
+                <span class="muted">{{ evidence_count }} / {{ evidence_needed }}</span>
+            </header>
+            {% if evidence_count == 0 %}
+            <p class="empty-note">Collect the relevant indicators before making your security decision.</p>
+            {% endif %}
+            {% for card in evidence_cards %}
+            <article class="evidence-card{% if forloop.last %} is-new{% endif %}">
+                <h4><span aria-hidden="true">✓</span> {{ card.title }}</h4>
+                <p class="evidence-tool">{{ card.label }}</p>
+                {% if card.feedback %}<p>{{ card.feedback }}</p>{% endif %}
+                {% for f in card.fields %}
+                <p><span>{{ f.label }}:</span> {{ f.value }}</p>
+                {% endfor %}
+            </article>
             {% endfor %}
-            <p class="reveal-feedback">{{ last_reveal.feedback }}</p>
-        </aside>
-        {% endif %}
-    </section>
-
-    <!-- MIDDLE: evidence locker -->
-    <section class="console-panel evidence-panel">
-        <header class="console-panel-head">
-            <span>EVIDENCE LOCKER</span>
-            <span class="muted">{{ evidence_count }}/{{ evidence_needed }} key</span>
-        </header>
-        {% for card in evidence_cards %}
-        <article class="evidence-card">
-            <h4>✓ {{ card.label }}</h4>
-            {% for f in card.fields %}
-            <p><span>{{ f.label }}:</span> {{ f.value }}</p>
+            {% for label in required_labels %}
+                {% if label not in collected_labels %}
+                <article class="evidence-card is-open">
+                    <h4><span aria-hidden="true">○</span> {{ label }}</h4>
+                    <p>Not collected</p>
+                </article>
+                {% endif %}
             {% endfor %}
-        </article>
-        {% empty %}
-        <p class="empty-note">No evidence yet. Use investigation tools to reveal indicators.</p>
-        {% endfor %}
-    </section>
+        </section>
 
-    <!-- RIGHT: tools + decisions -->
-    <aside class="console-side">
-        <section class="console-panel">
+        <section class="console-panel tools-panel">
             <header class="console-panel-head"><span>INVESTIGATION TOOLS</span></header>
             <div class="tool-list">
+                {% for card in evidence_cards %}
+                <button type="button" class="tool-btn is-done" disabled>
+                    <span class="tool-ico" aria-hidden="true">✓</span>
+                    <span class="tool-name">{{ card.label }}</span>
+                    <span class="tool-meta">Done</span>
+                </button>
+                {% endfor %}
                 {% for tool in pending_investigations %}
                 <form method="post" action="{% url 'practice:decide' session.pk %}">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="{{ tool.key }}">
-                    <button type="submit" class="tool-btn">{{ tool.label }}</button>
+                    <button type="submit" class="tool-btn">
+                        <span class="tool-ico" aria-hidden="true">🔎</span>
+                        <span class="tool-name">{{ tool.label }}</span>
+                        <span class="tool-meta" aria-hidden="true">→</span>
+                    </button>
                 </form>
-                {% empty %}
-                <p class="empty-note">All investigation tools used.</p>
                 {% endfor %}
             </div>
         </section>
 
-        <section class="console-panel">
-            <header class="console-panel-head"><span>SECURITY DECISION</span></header>
+        <section class="console-panel decision-panel{% if evidence_count < evidence_needed %} is-early{% endif %}">
+            <header class="console-panel-head">
+                <span>SECURITY DECISION</span>
+                <span class="muted">Evidence collected: {{ evidence_count }} / {{ evidence_needed }}</span>
+            </header>
             <p class="decision-prompt">What should you do next?</p>
+            {% if evidence_count < evidence_needed %}
+            <p class="hint-note">Investigate the available indicators before deciding.</p>
+            {% endif %}
             <div class="tool-list">
                 {% for d in decision_actions %}
                 <form method="post" action="{% url 'practice:decide' session.pk %}">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="{{ d.key }}">
-                    <button type="submit" class="tool-btn decision-btn">{{ d.label }}</button>
+                    <button type="submit" class="tool-btn decision-btn">
+                        <span class="tool-name">{{ d.label }}</span>
+                        <span class="tool-meta" aria-hidden="true">→</span>
+                    </button>
                 </form>
                 {% endfor %}
             </div>
-            <p class="hint-note">Decisions have consequences. Evidence is not shown until inspected.</p>
-        </section>
-
-        <section class="console-panel log-mini">
-            <header class="console-panel-head"><span>ACTIVITY LOG</span></header>
-            {% for d in log %}
-            <div class="log-mini-row">
-                <strong>{{ d.label }}</strong>
-                <span class="{% if d.score_delta >= 0 %}pos{% else %}neg{% endif %}">
-                    {% if d.score_delta >= 0 %}+{% endif %}{{ d.score_delta }}
-                </span>
-            </div>
-            {% empty %}
-            <p class="empty-note">Waiting for analyst actions…</p>
-            {% endfor %}
         </section>
     </aside>
+
+    <section class="console-panel log-panel" aria-live="polite">
+        <header class="console-panel-head"><span>ACTIVITY LOG</span></header>
+        <ol class="soc-log">
+            <li>
+                <span class="soc-log-k">Incident opened</span>
+                <span>Investigation started</span>
+            </li>
+            {% for d in log %}
+            <li class="{% if forloop.last %}is-new{% endif %}">
+                {% if d.at %}<time>{{ d.at|slice:"11:19" }}</time>{% endif %}
+                <span class="soc-log-k">{% if d.type == "investigate" %}Evidence found{% else %}Decision{% endif %}</span>
+                <span>{{ d.label }}</span>
+                {% if d.result %}<span class="soc-log-d">{{ d.result }}</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+    </section>
 </main>
 {% endif %}
+<script src="{% static 'practice/js/console.js' %}"></script>
 </body>
 </html>

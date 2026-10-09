@@ -3,6 +3,7 @@ from io import BytesIO
 import tempfile
 from pathlib import Path
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
@@ -241,3 +242,133 @@ class VerificationCodeSecurityTests(TestCase):
         self.assertFalse(
             check_code(self.user, purpose="password_reset", submitted_code=record.code)
         )
+
+
+class AuthFlowFixTests(TestCase):
+    def test_login_and_signup_pages_drop_the_site_nav(self):
+        login_page = self.client.get(reverse("accounts:login"))
+        signup_page = self.client.get(reverse("accounts:signup"))
+        self.assertNotContains(login_page, 'id="cq-nav"')
+        self.assertNotContains(signup_page, 'id="cq-nav"')
+        self.assertContains(login_page, "Create an account")
+        self.assertContains(login_page, "Administrator sign in")
+        self.assertContains(signup_page, "Sign up with Google")
+        self.assertContains(signup_page, "Create Account")
+
+    def test_login_and_signup_styles_keep_a_keyboard_focus_ring(self):
+        login_css = (settings.BASE_DIR / "accounts/static/accounts/css/login_v2.css").read_text(encoding="utf-8")
+        theme_css = (settings.BASE_DIR / "static/shared/css/theme.css").read_text(encoding="utf-8")
+        self.assertIn(".lq-input:focus-visible", login_css)
+        self.assertIn(".lq-btn:focus-visible", login_css)
+        self.assertIn("outline-color: #fff", login_css)
+        self.assertIn(".cq-shell input.cq-input:focus-visible", theme_css)
+        self.assertIn(".cq-choice-card:focus-within", theme_css)
+        self.assertIn("outline-color: #4c1d95", theme_css)
+
+    def test_signup_lands_on_the_dashboard(self):
+        response = self.client.post(reverse("accounts:signup"), {
+            "username": "newrecruit",
+            "email": "new.recruit@gmail.com",
+            "password": "securepass1",
+            "confirm_password": "securepass1",
+            "date_of_birth": "2000-01-15",
+            "cyber_class": "general",
+            "skill_level": "beginner",
+            "ethical_agreement": "on",
+        })
+        self.assertRedirects(response, reverse("dashboard:home"))
+        self.assertNotEqual(response.url, reverse("courses:intro"))
+
+    def test_admin_login_is_superuser_only_and_rejects_open_redirects(self):
+        student = UserModel.objects.create_user(
+            email="student.login@gmail.com", password="securepass1", username="studentlogin",
+            ethical_agreement=True,
+        )
+        staff = UserModel.objects.create_user(
+            email="staff.login@gmail.com", password="securepass1", username="stafflogin",
+            is_staff=True, ethical_agreement=True,
+        )
+        admin = UserModel.objects.create_superuser(
+            email="root.login@gmail.com", password="securepass1", username="rootlogin",
+        )
+        page = self.client.get(reverse("accounts:admin_login"))
+        self.assertContains(page, "Administrator sign in")
+        denied = self.client.post(reverse("accounts:admin_login"), {
+            "email": student.email, "password": "securepass1",
+        })
+        self.assertEqual(denied.status_code, 200)
+        self.assertNotIn("_auth_user_id", self.client.session)
+        staff_denied = self.client.post(reverse("accounts:admin_login"), {
+            "email": staff.email, "password": "securepass1",
+        })
+        self.assertEqual(staff_denied.status_code, 200)
+        self.assertNotIn("_auth_user_id", self.client.session)
+        away = self.client.post(reverse("accounts:admin_login"), {
+            "email": admin.email,
+            "password": "securepass1",
+            "next": "https://evil.example/phish",
+        })
+        self.assertRedirects(away, reverse("ops:overview"))
+        self.assertNotIn("evil.example", away.url)
+
+        secure = self.client.__class__(enforce_csrf_checks=True)
+        blocked = secure.post(reverse("accounts:admin_login"), {
+            "email": admin.email, "password": "securepass1",
+        })
+        self.assertEqual(blocked.status_code, 403)
+
+    def test_google_profile_completion_and_linking(self):
+        from unittest.mock import patch
+
+        existing = UserModel.objects.create_user(
+            email="linked@gmail.com", password="securepass1", username="linkeduser",
+            ethical_agreement=True,
+        )
+        session = self.client.session
+        session["google_oauth_state"] = "state-1"
+        session.save()
+        with patch("accounts.views.exchange_code_for_token", return_value={"access_token": "token"}), \
+             patch("accounts.views.fetch_google_userinfo", return_value={
+                 "email": "linked@gmail.com", "email_verified": True, "name": "Linked User",
+             }):
+            linked = self.client.get(reverse("accounts:google_callback"), {"code": "c", "state": "state-1"})
+        self.assertRedirects(linked, reverse("dashboard:home"))
+        existing.refresh_from_db()
+        self.assertTrue(existing.google_linked)
+        self.assertTrue(existing.check_password("securepass1"))
+        self.assertEqual(UserModel.objects.filter(email__iexact="linked@gmail.com").count(), 1)
+
+        self.client.logout()
+        session = self.client.session
+        session["google_oauth_state"] = "state-2"
+        session.save()
+        with patch("accounts.views.exchange_code_for_token", return_value={"access_token": "token"}), \
+             patch("accounts.views.fetch_google_userinfo", return_value={
+                 "email": "fresh.google@gmail.com", "email_verified": True, "name": "Fresh Google",
+             }):
+            created = self.client.get(reverse("accounts:google_callback"), {"code": "c", "state": "state-2"})
+        self.assertRedirects(created, reverse("accounts:complete_profile"))
+        fresh = UserModel.objects.get(email="fresh.google@gmail.com")
+        self.assertTrue(fresh.google_linked)
+        self.assertFalse(fresh.has_usable_password())
+        UserModel.objects.create_user(email="other@gmail.com", password="securepass1", username="takenname")
+        collision = self.client.post(reverse("accounts:complete_profile"), {
+            "username": "takenname",
+            "date_of_birth": "2000-01-15",
+            "cyber_class": "general",
+            "skill_level": "beginner",
+            "ethical_agreement": "on",
+        })
+        self.assertEqual(collision.status_code, 200)
+        self.assertContains(collision, "That username is already taken.")
+        finished = self.client.post(reverse("accounts:complete_profile"), {
+            "username": "freshgoogle",
+            "date_of_birth": "2000-01-15",
+            "cyber_class": "general",
+            "skill_level": "beginner",
+            "ethical_agreement": "on",
+        })
+        self.assertRedirects(finished, reverse("dashboard:home"))
+        fresh.refresh_from_db()
+        self.assertEqual(fresh.username, "freshgoogle")
+        self.assertTrue(fresh.ethical_agreement)

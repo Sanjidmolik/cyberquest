@@ -1,25 +1,135 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
-<p><a href="{% url 'ops:students' %}">Back to students</a></p>
+<p class="ops-note"><a href="{% url 'ops:students' %}">Back to students</a></p>
+<div class="ops-page-head">
+  <div>
+    <h2>{{ profile.name|default:profile.display_name }}</h2>
+    <p>
+      {% if profile.is_active %}<span class="ops-badge ops-s-active">Active</span>{% else %}<span class="ops-badge ops-s-inactive">Inactive</span>{% endif %}
+      <span class="ops-badge">Level {{ profile.xp_info.level }}</span>
+      <span class="ops-badge">{{ profile.xp_info.xp }} XP</span>
+    </p>
+  </div>
+  <form method="post" action="{% url 'ops:student_status' profile.id %}">
+    {% csrf_token %}
+    {% if profile.is_active %}
+    <button class="ops-btn-quiet" type="submit" name="action" value="deactivate">Deactivate</button>
+    {% else %}
+    <button type="submit" name="action" value="activate">Reactivate</button>
+    {% endif %}
+  </form>
+</div>
+<section class="ops-kpis">
+  <article class="ops-kpi"><strong>{{ profile.learning.completed }}/{{ profile.learning.published }}</strong><span>Courses completed</span></article>
+  <article class="ops-kpi"><strong>{{ profile.learning.average }}%</strong><span>Overall progress</span></article>
+  <article class="ops-kpi"><strong>{{ profile.games.attempts }}</strong><span>Game attempts</span></article>
+  <article class="ops-kpi"><strong>{{ profile.practice.completed }}</strong><span>Practice completed</span></article>
+  <article class="ops-kpi"><strong>{{ profile.badge_count }}</strong><span>Achievements</span></article>
+  <article class="ops-kpi"><strong>{{ profile.practice.dna.overall }}</strong><span>Cyber DNA</span><small>{{ profile.practice.dna.overall_level }}</small></article>
+</section>
 <section class="ops-panel">
   <h2>Profile</h2>
-  <p>{{ learner.display_name }} · {{ learner.email }}</p>
-  <p>Joined {{ learner.date_joined|date:"Y-m-d" }} · {% if learner.is_active %}<span class="ops-badge ops-s-active">Active</span>{% else %}<span class="ops-badge ops-s-inactive">Inactive</span>{% endif %} · Level {{ learner.level }} · {{ learner.xp }} XP</p>
+  <ul class="ops-list">
+    <li><strong>Name</strong><br>{{ profile.name|default:profile.display_name }}</li>
+    {% if profile.username %}<li><strong>Username</strong><br>{{ profile.username }}</li>{% endif %}
+    <li><strong>Email</strong><br>{{ profile.email }}</li>
+    <li><strong>Joined</strong><br>{{ profile.joined|date:"Y-m-d" }}</li>
+    <li><strong>Last sign-in</strong><br>{% if profile.last_active %}{{ profile.last_active|date:"Y-m-d" }}{% else %}No sign-in yet{% endif %}{% if profile.streak %} · {{ profile.streak }} day streak{% endif %}</li>
+    <li><strong>Path</strong><br>{{ profile.cyber_class }} · {{ profile.skill_level }}</li>
+  </ul>
 </section>
 <section class="ops-panel">
   <h2>Learning</h2>
-  <p class="ops-note">{{ reading }} saved reading positions.</p>
-  <ul class="ops-list">{% for row in courses %}<li>{{ row.course.code }} — {{ row.course.title }} · {{ row.completed_at|date:"Y-m-d" }}</li>{% empty %}<li class="ops-empty">No course completions.</li>{% endfor %}</ul>
+  <p class="ops-note">{{ profile.learning.started }} started · {{ profile.learning.completed }} completed · {{ profile.learning.average }}% across published courses</p>
+  <ul class="ops-list">
+    {% for course in profile.learning.courses %}
+    <li>
+      <strong>{{ course.title }}</strong>
+      <span class="ops-badge{% if course.state == 'Completed' %} ops-s-completed{% elif course.state == 'In progress' %} ops-s-review{% endif %}">{{ course.state }}</span>
+      <span class="ops-num">{{ course.percent }}%</span>
+      <br><small>{{ course.code }}{% if course.when %} · {{ course.when|date:"Y-m-d" }}{% endif %}</small>
+    </li>
+    {% empty %}
+    <li class="ops-empty">No published courses.</li>
+    {% endfor %}
+  </ul>
 </section>
 <section class="ops-panel">
-  <h2>Performance</h2>
-  <ul class="ops-list">{% for row in attempts %}<li>{{ row.game_key }} · {{ row.n }} attempts</li>{% empty %}<li class="ops-empty">No game attempts.</li>{% endfor %}</ul>
-  <ul class="ops-list">{% for row in practices %}<li>{{ row.domain }} {{ row.activity_type }} · {{ row.percent }}% · <span class="ops-badge{% if row.status == 'completed' %} ops-s-completed{% endif %}">{{ row.get_status_display }}</span></li>{% empty %}<li class="ops-empty">No practice sessions.</li>{% endfor %}</ul>
+  <h2>Games</h2>
+  <ul class="ops-list">
+    <li>{{ profile.games.attempts }} completed attempts across {{ profile.games.games }} games</li>
+    <li>Average score {{ profile.games.avg_score }} · average {{ profile.games.avg_percent }}%</li>
+    <li>XP from first plays: {{ profile.games.xp }}</li>
+    {% if profile.games.latest %}<li>Latest {{ profile.games.latest|date:"Y-m-d" }}</li>{% endif %}
+  </ul>
+  <ul class="ops-list">
+    {% for row in profile.games.best %}
+    <li>{{ row.name }} · best {{ row.percent }}%</li>
+    {% empty %}
+    <li class="ops-empty">No game attempts.</li>
+    {% endfor %}
+  </ul>
 </section>
 <section class="ops-panel">
-  <h2>Badges and certificate</h2>
-  <ul class="ops-list">{% for row in badges %}<li>{{ row.badge.name }} · {{ row.earned_at|date:"Y-m-d" }}</li>{% empty %}<li class="ops-empty">No badges.</li>{% endfor %}</ul>
-  <p>Eligibility (existing rules): {% if eligible %}<span class="ops-badge ops-s-good">Eligible</span>{% else %}<span class="ops-badge">Not eligible</span>{% endif %}</p>
-  {% if certificate %}<p>Issued {{ certificate.certificate_id }} · score {{ certificate.score }}% · {{ certificate.issued_at|date:"Y-m-d" }}</p>{% else %}<p class="ops-note">No certificate issued.</p>{% endif %}
+  <h2>Practice</h2>
+  <ul class="ops-list">
+    <li>{{ profile.practice.sessions }} sessions started · {{ profile.practice.completed }} completed</li>
+    <li>Average completed score {{ profile.practice.avg_score }}</li>
+  </ul>
+  <ul class="ops-list">
+    {% for row in profile.practice.domains %}
+    <li>{{ row.label }} · {{ row.sessions }} started · {{ row.completed }} completed</li>
+    {% empty %}
+    <li class="ops-empty">No practice sessions.</li>
+    {% endfor %}
+  </ul>
+  <p class="ops-note">Cyber DNA {{ profile.practice.dna.overall }} · {{ profile.practice.dna.overall_level }}</p>
+  <ul class="ops-list">
+    {% for row in profile.practice.dna.domains %}
+    <li>{{ row.label }} · {{ row.percent }}% · {{ row.level }}</li>
+    {% endfor %}
+  </ul>
+</section>
+<section class="ops-panel">
+  <h2>XP</h2>
+  <ul class="ops-list">
+    <li>Current XP {{ profile.xp_info.xp }}</li>
+    <li>Current level {{ profile.xp_info.level }}</li>
+    <li>{{ profile.xp_info.into_level }} XP into this level · {{ profile.xp_info.remaining }} XP to the next level</li>
+  </ul>
+</section>
+<section class="ops-panel">
+  <h2>Achievements</h2>
+  <p class="ops-note">{{ profile.badge_count }} earned</p>
+  <ul class="ops-list">
+    {% for row in profile.badges %}
+    <li>{{ row.badge.name }} · {{ row.earned_at|date:"Y-m-d" }}</li>
+    {% empty %}
+    <li class="ops-empty">No achievements yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+<section class="ops-panel">
+  <h2>Certificate</h2>
+  <p>Eligibility: {% if profile.eligible %}<span class="ops-badge ops-s-good">Eligible</span>{% else %}<span class="ops-badge">Not eligible</span>{% endif %}</p>
+  {% if profile.certificate %}
+  <ul class="ops-list">
+    <li>{{ profile.certificate.certificate_id }}</li>
+    <li>{{ profile.certificate.recipient_name }} · {{ profile.certificate.score }}%</li>
+    <li>Issued {{ profile.certificate.issued_at|date:"Y-m-d" }}</li>
+  </ul>
+  {% else %}
+  <p class="ops-note">No certificate issued.</p>
+  {% endif %}
+</section>
+<section class="ops-panel">
+  <h2>Recent activity</h2>
+  <ul class="ops-list">
+    {% for row in profile.activity %}
+    <li><strong>{{ row.kind }}</strong> {{ row.detail }} · {{ row.status }}{% if row.when %} · {{ row.when|date:"Y-m-d" }}{% endif %}</li>
+    {% empty %}
+    <li class="ops-empty">No activity yet.</li>
+    {% endfor %}
+  </ul>
 </section>
 {% endblock %}

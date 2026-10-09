@@ -1,0 +1,49 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'ops:notifications' %}">Back to notifications</a></p>
+<div class="ops-page-head">
+  <div>
+    <h2>Notification</h2>
+    <p>
+      {% if note.is_read %}
+      <span class="ops-badge ops-s-resolved">Read</span>
+      {% else %}
+      <span class="ops-badge ops-s-open">Unread</span>
+      {% endif %}
+    </p>
+  </div>
+</div>
+<section class="ops-panel">
+  <h2>Message</h2>
+  <ul class="ops-list">
+    <li>{{ note.message }}</li>
+    <li><strong>Created</strong><br>{{ note.created_at|date:"Y-m-d H:i" }}</li>
+    <li>
+      <strong>Link</strong><br>
+      {% if safe_link %}
+      <a href="{{ safe_link }}">{{ safe_link }}</a>
+      {% elif note.link_url %}
+      {{ note.link_url }}
+      <br><small>This address is stored, and the student notification page will not send them there.</small>
+      {% else %}
+      None
+      {% endif %}
+    </li>
+  </ul>
+</section>
+<section class="ops-panel">
+  <h2>Recipient</h2>
+  <ul class="ops-list">
+    <li>
+      <strong>Name</strong><br>
+      {% if is_student %}
+      <a href="{% url 'ops:student' note.user.pk %}">{{ note.user.full_name|default:note.user.display_name }}</a>
+      {% else %}
+      {{ note.user.full_name|default:note.user.display_name }}
+      {% endif %}
+    </li>
+    {% if note.user.username %}<li><strong>Username</strong><br>{{ note.user.username }}</li>{% endif %}
+    <li><strong>Email</strong><br>{{ note.user.email }}</li>
+  </ul>
+</section>
+{% endblock %}

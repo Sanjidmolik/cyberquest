@@ -1,18 +1,188 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
+<p class="ops-note">Student figures leave out staff and superuser accounts. The course completion rate uses the same all-time denominator as Overview: completed student-course pairs divided by published courses times student accounts. Averages appear only when at least one scored record exists. The date range below filters the period figures and the trend charts. Queue counts stay current.</p>
+<form class="ops-filters" method="get">
+  <select name="period" aria-label="Reporting period">
+    <option value="all"{% if period == "all" %} selected{% endif %}>All time</option>
+    <option value="7"{% if period == "7" %} selected{% endif %}>Last 7 days</option>
+    <option value="30"{% if period == "30" %} selected{% endif %}>Last 30 days</option>
+    <option value="90"{% if period == "90" %} selected{% endif %}>Last 90 days</option>
+  </select>
+  <button type="submit">Apply</button>
+</form>
+
 <section class="ops-panel">
-  <h2>New students, 30 days</h2>
-  <div class="ops-chart">
-    <div class="ops-bars" role="img" aria-label="New students over 30 days">{% for bar in signups %}<span style="height: {{ bar.height }}%" title="{{ bar.label }}: {{ bar.n }}"></span>{% endfor %}</div>
-    <div class="ops-bar-labels" aria-hidden="true">{% for bar in signups %}<span>{{ bar.label }}</span>{% endfor %}</div>
+  <h2>Platform overview <span>· all-time accounts and the {{ report.period_label|lower }} activity window</span></h2>
+  <section class="ops-kpis">
+    <article class="ops-kpi"><strong>{{ report.students }}</strong><span>Student accounts</span></article>
+    <article class="ops-kpi"><strong>{{ report.active_accounts }}</strong><span>Active accounts</span></article>
+    <article class="ops-kpi"><strong>{{ report.active_in_period }}</strong><span>Students with a sign-in · {{ report.period_label }}</span></article>
+    <article class="ops-kpi"><strong>{{ report.published_courses }}</strong><span>Published courses</span></article>
+    <article class="ops-kpi"><strong>{% if report.completion_rate is not None %}{{ report.completion_rate }}%{% else %}—{% endif %}</strong><span>Course completion · {{ report.completions }} of {{ report.completion_denominator }} slots</span></article>
+    <article class="ops-kpi"><strong>{{ report.game_attempts }}</strong><span>Finished game attempts · {{ report.period_label }}</span></article>
+    <article class="ops-kpi"><strong>{{ report.practice_completed }}</strong><span>Completed practice sessions · {{ report.period_label }}</span></article>
+    <article class="ops-kpi"><strong>{% if report.mean_game is not None %}{{ report.mean_game }}%{% else %}—{% endif %}</strong><span>Average game score · {{ report.period_label }}</span></article>
+    <article class="ops-kpi"><strong>{% if report.mean_practice is not None %}{{ report.mean_practice }}%{% else %}—{% endif %}</strong><span>Average completed practice score · {{ report.period_label }}</span></article>
+    <article class="ops-kpi"><strong>{{ report.certificates }}</strong><span>Ready student certificates</span></article>
+    <article class="ops-kpi"><strong>{{ report.badge_students }}</strong><span>Students with an achievement</span></article>
+    <article class="ops-kpi"><strong>{{ report.open_contact }}</strong><span>Open contact messages</span></article>
+  </section>
+</section>
+
+<section class="ops-panel">
+  <h2>Learning <span>· completion rate is completions ÷ student accounts</span></h2>
+  <p class="ops-note">{{ report.readers }} students have opened a published course. {% if report.busiest_course %}Most completions: {{ report.busiest_course.title }} ({{ report.busiest_course.completed }}).{% else %}No published course has a completion yet.{% endif %} {% if report.low_courses %}Lowest completion: {% for row in report.low_courses %}{{ row.title }} ({{ row.percent }}%){% if not forloop.last %}, {% endif %}{% endfor %}.{% elif report.low_note %}{{ report.low_note }}{% endif %}</p>
+  <div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>Course</th>
+        <th>Completions</th>
+        <th>In this period</th>
+        <th>Readers</th>
+        <th>Completion rate</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in report.courses %}
+      <tr>
+        <td>
+          {{ row.title }}
+          <div class="ops-meter" aria-hidden="true"><span style="width: {% if row.percent %}{{ row.percent }}{% else %}0{% endif %}%"></span></div>
+        </td>
+        <td class="ops-num">{{ row.completed }}</td>
+        <td class="ops-num">{{ row.period_completed }}</td>
+        <td class="ops-num">{{ row.readers }}</td>
+        <td class="ops-num">{% if row.percent is not None %}{{ row.percent }}%{% else %}—{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td class="ops-empty" colspan="5">No published courses.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
   </div>
 </section>
-<section class="ops-panel">
-  <h2>Games</h2>
-  <ul class="ops-list">{% for row in games %}<li>{{ row.name }} · {{ row.attempts }} attempts · {{ row.avg_score }}% mean</li>{% empty %}<li class="ops-empty">No attempts.</li>{% endfor %}</ul>
+
+<section class="ops-panel ops-panel-chart">
+  <h2>Game attempts <span>· {{ report.period_label }}</span></h2>
+  <div class="ops-chart">
+    <div class="ops-bars" role="img" aria-label="Finished student game attempts, {{ report.period_label }}">
+      {% for row in report.games %}<span style="height: {{ row.height }}%{% if not row.attempts %};min-height:0{% endif %}" title="{{ row.name }}: {{ row.attempts }}"></span>{% endfor %}
+    </div>
+    <div class="ops-bar-labels" aria-hidden="true">{% for row in report.games %}<span>{{ row.attempts }}</span>{% endfor %}</div>
+  </div>
+  <div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>Game</th>
+        <th>Question bank</th>
+        <th>Attempts</th>
+        <th>Students</th>
+        <th>Average</th>
+        <th>First attempt</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in report.games %}
+      <tr>
+        <td>{{ row.name }}</td>
+        <td>{{ row.bank }}</td>
+        <td class="ops-num">{{ row.attempts }}</td>
+        <td class="ops-num">{{ row.students }}</td>
+        <td class="ops-num">{% if row.avg_percent is not None %}{{ row.avg_percent }}%{% else %}—{% endif %}</td>
+        <td class="ops-num">{% if row.first_percent is not None %}{{ row.first_percent }}%{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="ops-note">{{ report.game_students }} students played in this period. The first-attempt column is the earliest saved play for each student and game, limited to the same period. Average uses scored attempts only.</p>
 </section>
+
+<section class="ops-panel ops-panel-chart">
+  <h2>Practice <span>· {{ report.period_label }}</span></h2>
+  <p class="ops-note">{% if report.practice_rate is not None %}{{ report.practice_rate }}% of {{ report.practice_sessions }} student sessions were completed. The rate divides completed sessions by sessions started in this period.{% else %}No student practice sessions in this period.{% endif %} {{ report.practice_students }} students started a session. Unfinished sessions stay out of the average.</p>
+  <div class="ops-chart">
+    <div class="ops-bars" role="img" aria-label="Completed student practice sessions by domain, {{ report.period_label }}">
+      {% for row in report.domains %}<span style="height: {{ row.height }}%{% if not row.completed %};min-height:0{% endif %}" title="{{ row.domain }}: {{ row.completed }}"></span>{% endfor %}
+    </div>
+    <div class="ops-bar-labels" aria-hidden="true">{% for row in report.domains %}<span>{{ row.completed }}</span>{% endfor %}</div>
+  </div>
+  <div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead>
+      <tr><th>Domain</th><th>Sessions</th><th>Completed</th><th>Students</th><th>Completion</th><th>Average</th></tr>
+    </thead>
+    <tbody>
+      {% for row in report.domains %}
+      <tr>
+        <td>{{ row.domain }}</td>
+        <td class="ops-num">{{ row.sessions }}</td>
+        <td class="ops-num">{{ row.completed }}</td>
+        <td class="ops-num">{{ row.students }}</td>
+        <td class="ops-num">{% if row.rate is not None %}{{ row.rate }}%{% else %}—{% endif %}</td>
+        <td class="ops-num">{% if row.avg_percent is not None %}{{ row.avg_percent }}%{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <div class="ops-table-wrap">
+  <table class="ops-table">
+    <thead>
+      <tr><th>Activity</th><th>Sessions</th><th>Completed</th><th>Completion</th><th>Average</th></tr>
+    </thead>
+    <tbody>
+      {% for row in report.activities %}
+      <tr>
+        <td>{{ row.activity }}</td>
+        <td class="ops-num">{{ row.sessions }}</td>
+        <td class="ops-num">{{ row.completed }}</td>
+        <td class="ops-num">{% if row.rate is not None %}{{ row.rate }}%{% else %}—{% endif %}</td>
+        <td class="ops-num">{% if row.avg_percent is not None %}{{ row.avg_percent }}%{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="ops-panel ops-panel-chart">
+  <h2>Student engagement</h2>
+  <p class="ops-note">Registrations in the chart are {{ report.chart_label|lower }}. The student-account total above stays all-time. Current level uses the stored level and is not recalculated for the date range.</p>
+  <h3>Signups <span>· {{ report.chart_label }}</span></h3>
+  <div class="ops-chart">
+    <div class="ops-bars" role="img" aria-label="New student accounts, {{ report.chart_label }}">
+      {% for bar in report.signups_chart %}<span style="height: {{ bar.height }}%{% if not bar.n %};min-height:0{% endif %}" title="{{ bar.label }}: {{ bar.n }}"></span>{% endfor %}
+    </div>
+    <div class="ops-bar-labels" aria-hidden="true">{% for bar in report.signups_chart %}<span>{% if bar.show_label %}{{ bar.label }}{% endif %}</span>{% endfor %}</div>
+  </div>
+  <h3>Completed practice by day <span>· {{ report.chart_label }}</span></h3>
+  <div class="ops-chart">
+    <div class="ops-bars" role="img" aria-label="Completed practice sessions by day, {{ report.chart_label }}">
+      {% for bar in report.practice_chart %}<span style="height: {{ bar.height }}%{% if not bar.n %};min-height:0{% endif %}" title="{{ bar.label }}: {{ bar.n }}"></span>{% endfor %}
+    </div>
+  </div>
+  <h3>Current level</h3>
+  <div class="ops-chart">
+    <div class="ops-bars" role="img" aria-label="Students by stored level">
+      {% for row in report.levels %}<span style="height: {{ row.height }}%" title="Level {{ row.level }}: {{ row.n }}"></span>{% empty %}<span style="height:0;min-height:0"></span>{% endfor %}
+    </div>
+    <div class="ops-bar-labels" aria-hidden="true">{% for row in report.levels %}<span>{{ row.level }}</span>{% endfor %}</div>
+  </div>
+  <p class="ops-note">{{ report.signups }} student registrations in {{ report.period_label|lower }}. {{ report.game_students }} played a game and {{ report.practice_students }} started practice in that same window.</p>
+</section>
+
 <section class="ops-panel">
-  <h2>Practice domains</h2>
-  <ul class="ops-list">{% for row in practice %}<li>{{ row.domain }} · {{ row.rate }}% completed · mean {{ row.avg_score }}</li>{% empty %}<li class="ops-empty">No sessions.</li>{% endfor %}</ul>
+  <h2>Operational health <span>· current queue</span></h2>
+  <section class="ops-kpis">
+    <article class="ops-kpi"><strong>{{ report.review_sets }}</strong><span>Question sets in review</span></article>
+    <article class="ops-kpi"><strong>{{ report.review_banks }}</strong><span>Banks awaiting review</span></article>
+    <article class="ops-kpi"><strong>{{ report.incomplete_certificates }}</strong><span>Certificate records without a PDF</span></article>
+    <article class="ops-kpi"><strong>{{ report.unread_notifications }}</strong><span>Unread notifications</span></article>
+    <article class="ops-kpi"><strong>{{ report.open_contact }}</strong><span>Open contact messages</span></article>
+  </section>
+  <p class="ops-note">{{ report.certificates_in_period }} ready student certificates and {{ report.badges_in_period }} achievement awards fall in {{ report.period_label|lower }}.</p>
 </section>
 {% endblock %}

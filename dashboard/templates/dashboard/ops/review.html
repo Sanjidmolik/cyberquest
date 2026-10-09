@@ -10,11 +10,12 @@
   {% for qset in bank.question_sets.all %}
     {% if qset.status == "REVIEW" %}
     <article class="ops-review">
-      <p>Set {{ qset.set_number }} · {{ qset.get_set_type_display }} · <span class="ops-badge ops-s-review">{{ qset.get_status_display }}</span></p>
+      <p>Set {{ qset.set_number }} · {{ qset.get_set_type_display }} · <span class="ops-badge ops-s-review">Needs review</span></p>
       <ul>
         {% for question in qset.questions.all %}
         <li>
           <strong>{{ question.prompt }}</strong>
+          <small>{{ question.get_question_type_display }}{% if question.difficulty %} · {{ question.get_difficulty_display }}{% endif %}</small>
           <ol>{% for option in question.options %}<li>{% if forloop.counter0 == question.correct_index %}✓ {% endif %}{{ option }}</li>{% endfor %}</ol>
           <p>{{ question.explanation }}</p>
           {% if question.source_excerpt %}<p><small>Source: {{ question.source_excerpt }}</small></p>{% endif %}

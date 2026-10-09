@@ -1,0 +1,19 @@
+{% if scenario.scene.nodes %}
+<section class="brief-view" aria-label="Security visualization">
+    <p class="brief-label">Security visualization</p>
+    <div class="brief-stage">
+        <div class="brief-path">
+            {% for node in scenario.scene.nodes %}
+            {% if not forloop.first %}<span class="brief-link" style="--d: {{ forloop.counter0 }};" aria-hidden="true"></span>{% endif %}
+            {% with name=node.label|lower %}
+            <div class="brief-node{% if node.id in scenario.scene.suspicious %} is-alert{% endif %}" style="--d: {{ forloop.counter0 }}; --z: {{ node.z|default:12 }}px;">
+                <span class="brief-ico" aria-hidden="true">{% if node.id in scenario.scene.suspicious %}⚠{% elif "mail" in name or "email" in name or "sender" in name %}✉{% elif "link" in name or "login" in name or "page" in name %}⧉{% elif "key" in name %}⚿{% elif "firewall" in name or "network" in name or "internet" in name %}⬡{% elif "user" in name or "employee" in name or "person" in name or "profile" in name %}◉{% elif "server" in name or "host" in name or "workstation" in name %}▣{% else %}◉{% endif %}</span>
+                <span class="brief-name">{{ node.label }}</span>
+            </div>
+            {% endwith %}
+            {% endfor %}
+            <span class="brief-packet" aria-hidden="true"></span>
+        </div>
+    </div>
+</section>
+{% endif %}

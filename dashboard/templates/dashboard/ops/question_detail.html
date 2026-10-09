@@ -1,0 +1,59 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note">
+  {% for qset in question.sets.all %}
+    {% if qset.question_bank_id %}
+    <a href="{% url 'ops:question_bank' qset.question_bank_id %}">{{ qset.question_bank.title }}</a>
+    {% else %}
+    {{ qset.get_course_display }}
+    {% endif %}
+    {% if not forloop.last %} · {% endif %}
+  {% empty %}
+  <a href="{% url 'ops:questions' %}">Question banks</a>
+  {% endfor %}
+</p>
+
+<section class="ops-panel">
+  <h2>
+    {{ question.get_question_type_display }}
+    {% if question.difficulty %}<span>{{ question.get_difficulty_display }}</span>{% endif %}
+    {% if question.is_active %}
+    <span class="ops-badge ops-s-active">Available</span>
+    {% else %}
+    <span class="ops-badge ops-s-draft">Hidden</span>
+    {% endif %}
+    {% if live %}<span class="ops-badge ops-s-approved">In a live game</span>{% endif %}
+  </h2>
+  <p>{{ question.prompt }}</p>
+  <ol>
+    {% for option in question.options %}
+    <li>{% if forloop.counter0 == question.correct_index %}<strong>{{ option }} — correct</strong>{% else %}{{ option }}{% endif %}</li>
+    {% endfor %}
+  </ol>
+  {% if question.explanation %}<p class="ops-note">{{ question.explanation }}</p>{% endif %}
+  <form method="post" action="{% url 'ops:question_visibility' question.pk %}">
+    {% csrf_token %}
+    {% if question.is_active %}
+    <button class="ops-btn-quiet" type="submit" name="action" value="hide">Hide from students</button>
+    {% else %}
+    <button type="submit" name="action" value="show">Show to students</button>
+    {% endif %}
+  </form>
+</section>
+
+{% if live %}
+<p class="ops-note">Students can receive this question now. Hide it before changing the wording, so a live game is not rewritten underneath them.</p>
+{% else %}
+<form class="ops-panel ops-course-form" method="post">
+  {% csrf_token %}
+  <h2>Edit wording</h2>
+  {{ form.non_field_errors }}
+  {% for field in form %}
+  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {{ field }}
+  {{ field.errors }}
+  {% endfor %}
+  <p><button type="submit">Save question</button></p>
+</form>
+{% endif %}
+{% endblock %}

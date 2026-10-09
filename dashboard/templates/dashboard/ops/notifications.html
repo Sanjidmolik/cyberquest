@@ -1,20 +1,74 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
-<p class="ops-note">{{ unread }} unread notifications across the platform.</p>
+<p class="ops-note">Each notification belongs to one student account and is saved in the app. This form does not send email. Opening this screen does not mark a notification as read.</p>
+<section class="ops-kpis">
+  <article class="ops-kpi"><strong>{{ summary.total }}</strong><span>Notifications</span></article>
+  <article class="ops-kpi"><strong>{{ summary.unread }}</strong><span>Unread</span></article>
+  <article class="ops-kpi"><strong>{{ summary.read }}</strong><span>Read</span></article>
+</section>
 <form class="ops-filters" method="post">
   {% csrf_token %}
-  <input type="email" name="email" required placeholder="Student email" aria-label="Student email">
-  <input type="text" name="message" required maxlength="255" placeholder="Message" aria-label="Message">
-  <input type="text" name="link_url" placeholder="/dashboard/" aria-label="Optional internal link">
-  <button type="submit">Send</button>
+  <label class="ops-filter-field">
+    Student email
+    <input type="email" name="email" value="{{ posted.email }}" placeholder="student@example.com" aria-label="Student email" aria-describedby="note-email-error">
+    {% if form_errors.email %}<span id="note-email-error" class="ops-field-error">{{ form_errors.email }}</span>{% endif %}
+  </label>
+  <label class="ops-filter-field">
+    Message
+    <input type="text" name="message" value="{{ posted.message }}" maxlength="255" placeholder="Message" aria-label="Message" aria-describedby="note-message-error">
+    {% if form_errors.message %}<span id="note-message-error" class="ops-field-error">{{ form_errors.message }}</span>{% endif %}
+  </label>
+  <label class="ops-filter-field">
+    Optional link
+    <input type="text" name="link_url" value="{{ posted.link_url }}" maxlength="200" placeholder="/dashboard/" aria-label="Optional internal link" aria-describedby="note-link-error">
+    {% if form_errors.link_url %}<span id="note-link-error" class="ops-field-error">{{ form_errors.link_url }}</span>{% endif %}
+  </label>
+  <button type="submit">Save notification</button>
+</form>
+<form class="ops-filters" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Message, name, username, or email" aria-label="Search notifications">
+  <select name="status" aria-label="Read status">
+    <option value="">Read and unread</option>
+    <option value="unread"{% if status == "unread" %} selected{% endif %}>Unread</option>
+    <option value="read"{% if status == "read" %} selected{% endif %}>Read</option>
+  </select>
+  <select name="window" aria-label="Created">
+    <option value="">Any date</option>
+    <option value="7"{% if window == "7" %} selected{% endif %}>Last 7 days</option>
+    <option value="30"{% if window == "30" %} selected{% endif %}>Last 30 days</option>
+  </select>
+  <button type="submit">Filter</button>
 </form>
 <div class="ops-table-wrap">
 <table class="ops-table">
-  <thead><tr><th>User</th><th>Message</th><th>Link</th><th>Read</th><th>When</th></tr></thead>
+  <thead>
+    <tr>
+      <th>Message</th>
+      <th>Recipient</th>
+      <th>Status</th>
+      <th>Created</th>
+    </tr>
+  </thead>
   <tbody>
     {% for note in page_obj %}
-    <tr><td>{{ note.user.email }}</td><td>{{ note.message }}</td><td>{{ note.link_url }}</td><td>{% if note.is_read %}<span class="ops-badge ops-s-resolved">Read</span>{% else %}<span class="ops-badge ops-s-open">Unread</span>{% endif %}</td><td>{{ note.created_at|date:"Y-m-d H:i" }}</td></tr>
-    {% empty %}<tr><td class="ops-empty" colspan="5">None.</td></tr>{% endfor %}
+    <tr>
+      <td><a href="{% url 'ops:notification' note.pk %}">{{ note.message }}</a></td>
+      <td>
+        {{ note.user.full_name|default:note.user.display_name }}
+        <br><small>{{ note.user.email }}</small>
+      </td>
+      <td>
+        {% if note.is_read %}
+        <span class="ops-badge ops-s-resolved">Read</span>
+        {% else %}
+        <span class="ops-badge ops-s-open">Unread</span>
+        {% endif %}
+      </td>
+      <td>{{ note.created_at|date:"Y-m-d H:i" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="4">No notifications match.</td></tr>
+    {% endfor %}
   </tbody>
 </table>
 </div>

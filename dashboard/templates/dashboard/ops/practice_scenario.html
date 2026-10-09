@@ -1,0 +1,74 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'ops:practice' %}">Back to practice scenarios</a></p>
+<p class="ops-note">Developer-managed. This view does not change what students receive or how the scenario is scored.</p>
+<div class="ops-page-head">
+  <div>
+    <h2>{{ scenario.title }}</h2>
+    <p>
+      <span class="ops-badge">{{ scenario.domain_label }}</span>
+      <span class="ops-badge">{{ scenario.activity_label }}</span>
+      <span class="ops-badge">{{ scenario.difficulty_label }}</span>
+      {% if scenario.severity %}<span class="ops-badge ops-s-review">{{ scenario.severity }}</span>{% endif %}
+    </p>
+  </div>
+</div>
+<section class="ops-kpis">
+  <article class="ops-kpi"><strong>{{ scenario.usage.completed }}</strong><span>Completed</span></article>
+  <article class="ops-kpi"><strong>{{ scenario.usage.students }}</strong><span>Students</span></article>
+  <article class="ops-kpi"><strong>{{ scenario.usage.avg_score }}</strong><span>Average score</span></article>
+  <article class="ops-kpi"><strong>{{ scenario.usage.sessions }}</strong><span>Sessions started</span>{% if scenario.usage.latest %}<small>Latest {{ scenario.usage.latest|date:"Y-m-d" }}</small>{% endif %}</article>
+</section>
+<section class="ops-panel">
+  <h2>What the student is asked to do</h2>
+  {% if scenario.objective %}<p>{{ scenario.objective }}</p>{% endif %}
+  {% if scenario.summary %}<p class="ops-note">{{ scenario.summary }}</p>{% endif %}
+  <ul class="ops-list">
+    {% if scenario.incident_code %}<li>Case {{ scenario.incident_code }}</li>{% endif %}
+    {% if scenario.environment %}<li>{{ scenario.environment }}{% if scenario.workspace_label %} · {{ scenario.workspace_label }}{% endif %}</li>{% endif %}
+    {% if scenario.employee %}<li>{{ scenario.employee }}{% if scenario.department %}, {{ scenario.department }}{% endif %}</li>{% endif %}
+    {% if scenario.subject %}<li>{{ scenario.subject }}</li>{% endif %}
+  </ul>
+</section>
+<section class="ops-panel">
+  <h2>Evidence the student can inspect</h2>
+  <ul class="ops-list">
+    {% for check in scenario.checks %}
+    <li>
+      <strong>{{ check.label }}</strong>
+      {% if check.required %}<span class="ops-badge ops-s-review">Needed before the decision</span>{% else %}<span class="ops-badge">Optional</span>{% endif %}
+      {% if check.finding %}<br><small>{{ check.finding }}</small>{% endif %}
+      {% if check.note %}<br><span class="ops-note">{{ check.note }}</span>{% endif %}
+    </li>
+    {% empty %}
+    <li>This scenario has no evidence checks.</li>
+    {% endfor %}
+  </ul>
+</section>
+<section class="ops-panel">
+  <h2>Decisions</h2>
+  <ul class="ops-list">
+    {% for decision in scenario.decisions %}
+    <li>
+      <strong>{{ decision.label }}</strong>
+      <span class="ops-badge{% if decision.quality == 'Recommended' %} ops-s-approved{% elif decision.quality == 'Unsafe' %} ops-s-rejected{% endif %}">{{ decision.quality }}</span>
+      <span class="ops-num">{{ decision.score }}</span>
+      {% if decision.result_title %}<br><small>{{ decision.result_title }}</small>{% endif %}
+      {% if decision.result %}<br><span class="ops-note">{{ decision.result }}</span>{% endif %}
+    </li>
+    {% empty %}
+    <li>This scenario has no decisions.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% if scenario.nodes %}
+<section class="ops-panel">
+  <h2>Scene</h2>
+  <ul class="ops-list">
+    {% for node in scenario.nodes %}
+    <li>{{ node.label }}{% if node.suspicious %} <span class="ops-badge ops-s-review">Highlighted</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

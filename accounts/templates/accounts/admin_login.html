@@ -1,0 +1,50 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="day">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CyberQuest — Administrator sign in</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'accounts/css/login_v2.css' %}">
+    <link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
+</head>
+<body>
+<main class="lq-page">
+    <section class="lq-card" aria-labelledby="admin-login-title">
+        <div class="lq-main">
+            {% include "shared/_brand.html" with brand_class="lq-mbrand" %}
+            <header class="lq-head">
+                <p class="lq-hello">Command Center</p>
+                <h1 id="admin-login-title">Administrator sign in</h1>
+                <p class="lq-sub lq-muted">This page is only for CyberQuest superusers. Student accounts stay on the student sign-in page.</p>
+            </header>
+            <form method="post" class="lq-form">
+                {% csrf_token %}
+                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                {% if messages %}
+                <div class="lq-messages" role="status">
+                    {% for message in messages %}
+                    <p class="lq-msg lq-msg-{{ message.tags }}">{{ message }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="lq-field">
+                    <label for="id_email">Email address</label>
+                    <input id="id_email" name="email" type="email" class="lq-input" autocomplete="username" value="{{ form.email.value|default_if_none:'' }}" required>
+                    {% if form.email.errors %}<p class="lq-field-error">{{ form.email.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="lq-field">
+                    <label for="id_password">Password</label>
+                    <input id="id_password" name="password" type="password" class="lq-input" autocomplete="current-password" required>
+                    {% if form.password.errors %}<p class="lq-field-error">{{ form.password.errors.0 }}</p>{% endif %}
+                </div>
+                <button type="submit" class="lq-btn lq-btn-primary">Sign in as administrator</button>
+            </form>
+            <p class="lq-foot lq-muted"><a href="{% url 'accounts:login' %}">Student sign in</a></p>
+        </div>
+    </section>
+</main>
+</body>
+</html>

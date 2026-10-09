@@ -12,6 +12,8 @@ sending -- no real email account is needed to test any of this.
 
 from django.core.mail import send_mail
 from django.conf import settings
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 
 def send_welcome_email(user):
@@ -54,3 +56,41 @@ def send_password_reset_email(user, code):
         "-- The CyberQuest Team"
     )
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+
+
+def send_account_status_email(user, active):
+    """
+    Tell a student their sign-in was suspended or restored.
+    Returns True only after send_mail succeeds. Never includes SMTP details.
+    """
+    if user.is_staff or user.is_superuser:
+        return False
+    recipient = (user.email or "").strip()
+    sender = (settings.DEFAULT_FROM_EMAIL or "").strip()
+    try:
+        validate_email(recipient)
+    except ValidationError:
+        return False
+    if not sender:
+        return False
+    name = user.display_name()
+    if active:
+        subject = "Your CyberQuest account is active again"
+        body = (
+            f"Hello {name},\n\n"
+            "An administrator restored your CyberQuest account. You can sign in again.\n\n"
+            "-- The CyberQuest Team"
+        )
+    else:
+        subject = "Your CyberQuest account is suspended"
+        body = (
+            f"Hello {name},\n\n"
+            "An administrator suspended your CyberQuest account. "
+            "You cannot sign in until it is restored.\n\n"
+            "-- The CyberQuest Team"
+        )
+    try:
+        send_mail(subject, body, sender, [recipient], fail_silently=False)
+    except Exception:
+        return False
+    return True

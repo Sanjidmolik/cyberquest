@@ -1,0 +1,83 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'ops:games' %}">Back to games</a></p>
+<p class="ops-note">Developer-managed. Opening this page does not change scoring, XP, or which questions a student receives.</p>
+<div class="ops-page-head">
+  <div>
+    <h2>{{ game.name }}</h2>
+    {% if game.description %}<p>{{ game.description }}</p>{% endif %}
+    <p>
+      <span class="ops-badge">{{ game.key }}</span>
+      {% if game.bank_label %}<span class="ops-badge">{{ game.bank_label }}</span>{% else %}<span class="ops-badge">Built-in questions</span>{% endif %}
+    </p>
+  </div>
+</div>
+<section class="ops-kpis">
+  <article class="ops-kpi">
+    <strong>{{ game.usage.completed }}</strong>
+    <span>Completed attempts</span>
+    {% if game.usage.latest %}<small>Latest {{ game.usage.latest|date:"Y-m-d" }}</small>{% endif %}
+  </article>
+  <article class="ops-kpi"><strong>{{ game.usage.students }}</strong><span>Students</span></article>
+  <article class="ops-kpi"><strong>{{ game.usage.avg_score }}</strong><span>Average score</span></article>
+  <article class="ops-kpi"><strong>{{ game.usage.avg_percent }}%</strong><span>Average percentage</span></article>
+  <article class="ops-kpi">
+    <strong>{{ game.usage.first_avg_percent }}%</strong>
+    <span>First-attempt average</span>
+    <small>{{ game.usage.replays }} later plays</small>
+  </article>
+  <article class="ops-kpi"><strong>{{ game.usage.xp }}</strong><span>XP awarded</span></article>
+</section>
+<p class="ops-note">An attempt is stored only after a student submits, so every figure here is a completed play. Staff activity is not included.</p>
+<section class="ops-panel">
+  <h2>Question bank</h2>
+  {% if game.has_bank %}
+  <ul class="ops-list">
+    <li><strong>Game</strong><br>{{ game.name }}</li>
+    <li><strong>Question bank</strong><br>{{ game.bank_label }}</li>
+    <li><strong>Identifier</strong><br>{{ game.key }}</li>
+    <li><strong>Questions</strong><br>{{ game.question_count }}</li>
+    <li><strong>Ready for students</strong><br>{{ game.usable_questions }}</li>
+  </ul>
+  {% if game.banks %}
+  <p class="ops-note">Records stored for this bank</p>
+  <ul class="ops-list">
+    {% for bank in game.banks %}
+    <li>
+      <a href="{% url 'ops:question_bank' bank.pk %}">{{ bank.title }}</a>
+      <span class="ops-badge ops-s-{{ bank.status|lower }}">{{ bank.get_status_display }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="ops-empty">No question bank record has been created for this game yet.</p>
+  {% endif %}
+  {% else %}
+  <ul class="ops-list">
+    <li><strong>Game</strong><br>{{ game.name }}</li>
+    <li><strong>Question bank</strong><br>None. This game uses a built-in question list.</li>
+    <li><strong>Questions</strong><br>{{ game.question_count }}</li>
+  </ul>
+  <p class="ops-empty">This game does not use a question bank.</p>
+  {% endif %}
+</section>
+<section class="ops-panel">
+  <h2>How a play is scored</h2>
+  <ul class="ops-list">
+    <li>Configured play: {{ game.questions_per_play }} questions.</li>
+    {% if game.default_mcq is not None %}
+    <li>Developer default mix: {{ game.default_mcq }} multiple choice and {{ game.default_simulation }} simulation{% if game.default_difficulty %}, {{ game.default_difficulty }} difficulty{% endif %}.</li>
+    {% endif %}
+    {% if game.live_play %}
+    <li>The newest approved bank, {{ game.live_play.title }}, builds a play of {{ game.live_play.questions }} questions ({{ game.live_play.mcq }} multiple choice, {{ game.live_play.simulation }} simulation, {{ game.live_play.difficulty }} difficulty) when the approved questions can fill that plan.</li>
+    {% endif %}
+    {% if game.has_bank and game.builtin_questions %}
+    <li>{{ game.builtin_questions }} built-in questions remain as a fallback when no approved set is ready.</li>
+    {% elif not game.has_bank %}
+    <li>This game uses its built-in questions. It is not connected to a question bank.</li>
+    {% endif %}
+    <li>The score is the number of correct answers. The percentage is that score divided by the questions in the play.</li>
+    <li>The first time a student finishes, each correct answer awards {{ game.xp_per_correct }} XP. A later play keeps the score and does not add XP.</li>
+  </ul>
+</section>
+{% endblock %}

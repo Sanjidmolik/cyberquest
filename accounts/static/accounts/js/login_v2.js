@@ -10,7 +10,7 @@
 (function () {
     "use strict";
 
-    var KEY = "cq_login_theme";
+    var KEY = "cq_home_theme";
     var root = document.documentElement;
     var form = document.getElementById("login-form");
     if (!form) return;
@@ -25,16 +25,19 @@
     var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var sending = false;
 
-    function store(value) { try { localStorage.setItem(KEY, value); } catch (e) { /* ignore */ } }
+    function store(dayNight) {
+        try { localStorage.setItem(KEY, dayNight === "day" ? "light" : "dark"); } catch (e) { /* ignore */ }
+    }
 
-    /* ---- Day / Night ---- */
+    /* ---- Day / Night (same cq_home_theme key as the rest of CyberQuest) ---- */
+    function isNight() { return root.getAttribute("data-theme") === "night"; }
     function syncThemeLabel() {
-        var night = root.getAttribute("data-theme") === "night";
+        var night = isNight();
         themeBtn.setAttribute("aria-label", night ? "Switch to day mode" : "Switch to night mode");
         themeBtn.querySelector(".lq-theme-text").textContent = night ? "Day" : "Night";
     }
     themeBtn.addEventListener("click", function () {
-        var next = root.getAttribute("data-theme") === "night" ? "day" : "night";
+        var next = isNight() ? "day" : "night";
         root.setAttribute("data-theme", next);
         store(next);
         syncThemeLabel();

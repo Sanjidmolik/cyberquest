@@ -1,29 +1,37 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
+<p class="ops-note">Each question bank belongs to a game. Students only receive questions from banks that are approved. Generating new questions with AI stays in the developer admin.</p>
 <section class="ops-kpis">
   <article class="ops-kpi"><strong>{{ summary.banks }}</strong><span>Banks</span></article>
-  <article class="ops-kpi"><strong>{{ summary.review }}</strong><span>In review</span></article>
+  <article class="ops-kpi"><strong>{{ summary.review }}</strong><span>Needs review</span></article>
   <article class="ops-kpi"><strong>{{ summary.approved }}</strong><span>Approved banks</span></article>
-  <article class="ops-kpi"><strong>{{ summary.questions }}</strong><span>Questions</span><small>{{ summary.ai }} AI · {{ summary.edited }} edited</small></article>
-  <article class="ops-kpi"><strong>{{ summary.sets_review }}</strong><span>Sets in review</span><small>{{ summary.sets_rejected }} rejected</small></article>
+  <article class="ops-kpi"><strong>{{ summary.questions }}</strong><span>Questions</span><small>{{ summary.ai }} from AI · {{ summary.edited }} edited</small></article>
+  <article class="ops-kpi"><strong>{{ summary.sets_review }}</strong><span>Sets needing review</span><small>{{ summary.sets_rejected }} rejected</small></article>
 </section>
 <form class="ops-filters" method="get">
-  <input type="search" name="q" value="{{ q }}" placeholder="Bank title" aria-label="Filter banks">
+  <input type="search" name="q" value="{{ q }}" placeholder="Bank title or description" aria-label="Search question banks">
+  <select name="domain" aria-label="Game">
+    <option value="">All games</option>
+    {% for value, label in domains %}
+    <option value="{{ value }}"{% if domain == value %} selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
   <select name="status" aria-label="Bank status">
-    <option value="">All</option>
+    <option value="">All statuses</option>
     {% for value, label in statuses %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
   </select>
   <button type="submit">Filter</button>
 </form>
+<p><a href="{% url 'ops:review' %}">Open questions that need review</a></p>
 <ul class="ops-banks">
   {% for bank in page_obj %}
   <li>
     <div>
-      <strong>{{ bank.title }}</strong>
-      <span>{{ bank.domain }}</span>
+      <strong><a href="{% url 'ops:question_bank' bank.pk %}">{{ bank.title }}</a></strong>
+      <span>{{ bank.get_domain_display }}</span>
     </div>
     <span class="ops-badge ops-s-{{ bank.status|lower }}">{{ bank.get_status_display }}</span>
-    <span class="ops-bank-meta">{{ bank.difficulty }}</span>
+    <span class="ops-bank-meta">{{ bank.question_count }} question{{ bank.question_count|pluralize }} · {{ bank.approved_sets }} approved set{{ bank.approved_sets|pluralize }} · {{ bank.review_sets }} need review</span>
     <time datetime="{{ bank.updated_at|date:'Y-m-d' }}">{{ bank.updated_at|date:"Y-m-d" }}</time>
   </li>
   {% empty %}

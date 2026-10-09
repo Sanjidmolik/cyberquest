@@ -150,6 +150,7 @@ body {
   padding: 9px 0;
 }
 .ops-search input:focus { outline: none; }
+.ops-search input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .ops-bell, .ops-theme, .ops-menu {
   display: inline-flex;
   align-items: center;
@@ -253,6 +254,75 @@ body {
 .ops-delta.is-up { color: var(--good); }
 .ops-delta.is-down { color: var(--bad); }
 .ops-panel { margin-bottom: 14px; }
+.ops-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.ops-page-head .ops-note { margin: 0; max-width: 46rem; }
+a.ops-create {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 8px;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+a.ops-create:hover { filter: brightness(1.06); }
+.ops-course-form label { display: block; margin: 12px 0 4px; font-weight: 600; }
+.ops-course-form input[type="text"],
+.ops-course-form input[type="number"],
+.ops-course-form input[type="file"],
+.ops-course-form textarea {
+  width: min(100%, 40rem);
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.ops-field-error { display: block; color: var(--bad); font-size: 13px; font-weight: 600; }
+.ops-filter-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 180px; font-size: 13px; font-weight: 600; }
+.ops-reply input[type="email"],
+.ops-reply input[type="text"],
+.ops-reply input[type="password"] {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  box-sizing: border-box;
+  margin: 0 0 10px;
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.ops-reply label { display: block; margin: 0 0 6px; font-weight: 600; }
+.ops-reply textarea {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  min-height: 8rem;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.ops-course-form small, .ops-course-form .errorlist { display: block; color: var(--muted); margin-top: 4px; }
+.ops-course-form .errorlist { color: var(--bad); padding-left: 1.1rem; }
+.ops-check { display: flex !important; align-items: center; gap: 8px; font-weight: 600; }
 .ops-panel-chart { padding-bottom: 12px; }
 .ops-panel-chart h2 { margin-bottom: 8px; }
 .ops-panel h2 {
@@ -260,7 +330,8 @@ body {
   font-size: 15px;
   font-weight: 600;
 }
-.ops-panel h2 span { color: var(--muted); font-weight: 500; }
+.ops-panel h2 span, .ops-panel h3 span { color: var(--muted); font-weight: 500; }
+.ops-panel h3 { margin: 18px 0 8px; font-size: 14px; font-weight: 600; }
 .ops-chart { overflow-x: auto; }
 .ops-bars {
   display: flex;
@@ -360,9 +431,17 @@ body {
   min-width: 0;
   transition: border-color 0.16s ease;
 }
-.ops-filters input:focus, .ops-filters select:focus, .ops-panel input:focus, .ops-panel select:focus {
+.ops-filters input:focus, .ops-filters select:focus, .ops-panel input:focus, .ops-panel select:focus, .ops-panel textarea:focus {
   outline: none;
   border-color: color-mix(in srgb, var(--focus) 70%, var(--line));
+}
+.ops-filters input:focus-visible,
+.ops-filters select:focus-visible,
+.ops-panel input:focus-visible,
+.ops-panel select:focus-visible,
+.ops-panel textarea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 .ops-filters input[type="search"], .ops-filters input[type="email"], .ops-filters input[type="text"] { flex: 1 1 180px; }
 button, .ops-pager a {
@@ -432,7 +511,7 @@ button.ops-btn-danger {
 .ops-review ol { margin: 8px 0; }
 .ops-review li + li { margin-top: 12px; }
 .ops-list { list-style: none; margin: 0; padding: 0; }
-.ops-list li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.ops-list li { padding: 8px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
 .ops-list li:last-child { border-bottom: 0; }
 .ops-pager {
   display: flex;
@@ -445,9 +524,17 @@ button.ops-btn-danger {
 .ops-status li {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
+}
+.ops-status small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
 }
 a { color: var(--accent); }
 a:hover { text-decoration: none; }

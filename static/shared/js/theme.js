@@ -5,8 +5,6 @@
   var root = document.documentElement;
   var btn = document.getElementById("themeToggle");
   var meta = document.querySelector('meta[name="theme-color"]');
-  var nav = document.getElementById("cq-nav");
-  var toggle = document.getElementById("cq-nav-toggle");
 
   function current() {
     return root.getAttribute("data-theme") === "light" ? "light" : "dark";
@@ -35,15 +33,4 @@
   }
   sync();
 
-  if (nav) {
-    window.addEventListener("scroll", function () {
-      nav.classList.toggle("scrolled", window.scrollY > 20);
-    }, { passive: true });
-  }
-  if (toggle && nav) {
-    toggle.addEventListener("click", function () {
-      var open = nav.classList.toggle("open");
-      toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    });
-  }
 })();

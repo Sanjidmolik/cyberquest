@@ -1,31 +1,61 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
+<p class="ops-note">Student accounts only. Deactivating an account blocks sign-in. It does not change XP, course progress, games, practice, or certificates.</p>
+<section class="ops-kpis">
+  <article class="ops-kpi"><strong>{{ summary.total }}</strong><span>Total students</span></article>
+  <article class="ops-kpi"><strong>{{ summary.active }}</strong><span>Active</span></article>
+  <article class="ops-kpi"><strong>{{ summary.avg_level }}</strong><span>Average level</span></article>
+  <article class="ops-kpi"><strong>{{ summary.avg_xp }}</strong><span>Average XP</span></article>
+</section>
 <form class="ops-filters" method="get">
-  <input type="search" name="q" value="{{ q }}" placeholder="Name or email" aria-label="Filter students">
+  <input type="search" name="q" value="{{ q }}" placeholder="Name, username, or email" aria-label="Search students">
   <select name="status" aria-label="Account status">
     <option value="">All statuses</option>
     <option value="active"{% if status == "active" %} selected{% endif %}>Active</option>
     <option value="inactive"{% if status == "inactive" %} selected{% endif %}>Inactive</option>
   </select>
+  <select name="level" aria-label="Level">
+    <option value="">All levels</option>
+    {% for item in levels %}
+    <option value="{{ item }}"{% if level == item|stringformat:"s" %} selected{% endif %}>Level {{ item }}</option>
+    {% endfor %}
+  </select>
+  <select name="activity" aria-label="Recent sign-in">
+    <option value="">Any sign-in</option>
+    <option value="recent"{% if activity == "recent" %} selected{% endif %}>Signed in this week</option>
+    <option value="never"{% if activity == "never" %} selected{% endif %}>No sign-in yet</option>
+  </select>
   <button type="submit">Filter</button>
 </form>
 <div class="ops-table-wrap">
 <table class="ops-table ops-table-students">
-  <thead><tr><th>Student</th><th>Joined</th><th>Level</th><th>XP</th><th>Courses</th><th>Games</th><th>Practice</th><th>Status</th></tr></thead>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Level</th>
+      <th>XP</th>
+      <th>Progress</th>
+      <th>Activity</th>
+      <th>Status</th>
+    </tr>
+  </thead>
   <tbody>
     {% for user in page_obj %}
     <tr>
-      <td><a href="{% url 'ops:student' user.pk %}">{{ user.display_name }}</a><br><small>{{ user.email }}</small></td>
-      <td>{{ user.date_joined|date:"Y-m-d" }}</td>
-      <td>{{ user.level }}</td>
-      <td>{{ user.xp }}</td>
-      <td>{{ user.course_done }}</td>
-      <td>{{ user.attempts }}</td>
-      <td>{{ user.practices }}</td>
+      <td>
+        <a href="{% url 'ops:student' user.pk %}">{{ user.full_name|default:user.display_name }}</a>
+        {% if user.username %}<br><small>{{ user.username }}</small>{% endif %}
+      </td>
+      <td>{{ user.email }}</td>
+      <td class="ops-num">{{ user.level }}</td>
+      <td class="ops-num">{{ user.xp }}</td>
+      <td class="ops-num">{{ user.course_done }}/{{ published }} · {{ user.progress_percent }}%</td>
+      <td>{% if user.last_active_date %}{{ user.last_active_date|date:"Y-m-d" }}{% else %}<span class="ops-note">No sign-in yet</span>{% endif %}</td>
       <td>{% if user.is_active %}<span class="ops-badge ops-s-active">Active</span>{% else %}<span class="ops-badge ops-s-inactive">Inactive</span>{% endif %}</td>
     </tr>
     {% empty %}
-    <tr><td class="ops-empty" colspan="8">No students match.</td></tr>
+    <tr><td class="ops-empty" colspan="7">No students match.</td></tr>
     {% endfor %}
   </tbody>
 </table>

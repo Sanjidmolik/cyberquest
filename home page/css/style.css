@@ -161,9 +161,10 @@ main, footer { position: relative; z-index: 1; }
 
 /* ---------------- Navbar ---------------- */
 .nav {
-  position: fixed; top: 14px; left: 50%;
-  transform: translateX(-50%);
-  width: min(1100px, 100% - 24px);
+  position: relative; top: auto; left: auto;
+  transform: none;
+  width: min(1100px, calc(100% - 32px));
+  margin: 14px auto 0;
   z-index: 50;
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 8px 10px 8px 22px;
@@ -175,9 +176,9 @@ main, footer { position: relative; z-index: 1; }
   transition: box-shadow .4s var(--ease), background .4s var(--ease), top .4s var(--ease);
 }
 .nav.scrolled {
-  top: 8px;
-  background: var(--nav-bg-scrolled);
-  box-shadow: 0 10px 40px -10px var(--nav-shadow);
+  top: auto;
+  background: var(--nav-bg);
+  box-shadow: 0 10px 28px -12px var(--nav-shadow);
 }
 .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .02em; }
 .logo-mark {
@@ -314,7 +315,7 @@ section { position: relative; padding: 120px 0; }
 /* ---------------- Hero ---------------- */
 .hero {
   min-height: 100vh; min-height: 100svh;
-  padding: 150px 0 0;
+  padding: 48px 0 0;
   text-align: center; overflow: hidden;
 }
 .hero h1 { font-size: clamp(36px, 6.4vw, 76px); }

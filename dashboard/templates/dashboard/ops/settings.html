@@ -1,15 +1,27 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
+<p class="ops-note">This page reports configuration and a few live checks. It does not change settings, send email, or run migrations. A configured service is not the same as a tested one. Secret values are not shown.</p>
+{% for group in groups %}
 <section class="ops-panel">
-  <h2>Platform status</h2>
+  <h2>{{ group.title }}</h2>
   <ul class="ops-status">
-    <li><span>Application</span><span class="ops-badge ops-s-good">Running</span></li>
-    <li><span>Database</span>{% if db_ok %}<span class="ops-badge ops-s-good">Reachable</span>{% else %}<span class="ops-badge ops-s-bad">Unreachable</span>{% endif %}</li>
-    <li{% if debug %} class="is-warn"{% endif %}><span>Debug mode</span>{% if debug %}<span class="ops-badge ops-s-bad">On</span>{% else %}<span class="ops-badge ops-s-good">Off</span>{% endif %}</li>
-    <li><span>Pending migrations</span><span class="ops-badge">{% if pending_migrations == None %}Unknown{% else %}{{ pending_migrations }}{% endif %}</span></li>
+    {% for item in group.items %}
+    <li>
+      <span>{{ item.name }}<small>{{ item.kind }} · {{ item.detail }}</small></span>
+      <span class="ops-badge {{ item.badge }}">{{ item.label }}</span>
+    </li>
+    {% endfor %}
   </ul>
-  {% if debug %}<p class="ops-warn-note">Debug mode is on. Treat this environment as development, not a locked-down deployment.</p>{% endif %}
-  <p class="ops-secret">Secret values are not shown here.</p>
-  <p><a href="{% url 'admin:index' %}">Open Django Admin</a> for database-level editing.</p>
+  {% if group.findings %}
+  <ul class="ops-list">
+    {% for finding in group.findings %}
+    <li>{{ finding }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
 </section>
+{% endfor %}
+<p class="ops-secret">Secret values are not shown here.</p>
+<p><a href="{% url 'ops:create_administrator' %}">Create an administrator</a></p>
+<p><a href="{% url 'admin:index' %}">Open Django Admin</a> for database-level editing. An existing superuser can also grant superuser access there.</p>
 {% endblock %}

@@ -1,0 +1,63 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'ops:questions' %}">Back to question banks</a></p>
+<div class="ops-page-head">
+  <div>
+    <p><span class="ops-badge ops-s-{{ bank.status|lower }}">{{ bank.get_status_display }}</span> {{ bank.get_domain_display }}</p>
+    {% if bank.description %}<p class="ops-note">{{ bank.description }}</p>{% endif %}
+  </div>
+  {% if bank.status != "ARCHIVED" %}
+  <form method="post" action="{% url 'ops:archive_bank' bank.pk %}">
+    {% csrf_token %}
+    <button class="ops-btn-quiet" type="submit" name="action" value="archive">Archive bank</button>
+  </form>
+  {% endif %}
+</div>
+{% if bank.status == "REVIEW" %}
+<form method="post" action="{% url 'ops:approve_bank' bank.pk %}">
+  {% csrf_token %}
+  <button type="submit">Approve bank</button>
+</form>
+{% endif %}
+
+{% for qset in sets %}
+<section class="ops-panel">
+  <h2>
+    Set {{ qset.set_number }}
+    <span>{{ qset.get_set_type_display }}</span>
+    {% if qset.status == "REVIEW" %}
+    <span class="ops-badge ops-s-review">Needs review</span>
+    {% elif qset.status == "APPROVED" %}
+    <span class="ops-badge ops-s-approved">Approved</span>
+    {% elif qset.status == "REJECTED" %}
+    <span class="ops-badge ops-s-rejected">Rejected</span>
+    {% else %}
+    <span class="ops-badge ops-s-draft">Draft</span>
+    {% endif %}
+  </h2>
+  <ul class="ops-list">
+    {% for item in qset.items.all %}
+    <li>
+      <a href="{% url 'ops:question_detail' item.question.pk %}">{{ item.question.prompt }}</a>
+      <br>
+      <small>
+        {{ item.question.get_question_type_display }}
+        {% if item.question.difficulty %} · {{ item.question.get_difficulty_display }}{% endif %}
+        {% if item.question.is_active %} · Shown to students when approved{% else %} · Hidden from students{% endif %}
+      </small>
+    </li>
+    {% empty %}
+    <li>This set has no questions yet.</li>
+    {% endfor %}
+  </ul>
+  {% if qset.status == "REVIEW" %}
+  <form method="post" action="{% url 'ops:reject_set' qset.pk %}">
+    {% csrf_token %}
+    <button class="ops-btn-danger" type="submit">Reject this set</button>
+  </form>
+  {% endif %}
+</section>
+{% empty %}
+<p class="ops-empty">This bank has no question sets yet.</p>
+{% endfor %}
+{% endblock %}

@@ -1,13 +1,50 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
+<p class="ops-note">Badge names, descriptions, icons, and the rules that award them are managed by the development team. This screen shows the catalog and which students have earned each badge.</p>
+<section class="ops-kpis">
+  <article class="ops-kpi"><strong>{{ summary.badges }}</strong><span>Badges</span></article>
+  <article class="ops-kpi"><strong>{{ summary.holders }}</strong><span>Students with badges</span></article>
+  <article class="ops-kpi"><strong>{{ summary.awards }}</strong><span>Awards</span></article>
+</section>
+<form class="ops-filters" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Badge name or description" aria-label="Search badges">
+  <select name="status" aria-label="Badge status">
+    <option value="">All badges</option>
+    <option value="active"{% if status == "active" %} selected{% endif %}>Active</option>
+    <option value="inactive"{% if status == "inactive" %} selected{% endif %}>Inactive</option>
+  </select>
+  <button type="submit">Filter</button>
+</form>
 <div class="ops-table-wrap">
 <table class="ops-table">
-  <thead><tr><th>Badge</th><th>Code</th><th>Active</th><th>Earned</th></tr></thead>
-  <tbody>{% for badge in badges %}<tr><td>{{ badge.icon_emoji }} {{ badge.name }}</td><td>{{ badge.code }}</td><td>{% if badge.is_active %}<span class="ops-badge ops-s-active">Active</span>{% else %}<span class="ops-badge ops-s-inactive">Inactive</span>{% endif %}</td><td>{{ badge.earned }}</td></tr>{% empty %}<tr><td class="ops-empty" colspan="4">No badges.</td></tr>{% endfor %}</tbody>
+  <thead>
+    <tr>
+      <th>Badge</th>
+      <th>Description</th>
+      <th>Earned by</th>
+      <th>Latest earned</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for badge in badges %}
+    <tr>
+      <td>
+        <a href="{% url 'ops:achievement' badge.pk %}">{{ badge.icon_emoji }} {{ badge.name }}</a>
+        <br>
+        {% if badge.is_active %}
+        <span class="ops-badge ops-s-active">Active</span>
+        {% else %}
+        <span class="ops-badge ops-s-inactive">Inactive</span>
+        {% endif %}
+      </td>
+      <td>{{ badge.description }}</td>
+      <td class="ops-num">{{ badge.earned }}{% if summary.students %} · {% widthratio badge.earned summary.students 100 %}%{% endif %}</td>
+      <td>{% if badge.latest %}{{ badge.latest|date:"Y-m-d" }}{% else %}—{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="4">No badges match.</td></tr>
+    {% endfor %}
+  </tbody>
 </table>
 </div>
-<section class="ops-panel">
-  <h2>Recent awards</h2>
-  <ul class="ops-list">{% for row in recent %}<li>{{ row.user.email }} · {{ row.badge.name }} · {{ row.earned_at|date:"Y-m-d" }}</li>{% empty %}<li class="ops-empty">None yet.</li>{% endfor %}</ul>
-</section>
 {% endblock %}

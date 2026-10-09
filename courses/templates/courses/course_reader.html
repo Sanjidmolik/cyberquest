@@ -14,12 +14,14 @@
 <body>
 
 <div class="reader-topbar">
-    {% include "shared/_brand.html" with brand_class="reader-logo" logo_class="cq-logo-lockup--sm" %}
-    <a href="{% url 'courses:intro' %}" class="reader-back">Back to Learning</a>
-    {% if course %}
-    <a href="{% url 'courses:detail' course.code %}" class="reader-back">Back to Course</a>
-    <span class="reader-title">{{ course.title }}</span>
-    {% endif %}
+    <div class="reader-nav">
+        {% include "shared/_brand.html" with brand_class="reader-logo" logo_class="cq-logo-lockup--sm" %}
+        <a href="{% url 'courses:intro' %}" class="reader-back">Back to Learning</a>
+        {% if course %}
+        <a href="{% url 'courses:detail' course.code %}" class="reader-back">Back to Course</a>
+        {% endif %}
+    </div>
+    {% if course %}<span class="reader-title">{{ course.title }}</span>{% endif %}
 
     <div class="reader-controls">
         <button id="font-decrease" class="reader-btn" title="Smaller text">A&minus;</button>
@@ -33,9 +35,11 @@
     </div>
 </div>
 
-<!-- Progress bar -->
-<div class="reader-progress-track">
-    <div id="reader-progress-fill" class="reader-progress-fill"></div>
+<div class="reader-progress">
+    <div class="reader-progress-track" aria-hidden="true">
+        <div id="reader-progress-fill" class="reader-progress-fill"></div>
+    </div>
+    <span id="page-indicator">Page 1 of 1</span>
 </div>
 
 {% if load_error or not course %}
@@ -52,12 +56,13 @@
 
 <div id="reader-stage" class="reader-stage">
     <button id="prev-btn" class="flip-zone flip-zone-left" type="button" aria-label="Previous page">&#10094;</button>
-    <div id="book" class="book" aria-label="CyberQuest learning book"></div>
+    <div id="book-frame" class="book-frame">
+        <div id="book" class="book" aria-label="CyberQuest learning book"></div>
+    </div>
     <button id="next-btn" class="flip-zone flip-zone-right" type="button" aria-label="Next page">&#10095;</button>
 </div>
 
 <div class="reader-footer">
-    <span id="page-indicator">Page 1 of 1</span>
     <button id="complete-btn" class="reader-complete-btn" disabled>
         {% if already_done %}✔ Already Completed{% else %}Reach the last page to unlock{% endif %}
     </button>

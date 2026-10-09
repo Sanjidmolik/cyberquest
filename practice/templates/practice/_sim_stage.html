@@ -1,0 +1,15 @@
+{% if scenario.scene %}
+<div class="sim-stage outcome-{{ outcome|default:'live' }}" data-domain="{{ scenario.domain }}">
+    <div class="sim-floor">
+        {% for node in scenario.scene.nodes %}
+        <div class="sim-node{% if node.id in active_nodes %} is-found{% endif %}{% if node.id == focus_node %} is-focus{% endif %}{% if node.id in scenario.scene.suspicious %} is-alert{% endif %}" style="--x: {{ node.x }}; --y: {{ node.y }}; --z: {{ node.z }}px;">
+            <span class="sim-name">{{ node.label }}</span>
+            <span class="sr-only">{% if node.id == focus_node %}Selected{% elif node.id in active_nodes %}Inspected{% elif node.id in scenario.scene.suspicious %}Suspicious{% else %}Default{% endif %}</span>
+        </div>
+        {% endfor %}
+        <span class="sim-packet" style="--i: 0;"></span>
+        <span class="sim-packet" style="--i: 1;"></span>
+        <span class="sim-packet" style="--i: 2;"></span>
+    </div>
+</div>
+{% endif %}

@@ -1,7 +1,7 @@
 {% if page_obj.paginator.num_pages > 1 %}
 <nav class="ops-pager" aria-label="Pages">
-  {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ request.GET.q }}&status={{ request.GET.status }}&state={{ request.GET.state }}">Previous</a>{% endif %}
+  {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&amp;q={{ request.GET.q|urlencode }}&amp;status={{ request.GET.status|urlencode }}&amp;state={{ request.GET.state|urlencode }}&amp;level={{ request.GET.level|urlencode }}&amp;activity={{ request.GET.activity|urlencode }}&amp;window={{ request.GET.window|urlencode }}&amp;readiness={{ request.GET.readiness|urlencode }}&amp;domain={{ request.GET.domain|urlencode }}">Previous</a>{% endif %}
   <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-  {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ request.GET.q }}&status={{ request.GET.status }}&state={{ request.GET.state }}">Next</a>{% endif %}
+  {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&amp;q={{ request.GET.q|urlencode }}&amp;status={{ request.GET.status|urlencode }}&amp;state={{ request.GET.state|urlencode }}&amp;level={{ request.GET.level|urlencode }}&amp;activity={{ request.GET.activity|urlencode }}&amp;window={{ request.GET.window|urlencode }}&amp;readiness={{ request.GET.readiness|urlencode }}&amp;domain={{ request.GET.domain|urlencode }}">Next</a>{% endif %}
 </nav>
 {% endif %}

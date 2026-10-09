@@ -30,6 +30,7 @@
     }
 
     const bookEl = document.getElementById("book");
+    const frameEl = document.getElementById("book-frame");
     const prevBtn = document.getElementById("prev-btn");
     const nextBtn = document.getElementById("next-btn");
     const pageIndicator = document.getElementById("page-indicator");
@@ -93,6 +94,7 @@
         bookEl.style.minWidth = "0";
         bookEl.style.minHeight = "0";
         bookEl.style.maxWidth = "none";
+        if (frameEl) frameEl.style.setProperty("--cq-page-w", layout.pageW + "px");
         return layout;
     }
 
@@ -296,6 +298,17 @@
             completeBtn.disabled = false;
             completeBtn.textContent = "Mark Course Complete";
         }
+        syncBookFrame(current);
+    }
+
+    /* A cover or a final leftover page sits on one side of the spread.
+       Shift that block so the visible page stays centered. A full spread stays put. */
+    function syncBookFrame(index) {
+        if (!frameEl || !pageFlip) return;
+        const landscape = pageFlip.getOrientation() === "landscape";
+        const seen = lastVisibleIndex(index);
+        frameEl.classList.toggle("is-single-right", landscape && index <= 0);
+        frameEl.classList.toggle("is-single-left", landscape && index > 0 && seen === index);
     }
 
     let saveTimer = null;
@@ -352,6 +365,11 @@
         pageFlip.on("flip", function (event) {
             updateUi(event.data);
             saveProgress(event.data);
+        });
+        pageFlip.on("changeState", function (event) {
+            if (frameEl && event.data === "flipping") {
+                frameEl.classList.remove("is-single-right", "is-single-left");
+            }
         });
         pageFlip.on("changeOrientation", function () {
             updateUi(pageFlip.getCurrentPageIndex());

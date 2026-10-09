@@ -22,8 +22,25 @@ html, body {
     height: 100%;
     margin: 0;
 }
-html { background: var(--lq-bg-day); }
-html[data-theme="night"] { background: var(--lq-bg-night); }
+html {
+    background: var(--lq-bg-day);
+    --nav-bg: rgba(255, 255, 255, .78);
+    --nav-edge: rgba(112, 31, 211, .16);
+    --nav-shadow: rgba(112, 31, 211, .28);
+    --nav-link: #3a2860;
+    --btn-bg: #6614d8;
+    --btn-text: #ffffff;
+}
+html[data-theme="night"],
+html[data-theme="dark"] {
+    background: var(--lq-bg-night);
+    --nav-bg: rgba(72, 16, 142, .72);
+    --nav-edge: rgba(231, 179, 255, .24);
+    --nav-shadow: rgba(30, 4, 70, .6);
+    --nav-link: #f3eaff;
+    --btn-bg: #e7b3ff;
+    --btn-text: #2a0845;
+}
 body {
     font-family: "Comic Neue", "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -51,20 +68,35 @@ body {
         1px 1px 0 rgb(47 20 97 / 0.12),
         2px 2px 0 rgb(47 20 97 / 0.1);
 }
-html[data-theme="night"] .lq-text-3d {
+html[data-theme="night"] .lq-text-3d,
+html[data-theme="dark"] .lq-text-3d {
     text-shadow:
         1px 1px 0 rgb(0 0 0 / 0.35),
         2px 2px 0 rgb(0 0 0 / 0.3),
         3px 3px 0 rgb(0 0 0 / 0.25),
         4px 4px 0 rgb(0 0 0 / 0.2);
 }
-html[data-theme="night"] .lq-text-3d-soft {
+html[data-theme="night"] .lq-text-3d-soft,
+html[data-theme="dark"] .lq-text-3d-soft {
     text-shadow:
         1px 1px 0 rgb(0 0 0 / 0.28),
         2px 2px 0 rgb(0 0 0 / 0.2);
 }
 
 /* ---------- page (full screen) ---------- */
+.lq-admin-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.75rem;
+    padding: 0.7rem 1rem;
+    border: 2px solid var(--lq-accent);
+    border-radius: 0.75rem;
+    color: var(--lq-accent);
+    font-weight: 700;
+    text-decoration: none;
+}
+.lq-admin-link:hover { background: rgb(112 31 211 / 0.08); }
 .lq-page {
     position: relative;
     display: flex;
@@ -78,15 +110,18 @@ html[data-theme="night"] .lq-text-3d-soft {
     overflow: auto;
     background: var(--lq-bg-day);
 }
-html[data-theme="night"] .lq-page {
+html[data-theme="night"] .lq-page,
+html[data-theme="dark"] .lq-page {
     background-color: var(--lq-bg-night);
 }
 .lq-glows { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .lq-glow { position: absolute; border-radius: 50%; filter: blur(64px); }
 .lq-glow-1 { left: -7rem; top: -9rem; width: 24rem; height: 24rem; background: rgb(112 31 211 / 0.12); }
 .lq-glow-2 { right: -8rem; bottom: -12rem; width: 30rem; height: 30rem; background: rgb(112 31 211 / 0.1); }
-html[data-theme="night"] .lq-glow-1 { background: rgb(255 255 255 / 0.1); }
-html[data-theme="night"] .lq-glow-2 { background: rgb(240 171 252 / 0.12); }
+html[data-theme="night"] .lq-glow-1 { background: rgb(255 255 255 / 0.1); },
+html[data-theme="dark"] .lq-glow-1 { background: rgb(255 255 255 / 0.1); }
+html[data-theme="night"] .lq-glow-2 { background: rgb(240 171 252 / 0.12); },
+html[data-theme="dark"] .lq-glow-2 { background: rgb(240 171 252 / 0.12); }
 
 /* ---------- day / night button ---------- */
 .lq-theme-btn {
@@ -111,7 +146,8 @@ html[data-theme="night"] .lq-glow-2 { background: rgb(240 171 252 / 0.12); }
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
 }
-html[data-theme="night"] .lq-theme-btn {
+html[data-theme="night"] .lq-theme-btn,
+html[data-theme="dark"] .lq-theme-btn {
     border-color: rgb(255 255 255 / 0.25);
     background: rgb(0 0 0 / 0.15);
     color: #fff;
@@ -119,8 +155,10 @@ html[data-theme="night"] .lq-theme-btn {
 /* .lq-3d sets position: relative, so repeat the class to keep this button pinned top-right */
 .lq-theme-btn.lq-3d { position: absolute; }
 .lq-theme-btn .lq-ico-sun { display: none; }
-html[data-theme="night"] .lq-theme-btn .lq-ico-sun { display: block; }
-html[data-theme="night"] .lq-theme-btn .lq-ico-moon { display: none; }
+html[data-theme="night"] .lq-theme-btn .lq-ico-sun { display: block; },
+html[data-theme="dark"] .lq-theme-btn .lq-ico-sun { display: block; }
+html[data-theme="night"] .lq-theme-btn .lq-ico-moon { display: none; },
+html[data-theme="dark"] .lq-theme-btn .lq-ico-moon { display: none; }
 
 /* ---------- card (fills the viewport) ---------- */
 .lq-card {
@@ -131,16 +169,18 @@ html[data-theme="night"] .lq-theme-btn .lq-ico-moon { display: none; }
     min-height: 100vh;
     min-height: 100dvh;
     max-width: none;
-    overflow: hidden;
+    overflow: auto;
     border-radius: 0;
     background: #fff;
     color: #020617;
     box-shadow: none;
     transition: background-color 0.5s, color 0.5s;
 }
-html[data-theme="night"] .lq-card { background: #4a15a0; color: #fff; }
+html[data-theme="night"] .lq-card { background: #4a15a0; color: #fff; },
+html[data-theme="dark"] .lq-card { background: #4a15a0; color: #fff; }
 .lq-muted { color: #64748b; }
-html[data-theme="night"] .lq-muted { color: #d8c4f7; }
+html[data-theme="night"] .lq-muted { color: #d8c4f7; },
+html[data-theme="dark"] .lq-muted { color: #d8c4f7; }
 
 /* left brand panel (large screens only) */
 .lq-aside {
@@ -151,7 +191,8 @@ html[data-theme="night"] .lq-muted { color: #d8c4f7; }
     background: var(--lq-panel);
     color: #fff;
 }
-html[data-theme="night"] .lq-aside { background: #35106f; }
+html[data-theme="night"] .lq-aside { background: #35106f; },
+html[data-theme="dark"] .lq-aside { background: #35106f; }
 .lq-brand {
     display: inline-flex;
     align-items: center;
@@ -191,8 +232,8 @@ html[data-theme="night"] .lq-aside { background: #35106f; }
 .lq-main {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 5rem 1.75rem 2rem;
+    justify-content: flex-start;
+    padding: 1.5rem 1.75rem 2rem;
     max-width: 28rem;
     width: 100%;
     margin: 0 auto;
@@ -209,14 +250,16 @@ html[data-theme="night"] .lq-aside { background: #35106f; }
 }
 .lq-mbrand:hover { opacity: 0.92; }
 .lq-mbrand .lq-logo { width: 2.25rem; height: 2.25rem; background: var(--lq-accent); color: #fff; }
-html[data-theme="night"] .lq-mbrand .lq-logo { background: #fff; color: var(--lq-accent); }
+html[data-theme="night"] .lq-mbrand .lq-logo { background: #fff; color: var(--lq-accent); },
+html[data-theme="dark"] .lq-mbrand .lq-logo { background: #fff; color: var(--lq-accent); }
 .lq-mbrand .cq-logo-lockup {
     --cq-badge: 36px;
     --cq-word: 1.05rem;
 }
 .lq-head { margin-bottom: 2rem; }
 .lq-hello { margin: 0 0 0.75rem; font-size: 1.35rem; font-weight: 400; color: var(--lq-link); }
-html[data-theme="night"] .lq-hello { color: #e9d5ff; }
+html[data-theme="night"] .lq-hello { color: #e9d5ff; },
+html[data-theme="dark"] .lq-hello { color: #e9d5ff; }
 .lq-head h1 { margin: 0; font-size: 2.35rem; font-weight: 400; }
 .lq-sub { margin: 0.85rem 0 0; font-size: 1.05rem; line-height: 1.4; }
 
@@ -240,9 +283,12 @@ html[data-theme="night"] .lq-hello { color: #e9d5ff; }
 }
 .lq-input::placeholder { color: #94a3b8; }
 .lq-input:focus { background: #fff; border-color: var(--lq-accent); box-shadow: 0 0 0 4px rgb(112 31 211 / 0.15); }
-html[data-theme="night"] .lq-input { border-color: rgb(255 255 255 / 0.2); background: rgb(255 255 255 / 0.08); color: #fff; }
-html[data-theme="night"] .lq-input::placeholder { color: #c4b0e8; }
-html[data-theme="night"] .lq-input:focus { background: rgb(255 255 255 / 0.14); border-color: #fff; box-shadow: 0 0 0 4px rgb(255 255 255 / 0.15); }
+html[data-theme="night"] .lq-input { border-color: rgb(255 255 255 / 0.2); background: rgb(255 255 255 / 0.08); color: #fff; },
+html[data-theme="dark"] .lq-input { border-color: rgb(255 255 255 / 0.2); background: rgb(255 255 255 / 0.08); color: #fff; }
+html[data-theme="night"] .lq-input::placeholder { color: #c4b0e8; },
+html[data-theme="dark"] .lq-input::placeholder { color: #c4b0e8; }
+html[data-theme="night"] .lq-input:focus { background: rgb(255 255 255 / 0.14); border-color: #fff; box-shadow: 0 0 0 4px rgb(255 255 255 / 0.15); },
+html[data-theme="dark"] .lq-input:focus { background: rgb(255 255 255 / 0.14); border-color: #fff; box-shadow: 0 0 0 4px rgb(255 255 255 / 0.15); }
 .lq-input-pw { padding-right: 3rem; }
 .lq-input.is-invalid { border-color: #ef4444; }
 .lq-eye {
@@ -260,7 +306,8 @@ html[data-theme="night"] .lq-input:focus { background: rgb(255 255 255 / 0.14); 
     color: #94a3b8;
     cursor: pointer;
 }
-html[data-theme="night"] .lq-eye { color: #d8c4f7; }
+html[data-theme="night"] .lq-eye { color: #d8c4f7; },
+html[data-theme="dark"] .lq-eye { color: #d8c4f7; }
 .lq-eye:hover { background: rgb(100 116 139 / 0.15); }
 .lq-eye .lq-ico-hide { display: none; }
 .lq-eye[aria-pressed="true"] .lq-ico-show { display: none; }
@@ -276,10 +323,12 @@ html[data-theme="night"] .lq-eye { color: #d8c4f7; }
     text-decoration: none;
     border-radius: 0.25rem;
 }
-html[data-theme="night"] .lq-forgot { color: #e9d5ff; }
+html[data-theme="night"] .lq-forgot { color: #e9d5ff; },
+html[data-theme="dark"] .lq-forgot { color: #e9d5ff; }
 .lq-forgot:hover { text-decoration: underline; }
 .lq-note { margin: 0; border-radius: 0.5rem; padding: 0.625rem 0.75rem; font-size: 0.75rem; line-height: 1.25rem; background: #f3e8ff; color: #5a18ad; }
-html[data-theme="night"] .lq-note { background: rgb(255 255 255 / 0.1); color: #e9d5ff; }
+html[data-theme="night"] .lq-note { background: rgb(255 255 255 / 0.1); color: #e9d5ff; },
+html[data-theme="dark"] .lq-note { background: rgb(255 255 255 / 0.1); color: #e9d5ff; }
 .lq-note strong { font-weight: 600; }
 
 /* messages (Django messages + client-side checks) */
@@ -287,8 +336,10 @@ html[data-theme="night"] .lq-note { background: rgb(255 255 255 / 0.1); color: #
 .lq-msg .lq-icon { margin-top: 0.15rem; }
 .lq-msg-error, .lq-msg-danger { background: rgb(239 68 68 / 0.1); color: #ef4444; }
 .lq-msg-success, .lq-msg-info { background: rgb(112 31 211 / 0.1); color: #701fd3; }
-html[data-theme="night"] .lq-msg-success,
-html[data-theme="night"] .lq-msg-info { background: rgb(255 255 255 / 0.12); color: #e9d5ff; }
+html[data-theme="night"] .lq-msg-success,,
+html[data-theme="dark"] .lq-msg-success,
+html[data-theme="night"] .lq-msg-info { background: rgb(255 255 255 / 0.12); color: #e9d5ff; },
+html[data-theme="dark"] .lq-msg-info { background: rgb(255 255 255 / 0.12); color: #e9d5ff; }
 .lq-msg-warning { background: rgb(245 158 11 / 0.12); color: #d97706; }
 .lq-msg[hidden] { display: none; }
 .lq-messages { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -316,7 +367,8 @@ html[data-theme="night"] .lq-msg-info { background: rgb(255 255 255 / 0.12); col
 .lq-3d:hover::after { transform: translateX(140%); }
 .lq-3d:active { transform: translateY(2px) translateZ(0); box-shadow: 0 2px 0 rgb(47 20 97 / 0.3), 0 5px 12px rgb(47 20 97 / 0.2); }
 .lq-3d:focus-visible { outline: 3px solid rgb(112 31 211 / 0.5); outline-offset: 3px; }
-html[data-theme="night"] .lq-3d:focus-visible { outline-color: rgb(255 255 255 / 0.9); }
+html[data-theme="night"] .lq-3d:focus-visible { outline-color: rgb(255 255 255 / 0.9); },
+html[data-theme="dark"] .lq-3d:focus-visible { outline-color: rgb(255 255 255 / 0.9); }
 
 .lq-btn {
     display: inline-flex;
@@ -334,7 +386,8 @@ html[data-theme="night"] .lq-3d:focus-visible { outline-color: rgb(255 255 255 /
     cursor: pointer;
 }
 .lq-btn-primary { background: var(--lq-accent); color: #fff; box-shadow: 0 5px 0 rgb(47 20 97 / 0.28), 0 12px 22px rgb(47 20 97 / 0.2); }
-html[data-theme="night"] .lq-btn-primary { background: #fff; color: #701fd3; box-shadow: 0 5px 0 rgb(0 0 0 / 0.2), 0 12px 22px rgb(0 0 0 / 0.2); }
+html[data-theme="night"] .lq-btn-primary { background: #fff; color: #701fd3; box-shadow: 0 5px 0 rgb(0 0 0 / 0.2), 0 12px 22px rgb(0 0 0 / 0.2); },
+html[data-theme="dark"] .lq-btn-primary { background: #fff; color: #701fd3; box-shadow: 0 5px 0 rgb(0 0 0 / 0.2), 0 12px 22px rgb(0 0 0 / 0.2); }
 .lq-btn:disabled { opacity: 0.7; cursor: wait; }
 .lq-btn .lq-spin { display: none; animation: lq-spin 0.8s linear infinite; }
 .lq-btn.is-loading .lq-spin { display: block; }
@@ -344,12 +397,14 @@ html[data-theme="night"] .lq-btn-primary { background: #fff; color: #701fd3; box
 .lq-or { display: flex; align-items: center; gap: 0.75rem; margin: 1.75rem 0; font-size: 0.75rem; }
 .lq-or::before, .lq-or::after { content: ""; flex: 1; height: 1px; background: currentColor; opacity: 0.15; }
 .lq-btn-google { border: 1px solid #e2e8f0; background: transparent; color: #334155; }
-html[data-theme="night"] .lq-btn-google { border-color: rgb(255 255 255 / 0.25); color: #fff; }
+html[data-theme="night"] .lq-btn-google { border-color: rgb(255 255 255 / 0.25); color: #fff; },
+html[data-theme="dark"] .lq-btn-google { border-color: rgb(255 255 255 / 0.25); color: #fff; }
 .lq-g { font-size: 1rem; font-weight: 700; color: var(--lq-google); }
 
 .lq-foot { margin: 2rem 0 0; text-align: center; font-size: 0.875rem; }
 .lq-foot a.lq-create { font-weight: 600; color: var(--lq-link); text-decoration: none; }
-html[data-theme="night"] .lq-foot a.lq-create { color: #e9d5ff; }
+html[data-theme="night"] .lq-foot a.lq-create { color: #e9d5ff; },
+html[data-theme="dark"] .lq-foot a.lq-create { color: #e9d5ff; }
 .lq-foot a.lq-create:hover { text-decoration: underline; }
 .lq-small-links { margin: 1rem 0 0; text-align: center; font-size: 0.75rem; }
 .lq-small-links a { color: inherit; opacity: 0.7; text-decoration: none; margin: 0 0.5rem; }
@@ -402,3 +457,44 @@ html[data-theme="night"] .lq-foot a.lq-create { color: #e9d5ff; }
     .lq-aside { padding: 3.5rem; }
     .lq-main { padding: 4rem 5rem; }
 }
+
+/* Keyboard focus. The existing :focus shadow stays; this outline is extra. */
+.lq-input:focus-visible,
+.lq-eye:focus-visible,
+.lq-theme-btn:focus-visible,
+.lq-forgot:focus-visible,
+.lq-admin-link:focus-visible,
+.lq-create:focus-visible,
+.lq-brand:focus-visible,
+.lq-mbrand:focus-visible,
+.lq-small-links a:focus-visible,
+.lq-foot a:focus-visible,
+.lq-btn:focus-visible {
+    outline: 3px solid #3b0764;
+    outline-offset: 3px;
+}
+html[data-theme="night"] .lq-input:focus-visible,
+html[data-theme="dark"] .lq-input:focus-visible,
+html[data-theme="night"] .lq-eye:focus-visible,
+html[data-theme="dark"] .lq-eye:focus-visible,
+html[data-theme="night"] .lq-theme-btn:focus-visible,
+html[data-theme="dark"] .lq-theme-btn:focus-visible,
+html[data-theme="night"] .lq-forgot:focus-visible,
+html[data-theme="dark"] .lq-forgot:focus-visible,
+html[data-theme="night"] .lq-admin-link:focus-visible,
+html[data-theme="dark"] .lq-admin-link:focus-visible,
+html[data-theme="night"] .lq-create:focus-visible,
+html[data-theme="dark"] .lq-create:focus-visible,
+html[data-theme="night"] .lq-brand:focus-visible,
+html[data-theme="dark"] .lq-brand:focus-visible,
+html[data-theme="night"] .lq-mbrand:focus-visible,
+html[data-theme="dark"] .lq-mbrand:focus-visible,
+html[data-theme="night"] .lq-small-links a:focus-visible,
+html[data-theme="dark"] .lq-small-links a:focus-visible,
+html[data-theme="night"] .lq-foot a:focus-visible,
+html[data-theme="dark"] .lq-foot a:focus-visible,
+html[data-theme="night"] .lq-btn:focus-visible,
+html[data-theme="dark"] .lq-btn:focus-visible {
+    outline-color: #fff;
+}
+.lq-3d:focus-visible { overflow: visible; }

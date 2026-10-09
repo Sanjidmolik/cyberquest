@@ -52,6 +52,46 @@ def check_level_up(user):
     return user.level >= 3
 
 
+def check_first_lesson(user):
+    from courses.models import CourseProgress
+    return CourseProgress.objects.filter(user=user, course__is_published=True).exists()
+
+
+def _completed_practice(user, domain):
+    from practice.models import PracticeSession
+    return PracticeSession.objects.filter(user=user, domain=domain, status="completed").exists()
+
+
+def check_phishing_practice(user):
+    return _completed_practice(user, "phishing")
+
+
+def check_password_practice(user):
+    return _completed_practice(user, "password")
+
+
+def check_network_practice(user):
+    return _completed_practice(user, "network")
+
+
+def check_crypto_practice(user):
+    return _completed_practice(user, "cryptography")
+
+
+def check_osint_practice(user):
+    return _completed_practice(user, "osint")
+
+
+def check_steady_practice(user):
+    from practice.models import PracticeSession
+    return PracticeSession.objects.filter(user=user, status="completed").count() >= 3
+
+
+def check_ten_games(user):
+    from games.models import GameAttempt
+    return GameAttempt.objects.filter(user=user).count() >= 10
+
+
 CHECKS = {
     "first_steps": check_first_steps,
     "phishing_expert": check_phishing_expert,
@@ -63,6 +103,14 @@ CHECKS = {
     "dedicated_learner": check_dedicated_learner,
     "course_complete": check_course_complete,
     "level_up": check_level_up,
+    "first_lesson": check_first_lesson,
+    "phishing_practice": check_phishing_practice,
+    "password_practice": check_password_practice,
+    "network_practice": check_network_practice,
+    "crypto_practice": check_crypto_practice,
+    "osint_practice": check_osint_practice,
+    "steady_practice": check_steady_practice,
+    "ten_games": check_ten_games,
 }
 
 

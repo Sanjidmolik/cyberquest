@@ -1,13 +1,52 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
+<p class="ops-note">These games are built into CyberQuest. This screen shows each game, the question bank it uses, and how students play. Names, scoring, and which questions a student receives are managed by the development team. There is no separate on/off switch for a game.</p>
+<form class="ops-filters" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Game name or question bank" aria-label="Search games">
+  <select name="game" aria-label="Game">
+    <option value="">All games</option>
+    {% for value, label in catalog %}
+    <option value="{{ value }}"{% if game == value %} selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="bank" aria-label="Question bank">
+    <option value="">All question banks</option>
+    {% for item in banks %}
+    <option value="{{ item.pk }}"{% if bank == item.pk %} selected{% endif %}>{{ item.title }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Filter</button>
+</form>
 <div class="ops-table-wrap">
 <table class="ops-table">
-  <thead><tr><th>Game</th><th>Attempts</th><th>Players</th><th>Mean score</th></tr></thead>
+  <thead>
+    <tr>
+      <th>Game</th>
+      <th>Question bank</th>
+      <th>Questions</th>
+      <th>Completed</th>
+      <th>Students</th>
+      <th>Average</th>
+    </tr>
+  </thead>
   <tbody>
-    {% for row in rows %}
-    <tr><td>{{ row.name }}</td><td>{{ row.attempts }}</td><td>{{ row.players }}</td><td>{{ row.avg_score }}%</td></tr>
+    {% for row in games %}
+    <tr>
+      <td>
+        <a href="{% url 'ops:game' row.key %}">{{ row.name }}</a>
+        <br><small>{{ row.key }}</small>
+      </td>
+      <td>
+        {% if row.bank_label %}{{ row.bank_label }}{% else %}Built-in questions{% endif %}
+        {% if row.bank_title %}<br><small>{{ row.bank_title }}</small>{% endif %}
+      </td>
+      <td class="ops-num">{{ row.question_count }}</td>
+      <td class="ops-num">{{ row.usage.completed }}</td>
+      <td class="ops-num">{{ row.usage.students }}</td>
+      <td class="ops-num">{{ row.usage.avg_percent }}%</td>
+    </tr>
     {% empty %}
-    <tr><td class="ops-empty" colspan="4">No attempts yet.</td></tr>
+    <tr><td class="ops-empty" colspan="6">No games match these filters.</td></tr>
     {% endfor %}
   </tbody>
 </table>

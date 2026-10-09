@@ -8,20 +8,27 @@
     <script>
         /* Apply the saved Day / Night choice before the page paints (no flash). */
         (function () {
+            var home = "dark";
             try {
-                var t = localStorage.getItem("cq_login_theme");
-                if (t === "night" || t === "day") document.documentElement.setAttribute("data-theme", t);
+                var s = localStorage.getItem("cq_home_theme");
+                if (s === "light" || s === "dark") home = s;
+                else {
+                    var legacy = localStorage.getItem("cq_login_theme");
+                    if (legacy === "day") home = "light";
+                    else if (legacy === "night") home = "dark";
+                }
             } catch (e) {}
+            document.documentElement.setAttribute("data-theme", home === "light" ? "day" : "night");
         })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'accounts/css/login_v2.css' %}">
+    <link rel="stylesheet" href="{% static 'shared/css/chrome.css' %}?v=nav3">
     <link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
 </head>
 <body>
-
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
     <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><circle cx="12" cy="16" r="1"/><rect x="3" y="10" width="18" height="12" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/></symbol>
@@ -72,7 +79,9 @@
                 {% if messages or form.non_field_errors %}
                 <div class="lq-messages" role="status" aria-live="polite">
                     {% for message in messages %}
+                    {% if "XP earned" not in message.message and "Level up!" not in message.message and "badge unlocked" not in message.message %}
                     <p class="lq-msg lq-msg-{{ message.tags }}"><svg class="lq-icon"><use href="#{% if message.tags == 'success' or message.tags == 'info' %}i-check{% else %}i-alert{% endif %}"/></svg>{{ message }}</p>
+                    {% endif %}
                     {% endfor %}
                     {% for error in form.non_field_errors %}
                     <p class="lq-msg lq-msg-error"><svg class="lq-icon"><use href="#i-alert"/></svg>{{ error }}</p>
@@ -119,11 +128,13 @@
             <a href="{% url 'accounts:google_login' %}" class="lq-btn lq-btn-google lq-3d"><span class="lq-g">G</span>Sign in with Google</a>
 
             <p class="lq-foot lq-muted">New here? <a href="{% url 'accounts:signup' %}" class="lq-create">Create an account</a></p>
+            <a href="{% url 'accounts:admin_login' %}" class="lq-admin-link">Administrator sign in</a>
             <p class="lq-small-links lq-muted"><a href="{% url 'pages:about' %}">About</a><a href="{% url 'pages:contact' %}">Contact</a></p>
         </div>
     </section>
 </main>
 
 <script src="{% static 'accounts/js/login_v2.js' %}"></script>
+<script src="{% static 'shared/js/chrome.js' %}?v=nav2"></script>
 </body>
 </html>

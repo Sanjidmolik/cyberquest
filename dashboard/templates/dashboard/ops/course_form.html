@@ -1,0 +1,100 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'ops:courses' %}">Back to courses</a></p>
+
+{% if course %}
+<div class="ops-kpis">
+  <div class="ops-kpi"><strong>{{ performance.students }}</strong><span>Students</span></div>
+  <div class="ops-kpi"><strong>{{ performance.completed }}</strong><span>Completed</span></div>
+  <div class="ops-kpi"><strong>{{ performance.percent }}%</strong><span>Completion rate</span></div>
+  <div class="ops-kpi">
+    <strong>{% if performance.average is None %}—{% else %}{{ performance.average }}%{% endif %}</strong>
+    <span>Average progress</span>
+    <small>Students who opened this course</small>
+  </div>
+</div>
+{% endif %}
+
+<form class="ops-panel ops-course-form" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <h2>Course information</h2>
+  {% if form.non_field_errors %}
+  <p class="ops-note">{{ form.non_field_errors }}</p>
+  {% endif %}
+  <label for="{{ form.code.id_for_label }}">Course code</label>
+  {{ form.code }}
+  {% if form.code.help_text %}<small>{{ form.code.help_text }}</small>{% endif %}
+  {{ form.code.errors }}
+
+  <label for="{{ form.title.id_for_label }}">Title</label>
+  {{ form.title }}
+  {{ form.title.errors }}
+
+  <label for="{{ form.short_description.id_for_label }}">Short summary</label>
+  {{ form.short_description }}
+  {% if form.short_description.help_text %}<small>{{ form.short_description.help_text }}</small>{% endif %}
+  {{ form.short_description.errors }}
+
+  <h2>Learning material</h2>
+  <label for="{{ form.pdf_file.id_for_label }}">Learning PDF</label>
+  {{ form.pdf_file }}
+  {% if form.pdf_file.help_text %}<small>{{ form.pdf_file.help_text }}</small>{% endif %}
+  {{ form.pdf_file.errors }}
+  {% if course and course.pdf_file %}
+  <p class="ops-note">Current file: {{ course.pdf_file.name }}</p>
+  {% endif %}
+
+  <label for="{{ form.content.id_for_label }}">Lesson text</label>
+  {{ form.content }}
+  {% if form.content.help_text %}<small>{{ form.content.help_text }}</small>{% endif %}
+  {{ form.content.errors }}
+
+  {% if course %}
+  <p class="ops-note">Reader pages, calculated from the saved material: {{ performance.pages }}</p>
+  {% endif %}
+
+  <h2>Course settings</h2>
+  <label for="{{ form.order.id_for_label }}">Display order</label>
+  {{ form.order }}
+  {% if form.order.help_text %}<small>{{ form.order.help_text }}</small>{% endif %}
+  {{ form.order.errors }}
+
+  <label class="ops-check" for="{{ form.is_published.id_for_label }}">
+    {{ form.is_published }} Published
+  </label>
+  {% if form.is_published.help_text %}<small>{{ form.is_published.help_text }}</small>{% endif %}
+  {{ form.is_published.errors }}
+
+  <p>
+    <button type="submit">{% if course %}Save course{% else %}Create course{% endif %}</button>
+  </p>
+</form>
+
+{% if course %}
+<div class="ops-panel">
+  <h2>Status</h2>
+  {% if course.is_published %}
+  <p><span class="ops-badge ops-s-published">Published</span> Students can open this course.</p>
+  <p><a href="{% url 'courses:detail' course.code %}">Preview course</a></p>
+  <form method="post" action="{% url 'ops:course_publish' course.code %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{% url 'ops:course_edit' course.code %}">
+    <button class="ops-btn-quiet" type="submit" name="action" value="unpublish">Unpublish course</button>
+  </form>
+  {% else %}
+  <p><span class="ops-badge ops-s-draft">Draft</span> Students cannot open a draft. Preview is available after you publish.</p>
+  <form method="post" action="{% url 'ops:course_publish' course.code %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{% url 'ops:course_edit' course.code %}">
+    <button type="submit" name="action" value="publish">Publish course</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="ops-panel">
+  <h2>Questions</h2>
+  <p class="ops-note">Questions are not stored on the course. Game questions are managed on their own screen.</p>
+  <p><a href="{% url 'ops:questions' %}">Open question banks</a></p>
+</div>
+{% endif %}
+{% endblock %}

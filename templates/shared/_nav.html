@@ -1,29 +1,31 @@
 {% load static %}
-<nav class="cq-nav" id="cq-nav">
+<nav class="cq-nav" id="cq-nav" aria-label="Primary">
   {% include "shared/_brand.html" with logo_class="cq-logo-lockup--sm" %}
   <ul class="cq-nav-links">
-    <li><a class="cq-nav-link" href="{% url 'pages:home' %}">Home</a></li>
-    <li><a class="cq-nav-link" href="{% url 'courses:intro' %}">Courses</a></li>
-    <li><a class="cq-nav-link" href="{% url 'pages:about' %}">About</a></li>
-    <li><a class="cq-nav-link" href="{% url 'pages:contact' %}">Contact</a></li>
     {% if user.is_authenticated %}
     <li><a class="cq-nav-link" href="{% url 'dashboard:home' %}">Dashboard</a></li>
+    {% endif %}
+    <li><a class="cq-nav-link" href="{% url 'courses:intro' %}">Courses</a></li>
+    <li><a class="cq-nav-link" href="{% url 'practice:center' %}">Practice</a></li>
+    {% if user.is_authenticated %}
+    <li><a class="cq-nav-link" href="{% url 'practice:cyber_dna' %}">Cyber DNA</a></li>
+    <li><a class="cq-nav-link" href="{% url 'practice:history' %}">History</a></li>
     {% endif %}
   </ul>
   <ul class="cq-nav-auth">
     {% if user.is_authenticated %}
-    <li><a class="cq-nav-link" href="{% url 'accounts:settings' %}">Settings</a></li>
     <li><a class="cq-btn cq-btn-sm" href="{% url 'accounts:logout' %}">Logout</a></li>
     {% else %}
     <li><a class="cq-nav-link" href="{% url 'accounts:login' %}">Login</a></li>
-    <li><a class="cq-btn cq-btn-sm" href="{% url 'accounts:signup' %}">Register</a></li>
     {% endif %}
   </ul>
   <div class="cq-nav-tools">
+    {% if not hide_theme %}
     <button class="cq-theme-toggle" id="themeToggle" type="button" aria-label="Switch to day mode" title="Switch to day mode">
       <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.3M12 19.2v2.3M2.5 12h2.3M19.2 12h2.3M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>
       <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5 8.6 8.6 0 1 0 20.5 14.2z"/></svg>
     </button>
+    {% endif %}
     <button class="cq-nav-toggle" id="cq-nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
   </div>
 </nav>

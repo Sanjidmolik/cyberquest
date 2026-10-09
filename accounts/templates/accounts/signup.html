@@ -8,10 +8,13 @@
   <div class="cq-page-card">
     <h1 class="cq-heading">Join CyberQuest</h1>
     <p class="cq-sub">Create your account to start training.</p>
+    <p class="cq-body"><a href="{% url 'accounts:google_login' %}">Sign up with Google</a></p>
 
     {% if messages %}
       {% for message in messages %}
+        {% if "XP earned" not in message.message and "Level up!" not in message.message and "badge unlocked" not in message.message %}
         <p class="cq-msg cq-msg-{{ message.tags }}">{{ message }}</p>
+        {% endif %}
       {% endfor %}
     {% endif %}
 
