@@ -76,7 +76,7 @@
     const READER_CONFIG = {
         courseCode: "{{ course.code|escapejs }}",
         usesPdf: {{ uses_pdf|yesno:"true,false" }},
-        pdfUrl: {% if uses_pdf %}"{{ course.pdf_file.url }}"{% else %}null{% endif %},
+        pdfUrl: {% if uses_pdf %}"{% url 'courses:ebook' course.code %}"{% else %}null{% endif %},
         resumePageIndex: {{ resume_page_index }},
         alreadyDone: {{ already_done|yesno:"true,false" }},
         saveProgressUrl: "{% url 'courses:save_progress' course.code %}",

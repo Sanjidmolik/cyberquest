@@ -483,7 +483,12 @@ def _fill_template_image(template_path: str, payload: dict, qr_png: bytes, field
 
 
 def _fill_uploaded_template(template, payload: dict, qr_png: bytes) -> bytes:
-    path = template.pdf_file.path
+    from cyberquest.media_access import stored_file_path
+
+    stored = stored_file_path(template.pdf_file)
+    if stored is None:
+        raise ValueError("Certificate template file is missing or outside media storage.")
+    path = str(stored)
     kind = getattr(template, "template_kind", None)
     if kind is None:
         lower = path.lower()

@@ -311,3 +311,86 @@ class CertificatePageViewTests(TestCase):
     def test_public_base_url_in_qr(self):
         url = build_verification_url("CQ-2026-TESTTEST")
         self.assertTrue(url.startswith("https://cyberquest.example/verify/"))
+
+
+class ProtectedCertificateFileTests(TestCase):
+    def test_download_stays_with_the_owner_and_templates_are_superuser_only(self):
+        import tempfile
+        from io import BytesIO
+
+        from django.core.files.base import ContentFile
+        from PIL import Image
+
+        from certificates.models import Signatory
+
+        with tempfile.TemporaryDirectory() as media:
+            with override_settings(MEDIA_ROOT=media):
+                owner = _make_user(email="owner.cert@example.com", full_name="Owner Cert")
+                owner.is_staff = True
+                owner.is_superuser = True
+                owner.save()
+                cert = issue_certificate_for_user(owner)
+                self.assertTrue(cert.pdf_file.name.replace("\\", "/").startswith("issued_certificates/"))
+                owner_client = Client()
+                owner_client.force_login(owner)
+                downloaded = owner_client.get(reverse("certificates:download"))
+                self.assertEqual(downloaded.status_code, 200)
+                self.assertEqual(downloaded["Content-Type"], "application/pdf")
+                self.assertTrue(b"".join(downloaded.streaming_content).startswith(b"%PDF"))
+                downloaded.close()
+
+                other = _make_user(email="other.cert@example.com")
+                other_client = Client()
+                other_client.force_login(other)
+                denied = other_client.get(reverse("certificates:download"))
+                self.assertNotEqual(denied.get("Content-Type"), "application/pdf")
+
+                buffer = BytesIO()
+                Image.new("RGB", (40, 20), (255, 255, 255)).save(buffer, format="PNG")
+                template = CertificateTemplate.objects.create(
+                    name="Preview",
+                    pdf_file=ContentFile(buffer.getvalue(), name="design.png"),
+                    is_active=False,
+                )
+                generated = generate_certificate_pdf(
+                    recipient_name="Owner Cert",
+                    score=80,
+                    certificate_id="CQ-2026-TESTFILE",
+                    issued_date_display="9 Oct 2026",
+                    verify_url="https://example.test/verify/CQ-2026-TESTFILE",
+                    template=template,
+                    require_template=True,
+                )
+                self.assertTrue(generated.startswith(b"%PDF"))
+                signatory = Signatory.objects.create(
+                    name="Ada",
+                    title="Director",
+                    signature_image=ContentFile(buffer.getvalue(), name="sign.png"),
+                )
+                student_template = other_client.get(reverse("certificates:template_file", args=[template.pk]))
+                student_signature = other_client.get(reverse("certificates:signature_file", args=[signatory.pk]))
+                self.assertEqual(student_template.status_code, 404)
+                self.assertEqual(student_signature.status_code, 404)
+                owner_template = owner_client.get(reverse("certificates:template_file", args=[template.pk]))
+                owner_signature = owner_client.get(reverse("certificates:signature_file", args=[signatory.pk]))
+                self.assertEqual(owner_template.status_code, 200)
+                self.assertEqual(owner_signature.status_code, 200)
+                self.assertTrue(b"".join(owner_template.streaming_content).startswith(b"\x89PNG"))
+                owner_template.close()
+                owner_signature.close()
+
+                student_issued = other_client.get(reverse("certificates:issued_file", args=[cert.pk]))
+                self.assertEqual(student_issued.status_code, 404)
+                admin_issued = owner_client.get(reverse("certificates:issued_file", args=[cert.pk]))
+                self.assertEqual(admin_issued.status_code, 200)
+                self.assertEqual(admin_issued["Content-Type"], "application/pdf")
+                self.assertTrue(b"".join(admin_issued.streaming_content).startswith(b"%PDF"))
+                admin_issued.close()
+
+                change = owner_client.get(
+                    reverse("admin:certificates_issuedcertificate_change", args=[cert.pk])
+                )
+                self.assertEqual(change.status_code, 200)
+                issued_url = reverse("certificates:issued_file", args=[cert.pk])
+                self.assertContains(change, issued_url)
+                self.assertNotContains(change, "/media/")

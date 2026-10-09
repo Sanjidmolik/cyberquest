@@ -31,7 +31,7 @@
         <div class="topnav-divider"></div>
         <a href="{% url 'accounts:settings' %}" class="user-chip" title="Settings">
             {% if profile_picture %}
-                <img src="{{ profile_picture.url }}" class="user-avatar-sm" alt="">
+                <img src="{% url 'accounts:profile_photo' request.user.pk %}" class="user-avatar-sm" alt="">
             {% else %}
                 <span class="user-avatar-sm user-avatar-fallback">{{ display_name|slice:":1"|upper }}</span>
             {% endif %}
@@ -66,7 +66,7 @@
             <div class="profile-block">
                 <div class="avatar-ring" style="--ring-percent: {{ xp_progress_percent }};">
                     {% if profile_picture %}
-                        <img src="{{ profile_picture.url }}" class="avatar-img" alt="">
+                        <img src="{% url 'accounts:profile_photo' request.user.pk %}" class="avatar-img" alt="">
                     {% else %}
                         <span class="avatar-img avatar-fallback">{{ display_name|slice:":1"|upper }}</span>
                     {% endif %}
@@ -227,7 +227,7 @@
             <div class="leaderboard-row {% if u.pk == request.user.pk %}leaderboard-row-me{% endif %}">
                 <span class="lb-rank">{{ forloop.counter }}</span>
                 {% if u.profile_picture %}
-                    <img src="{{ u.profile_picture.url }}" class="lb-avatar" alt="">
+                    <img src="{% url 'accounts:profile_photo' u.pk %}" class="lb-avatar" alt="">
                 {% else %}
                     <span class="lb-avatar lb-avatar-fallback">{{ u.username|slice:":1"|upper }}</span>
                 {% endif %}

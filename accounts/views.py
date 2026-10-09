@@ -701,3 +701,19 @@ def totp_disable(request):
     user.recovery_codes.all().delete()
     messages.success(request, "Two-factor authentication is now off.")
     return redirect("accounts:settings")
+
+
+@login_required(login_url="/accounts/login/")
+def profile_photo(request, pk):
+    """Serve one user's profile photo to any signed-in member. No client path is accepted."""
+    from django.http import Http404
+
+    from cyberquest.media_access import serve_stored_file
+
+    owner = UserModel.objects.filter(pk=pk).first()
+    if owner is None or not owner.profile_picture:
+        raise Http404("Profile photo not found.")
+    response = serve_stored_file(owner.profile_picture)
+    if response is None:
+        raise Http404("Profile photo not found.")
+    return response

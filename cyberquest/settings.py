@@ -217,8 +217,10 @@ STORAGES = {
 # ---- User-uploaded files (profile pictures, etc.) ----
 # Different from STATIC_URL/STATIC_ROOT above: those are OUR css/js files,
 # these are files USERS upload at runtime (e.g. profile pictures).
+# Leave MEDIA_ROOT unset locally. Set it to a persistent disk mount in production.
+_media_root = (os.environ.get("MEDIA_ROOT") or "").strip()
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(_media_root) if _media_root else BASE_DIR / 'media'
 
 
 # ---- Custom auth ----

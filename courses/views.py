@@ -17,7 +17,7 @@ mark_course_complete()  -- called by the reader ONLY once the user has
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.views.decorators.http import require_POST
 import json
 
@@ -220,3 +220,36 @@ def mark_course_complete(request, code):
     new_badges = [b.name for b in check_and_award_badges(request.user)]
 
     return JsonResponse({"completed": True, "new_badges": new_badges})
+
+
+def _course_for_media(user, code):
+    """Published courses for signed-in students. Superusers may open drafts."""
+    course = Course.objects.filter(code=code).first()
+    if course is None:
+        return None
+    if course.is_published or user.is_superuser:
+        return course
+    return None
+
+
+def _serve_course_field(request, code, field_name):
+    course = _course_for_media(request.user, code)
+    if course is None:
+        raise Http404("Course not found.")
+    from cyberquest.media_access import serve_stored_file
+
+    response = serve_stored_file(getattr(course, field_name))
+    if response is None:
+        raise Http404("File not found.")
+    return response
+
+
+@login_required(login_url="/accounts/login/")
+def course_ebook(request, code):
+    """PDF bytes for the reader. PDF.js requests this URL with the session cookie."""
+    return _serve_course_field(request, code, "pdf_file")
+
+
+@login_required(login_url="/accounts/login/")
+def course_thumbnail(request, code):
+    return _serve_course_field(request, code, "thumbnail")

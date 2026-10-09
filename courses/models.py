@@ -87,15 +87,13 @@ class Course(models.Model):
             raise ValidationError({"thumbnail": exc.messages})
 
     def safe_thumbnail_url(self):
-        field = self.thumbnail
-        if not field or not getattr(field, "name", ""):
+        from django.urls import reverse
+
+        from cyberquest.media_access import stored_file_path
+
+        if stored_file_path(self.thumbnail) is None:
             return ""
-        try:
-            if not field.storage.exists(field.name):
-                return ""
-            return field.url
-        except Exception:
-            return ""
+        return reverse("courses:thumbnail", args=[self.code])
 
 
 class CourseProgress(models.Model):

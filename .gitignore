@@ -53,6 +53,8 @@ staticfiles/
 # User-uploaded media. Named course and certificate source files stay trackable.
 # Course-card uploads land here. The fallback image stays under courses/static.
 media/issued_certificates/
+# Signature images uploaded for certificate signatories. No tracked source assets live here.
+media/signatures/
 media/profile_pictures/*
 !media/profile_pictures/dragon.png
 media/course_thumbnails/

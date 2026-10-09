@@ -8,7 +8,7 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import FileResponse, HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
@@ -56,9 +56,11 @@ def _page_context(request):
 
 
 def _serve_pdf(cert, *, as_attachment: bool):
+    from cyberquest.media_access import serve_stored_file
+
     try:
-        return FileResponse(
-            cert.pdf_file.open("rb"),
+        response = serve_stored_file(
+            cert.pdf_file,
             as_attachment=as_attachment,
             filename=f"CyberQuest_{cert.certificate_id}.pdf",
             content_type="application/pdf",
@@ -66,6 +68,9 @@ def _serve_pdf(cert, *, as_attachment: bool):
     except Exception:
         logger.exception("Certificate file serve failed for %s", cert.certificate_id)
         return HttpResponse("Could not open certificate.", status=500)
+    if response is None:
+        raise Http404("Certificate file is not available.")
+    return response
 
 
 def _ensure_ready_certificate(request):
@@ -151,3 +156,41 @@ def verify_certificate(request, certificate_id):
         "certificate_id": certificate_id,
     }
     return render(request, "certificates/verify.html", context)
+
+
+def _superuser_file(request, field):
+    from cyberquest.media_access import serve_stored_file
+
+    if not request.user.is_superuser:
+        raise Http404("File not found.")
+    response = serve_stored_file(field)
+    if response is None:
+        raise Http404("File not found.")
+    return response
+
+
+@login_required(login_url="/accounts/login/")
+def template_file(request, pk):
+    template = CertificateTemplate.objects.filter(pk=pk).first()
+    if template is None:
+        raise Http404("File not found.")
+    return _superuser_file(request, template.pdf_file)
+
+
+@login_required(login_url="/accounts/login/")
+def signature_file(request, pk):
+    from .models import Signatory
+
+    signatory = Signatory.objects.filter(pk=pk).first()
+    if signatory is None:
+        raise Http404("File not found.")
+    return _superuser_file(request, signatory.signature_image)
+
+
+@login_required(login_url="/accounts/login/")
+def issued_file(request, pk):
+    """Superuser preview of one issued PDF. Owner view and download stay on their own routes."""
+    certificate = IssuedCertificate.objects.filter(pk=pk).first()
+    if certificate is None:
+        raise Http404("File not found.")
+    return _superuser_file(request, certificate.pdf_file)

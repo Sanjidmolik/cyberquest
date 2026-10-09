@@ -16,7 +16,12 @@ def server_total_pages(course) -> int:
         try:
             import pymupdf
 
-            with pymupdf.open(course.pdf_file.path) as doc:
+            from cyberquest.media_access import stored_file_path
+
+            path = stored_file_path(course.pdf_file)
+            if path is None:
+                raise FileNotFoundError(course.pdf_file.name)
+            with pymupdf.open(path) as doc:
                 body = max(1, int(doc.page_count))
         except Exception:
             body = 1

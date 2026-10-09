@@ -31,7 +31,7 @@
     <h2 class="cq-section-title">Profile Picture</h2>
     <div class="cq-avatar-row">
       {% if request.user.profile_picture %}
-        <img src="{{ request.user.profile_picture.url }}" class="cq-avatar" id="avatar-preview" alt="Current profile picture">
+        <img src="{% url 'accounts:profile_photo' request.user.pk %}" class="cq-avatar" id="avatar-preview" alt="Current profile picture">
       {% else %}
         <div class="cq-avatar cq-avatar-fallback" id="avatar-fallback">{{ request.user.display_name|slice:":1"|upper }}</div>
         <img src="" class="cq-avatar" id="avatar-preview" alt="Profile picture preview" hidden>

@@ -16,8 +16,6 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
 from django.views.generic import RedirectView
 from django.templatetags.static import static as static_url
 
@@ -42,9 +40,3 @@ urlpatterns = [
     path('api/', include('question_bank.urls')),
     path('favicon.ico', RedirectView.as_view(url=static_url('dashboard/img/favicon.ico'), permanent=True)),
 ]
-
-# Serve user-uploaded files (profile pictures) during development.
-# In production this would be handled by the web server / a cloud storage
-# service instead -- this line only applies while DEBUG=True.
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
