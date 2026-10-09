@@ -6,12 +6,12 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">
-<link rel="stylesheet" href="{% static 'certificates/css/certificates.css' %}">
+<link rel="stylesheet" href="{% static 'certificates/css/certificates.css' %}?v=fit1">
 {% endblock %}
 
 
 {% block content %}
-<div class="cq-container-wide" style="padding: 28px 0 48px;">
+<div class="cq-cert-page">
   <header class="cq-cert-hero">
     <h1>Certificates</h1>
     <p>Your CyberQuest Achievement — unlock a verified certificate by completing all five challenges with an overall score of at least 80%.</p>
@@ -125,28 +125,22 @@
       </div>
     </section>
 
-    <aside class="cq-cert-panel" style="background:transparent;border:0;box-shadow:none;padding:0;">
-      <div class="cq-cert-preview {% if not certificate and not eligible %}is-locked{% endif %}">
-        {% if not certificate and not eligible %}
-        <span class="lock-badge">Locked</span>
+    <aside class="cq-cert-panel cq-cert-preview-panel">
+      <h2>Certificate Preview</h2>
+      <p class="cq-cert-message">
+        {% if certificate %}
+          This is your issued certificate. Download uses the same file.
+        {% else %}
+          Permanent CyberQuest design. Your name and current score are filled in.
+          Certificate ID, issue date, and the verification QR appear after you generate it.
         {% endif %}
-        <div class="brand">CYBERQUEST</div>
-        <div class="title">CERTIFICATE OF ACHIEVEMENT</div>
-        <div class="presented">This certificate is proudly presented to</div>
-        <div class="name">
-          {% if certificate %}{{ certificate.recipient_name }}{% else %}{{ display_name }}{% endif %}
-        </div>
-        <div class="score">
-          Score:
-          {% if certificate %}{{ certificate.score }}{% else %}{{ status.overall_score }}{% endif %}%
-        </div>
-        <div class="meta">
-          {% if certificate %}
-            {{ certificate.certificate_id }} · {{ certificate.issued_at|date:"d F Y" }}
-          {% else %}
-            Complete all challenges at {{ status.min_score }}%+ to unlock
-          {% endif %}
-        </div>
+      </p>
+      <div class="cq-cert-stage" tabindex="0" role="region" aria-label="Certificate preview. Scroll sideways if it does not fit.">
+        <img
+          src="{% url 'certificates:preview' %}"
+          alt="CyberQuest Certificate of Achievement for {{ display_name }}"
+          width="842"
+          height="595">
       </div>
     </aside>
   </div>

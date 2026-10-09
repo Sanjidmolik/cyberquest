@@ -19,9 +19,11 @@ from django.urls import path, include
 from django.views.generic import RedirectView
 from django.templatetags.static import static as static_url
 
+from accounts.views import admin_login_view
 from certificates.views import verify_certificate
 
 urlpatterns = [
+    path('admin-login/', admin_login_view, name='admin_login'),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('dashboard/', include('dashboard.urls')),

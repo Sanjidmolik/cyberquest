@@ -13,8 +13,10 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
 from .eligibility import get_eligibility_status
+from .services.generator import generate_certificate_pdf, pdf_bytes_to_png
 from .services.issuance import (
     CertificateIssuanceError,
+    _recipient_name,
     certificate_needs_template_refresh,
     get_ready_certificate,
     get_user_certificate,
@@ -84,9 +86,46 @@ def _ensure_ready_certificate(request):
     return issue_certificate_for_user(request.user, request=request)
 
 
+def _preview_png(request) -> bytes:
+    """
+    Render the certificate the user would download.
+    An issued PDF is shown as stored. Otherwise the same generator runs
+    against the permanent template (or the active admin template) without
+    inventing an id, date, or verification QR.
+    """
+    ready = get_ready_certificate(request.user)
+    if ready and ready.pdf_file:
+        with ready.pdf_file.open("rb") as handle:
+            return pdf_bytes_to_png(handle.read())
+
+    status = get_eligibility_status(request.user)
+    active = CertificateTemplate.get_active()
+    pdf_bytes = generate_certificate_pdf(
+        recipient_name=_recipient_name(request.user),
+        score=int(status["overall_score"]),
+        certificate_id="",
+        issued_date_display="",
+        verify_url="",
+        template=active,
+    )
+    return pdf_bytes_to_png(pdf_bytes)
+
+
 @login_required(login_url="/accounts/login/")
 def certificate_page(request):
     return render(request, "certificates/certificate_page.html", _page_context(request))
+
+
+@login_required(login_url="/accounts/login/")
+def certificate_preview(request):
+    try:
+        png = _preview_png(request)
+    except Exception:
+        logger.exception("Certificate preview failed")
+        return HttpResponse("Could not render certificate preview.", status=500)
+    response = HttpResponse(png, content_type="image/png")
+    response["Cache-Control"] = "private, no-cache"
+    return response
 
 
 @login_required(login_url="/accounts/login/")

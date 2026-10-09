@@ -17,7 +17,7 @@ import random
 from django.contrib.auth import get_user_model
 
 from games.models import GameAttempt
-from games.registry import GAMES_REGISTRY
+from games.registry import GAMES_REGISTRY, playable_games
 from achievements.models import UserBadge
 from notifications.models import Notification
 from courses.progress import has_completed_all_courses
@@ -69,14 +69,16 @@ def get_dashboard_context(user):
         if attempt.game_key not in best_by_game or pct > best_by_game[attempt.game_key]:
             best_by_game[attempt.game_key] = round(pct)
 
-    missions_completed = len(best_by_game)
-    total_missions = len(GAMES_REGISTRY)
+    playable_keys = {game["key"] for game in playable_games()}
+    played_scores = {key: pct for key, pct in best_by_game.items() if key in playable_keys}
+    missions_completed = len(played_scores)
+    total_missions = len(playable_keys)
 
-    # "Average Score" = average of best-attempt percentages across games actually played.
-    average_score = round(sum(best_by_game.values()) / len(best_by_game)) if best_by_game else 0
+    # "Average Score" = average of best-attempt percentages across playable games actually played.
+    average_score = round(sum(played_scores.values()) / len(played_scores)) if played_scores else 0
 
-    # "Skills Mastered" = games where the best attempt was 80%+ correct.
-    skills_mastered = sum(1 for pct in best_by_game.values() if pct >= 80)
+    # "Skills Mastered" = playable games where the best attempt was 80%+ correct.
+    skills_mastered = sum(1 for pct in played_scores.values() if pct >= 80)
 
     # Games unlock TOGETHER once all courses are done (not one-by-one), so
     # "locked" is a single platform-wide state here, not a per-game one --
@@ -86,21 +88,25 @@ def get_dashboard_context(user):
     active_missions = []
     for index, game in enumerate(GAMES_REGISTRY, start=1):
         progress = best_by_game.get(game["key"], 0)
+        coming_soon = bool(game.get("coming_soon"))
         active_missions.append({
             "number": f"{index:02d}",
             "key": game["key"],
-            "name": game["name"],
+            "name": game.get("card_name") or game["name"],
             "emoji": game["emoji"],
-            "url_name": game["url_name"],
-            "progress": progress,
+            "url_name": game.get("url_name") or "",
+            "progress": 0 if coming_soon else progress,
             "color": GAME_THEME_COLORS.get(game["key"], "green"),
-            "attempted": game["key"] in best_by_game,
+            "attempted": (not coming_soon) and game["key"] in best_by_game,
+            "coming_soon": coming_soon,
         })
 
     # ---- Skill matrix (same best-attempt data, relabeled for the panel) ----
     skill_matrix = [
-        {"label": game["name"], "percent": best_by_game.get(game["key"], 0),
-         "color": GAME_THEME_COLORS.get(game["key"], "green")}
+        {"label": game.get("card_name") or game["name"],
+         "percent": 0 if game.get("coming_soon") else best_by_game.get(game["key"], 0),
+         "color": GAME_THEME_COLORS.get(game["key"], "green"),
+         "coming_soon": bool(game.get("coming_soon"))}
         for game in GAMES_REGISTRY
     ]
 

@@ -4,8 +4,10 @@ certificates/eligibility.py
 Server-side certificate eligibility from stored GameAttempt results.
 
 Normal users:
-  ALL 5 core CyberQuest games completed
+  ALL 5 playable CyberQuest missions completed
+  (Phishing, Password, Network Defence, Cryptography, Steganography)
   AND overall competency score >= 80%
+  OSINT is coming soon and is not required.
 
 Staff/admin accounts can always generate a certificate (demo / testing).
 """

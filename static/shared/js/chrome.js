@@ -1,6 +1,8 @@
 (function () {
   var nav = document.getElementById("cq-nav") || document.getElementById("pc-nav") || document.getElementById("nav");
-  var toggle = document.getElementById("cq-nav-toggle") || (nav && nav.querySelector(".nav-toggle"));
+  // The homepage toggle is already handled by home_page/js/app.js. A second
+  // listener here toggles .open twice, so the menu never opens.
+  var toggle = document.getElementById("cq-nav-toggle");
   if (toggle && nav) {
     toggle.addEventListener("click", function () {
       var open = nav.classList.toggle("open");

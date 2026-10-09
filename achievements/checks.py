@@ -37,9 +37,9 @@ def check_network_guardian(user):
 
 def check_dedicated_learner(user):
     from games.models import GameAttempt
-    from games.registry import GAMES_REGISTRY
+    from games.registry import playable_games
     played = set(GameAttempt.objects.filter(user=user).values_list("game_key", flat=True))
-    required = {g["key"] for g in GAMES_REGISTRY}
+    required = {g["key"] for g in playable_games()}
     return required.issubset(played)
 
 

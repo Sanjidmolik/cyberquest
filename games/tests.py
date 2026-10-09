@@ -199,6 +199,31 @@ class QuestionSetArchitectureTests(TestCase):
         self.user.save()
         self.assertTrue(is_eligible_for_certificate(self.user))
 
+    def test_mission_order_and_osint_does_not_launch(self):
+        from games.registry import GAMES_REGISTRY, playable_games
+
+        self.assertEqual(
+            [game["key"] for game in GAMES_REGISTRY],
+            [
+                "phishing_simulator",
+                "password_cracker",
+                "network_defense",
+                "cryptography",
+                "steganography",
+                "osint",
+            ],
+        )
+        self.assertEqual(
+            [game["card_name"] for game in GAMES_REGISTRY],
+            ["Phishing", "Password Cracker", "Network Defence", "Cryptography", "Steganography", "OSINT"],
+        )
+        self.assertTrue(GAMES_REGISTRY[-1]["coming_soon"])
+        self.assertNotIn("osint", {game["key"] for game in playable_games()})
+        self.client.force_login(self.user)
+        blocked = self.client.get(reverse("games:osint"))
+        self.assertEqual(blocked.status_code, 302)
+        self.assertEqual(blocked.url, reverse("dashboard:home"))
+
     def test_seed_pool_iterable(self):
         rows = list(iter_seed_questions())
         self.assertGreaterEqual(len(rows), 100)

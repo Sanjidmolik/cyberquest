@@ -131,11 +131,14 @@ a { text-decoration: none; color: inherit; }
 button { font-family: inherit; }
 
 /* ================= TOP NAVIGATION ================= */
+html, body { overflow-x: hidden; }
 .topnav {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 24px;
+    min-width: 0;
+    max-width: 100%;
     padding: 12px 24px;
     width: min(1100px, calc(100% - 32px));
     margin: 14px auto 0;
@@ -238,6 +241,7 @@ h2 {
 .topnav-search input:focus { outline: none; border-color: var(--accent-green); }
 .search-icon { position: absolute; right: 14px; opacity: 0.6; pointer-events: none; }
 
+.topnav-left, .topnav-right { min-width: 0; }
 .topnav-right { display: flex; align-items: center; gap: 12px; }
 .icon-btn {
     position: relative;
@@ -305,23 +309,30 @@ html:not([data-theme]) .theme-toggle .label-dark { display: none; }
 /* ================= APP SHELL ================= */
 .app-shell {
     display: grid;
-    grid-template-columns: 240px 1fr 300px;
+    grid-template-columns: 240px minmax(0, 1fr) 300px;
     gap: 20px;
     padding: 20px 24px;
     align-items: start;
+    min-width: 0;
 }
-.app-shell-no-right { grid-template-columns: 240px 1fr; }
+.app-shell-no-right { grid-template-columns: 240px minmax(0, 1fr); }
+.main-content { min-width: 0; max-width: 100%; }
 
-/* Child pages: compact bar instead of dashboard topnav */
+/* Child pages: bar shares the shell's side inset so it lines up with
+   the sidebar and the main column. */
 .child-topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 12px;
-    width: min(1100px, calc(100% - 32px));
-    margin: 14px auto 0;
+    width: auto;
+    max-width: none;
+    box-sizing: border-box;
+    margin: 14px 24px 0;
     padding: 8px 16px;
+    min-width: 0;
+    min-height: 64px;
     border-radius: 18px;
     background: var(--nav-bg);
     backdrop-filter: blur(14px) saturate(140%);
@@ -332,7 +343,9 @@ html:not([data-theme]) .theme-toggle .label-dark { display: none; }
     top: auto;
     z-index: 1;
 }
-.child-topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.child-topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 auto; }
+.child-topbar .theme-toggle { flex: none; align-self: center; }
+.child-topbar .cc-return { min-width: 0; }
 .cc-return {
     display: inline-flex;
     align-items: center;
@@ -354,7 +367,7 @@ html:not([data-theme]) .theme-toggle .label-dark { display: none; }
     font-size: 0.72rem;
     transition: transform .28s var(--ease);
 }
-.cc-return-copy { display: flex; flex-direction: column; line-height: 1.05; }
+.cc-return-copy { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
 .cc-return-kicker {
     font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase;
     color: var(--text-muted); font-weight: 700;
@@ -362,6 +375,7 @@ html:not([data-theme]) .theme-toggle .label-dark { display: none; }
 .cc-return-title {
     font-family: Bangers, "Comic Sans MS", cursive, sans-serif;
     letter-spacing: 0.04em; font-size: 0.95rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .cc-return:hover {
     translate: 0 -2px;
@@ -585,7 +599,7 @@ html { scroll-padding-top: 88px; }
     to { opacity: 1; translate: 0 0; }
 }
 .mission-played { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-green) 35%, transparent); }
-.section-heading { display: flex; justify-content: space-between; align-items: center; margin: 28px 0 14px; }
+.section-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin: 28px 0 14px; }
 .section-heading h2 { font-size: 1.05rem; letter-spacing: 1.5px; margin: 0; color: var(--text-primary); }
 .locked-note { font-size: 0.78rem; color: var(--accent-amber); }
 .view-all-link { font-size: 0.78rem; color: var(--accent-green); font-weight: 700; }
@@ -658,6 +672,36 @@ html { scroll-padding-top: 88px; }
 .mission-locked:hover { transform: none; box-shadow: 0 10px 28px -20px var(--nav-shadow); }
 .mission-locked:hover::after { opacity: 0; }
 .mission-locked:hover .mission-emoji { transform: none; }
+.mission-soon {
+    cursor: default;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.92;
+}
+.mission-soon:hover,
+.mission-soon:active {
+    transform: none;
+    box-shadow: 0 10px 28px -20px var(--nav-shadow);
+}
+.mission-soon-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: color-mix(in srgb, var(--accent-teal) 22%, transparent);
+    color: var(--text-primary);
+    border: 1px solid color-mix(in srgb, var(--accent-teal) 55%, transparent);
+}
+.mission-btn-soon {
+    background: var(--hover-wash);
+    color: var(--text-muted);
+}
 
 .mission-green { border-color: color-mix(in srgb, var(--accent-green) 45%, transparent); }
 .mission-green .mission-progress-fill, .mission-green .mission-btn { background: var(--accent-green); color: var(--on-accent); }
@@ -800,27 +844,39 @@ html { scroll-padding-top: 88px; }
 }
 
 @media (max-width: 1180px) {
-    .app-shell { grid-template-columns: 220px 1fr; }
-    .app-shell-no-right { grid-template-columns: 220px 1fr; }
+    .app-shell { grid-template-columns: 220px minmax(0, 1fr); }
+    .app-shell-no-right { grid-template-columns: 220px minmax(0, 1fr); }
     .right-panel { display: none; }
 }
 
 @media (max-width: 860px) {
     .hamburger { display: inline-block; }
     .app-shell,
-    .app-shell-no-right { grid-template-columns: 1fr; }
+    .app-shell-no-right { grid-template-columns: minmax(0, 1fr); }
     .sidebar {
-        position: fixed; top: 0; left: -260px; height: 100vh;
-        width: 240px; z-index: 60; transition: left 0.25s ease; overflow-y: auto;
+        position: fixed; top: 0; left: 0; height: 100vh;
+        width: min(240px, calc(100vw - 48px));
+        transform: translateX(-110%);
+        z-index: 60; transition: transform 0.25s ease; overflow-y: auto;
     }
     .command-child .sidebar { top: 0; height: 100vh; }
-    .sidebar.open { left: 0; }
+    #sidebar.sidebar.open { transform: translateX(0) !important; }
+    .topnav { width: calc(100% - 16px); gap: 8px; padding: 8px 10px; }
+    .app-shell,
+    .app-shell-no-right { padding: 16px 12px; }
+    .child-topbar { margin-left: 12px; margin-right: 12px; }
+    .child-topbar.scrolled { left: 12px; right: 12px; margin: 0; }
+    .user-chip-text, .topnav-divider { display: none; }
+    .hamburger { min-width: 44px; min-height: 44px; }
     .topnav-search { display: none; }
     .profile-level-card { grid-template-columns: 1fr; }
     .level-progress-block { border-left: none; padding-left: 0; border-top: 1px solid var(--border-subtle); padding-top: 20px; margin-top: 20px; }
     .two-col-row { grid-template-columns: 1fr; }
     .skill-matrix-body { grid-template-columns: 1fr; }
     .mini-stats-row { grid-template-columns: repeat(2, 1fr); }
+    .missions-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mission-title { overflow-wrap: anywhere; }
+    .topnav, .child-topbar { min-width: 0; }
     .child-topbar { padding: 10px 14px; }
     .cc-context { display: none; }
     .cc-context-sep { display: none; }
@@ -849,4 +905,8 @@ html { scroll-padding-top: 88px; }
     .mission-card.mission-card-press {
         transform: none;
     }
+}
+
+#sidebar.open {
+    transform: translateX(0) !important;
 }

@@ -14,6 +14,7 @@ from django.contrib import messages
 from django.http import Http404
 
 from .models import GameAttempt, SET_COURSE_KEYS
+from .registry import game_by_key
 from .quiz_data import QUIZ_GAMES
 from .question_sets import pick_set_for_user, ensure_set_slots
 from courses.progress import has_completed_all_courses
@@ -180,6 +181,11 @@ def _set_game_bundle(user, game_key):
 
 @login_required(login_url="/accounts/login/")
 def quiz_game(request, game_key):
+    meta = game_by_key(game_key)
+    if meta and meta.get("coming_soon"):
+        messages.info(request, "OSINT is coming soon and cannot be started yet.")
+        return redirect("dashboard:home")
+
     blocked = _require_course_completed(request)
     if blocked:
         return blocked

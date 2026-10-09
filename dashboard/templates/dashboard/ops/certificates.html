@@ -1,6 +1,6 @@
 {% extends "dashboard/ops/base.html" %}
 {% block ops_content %}
-<p class="ops-note">Issued certificates use the existing certificate records. A certificate is ready for public verification once its PDF is stored. Eligibility and issuance use the same rules as the student certificate page.</p>
+<p class="ops-note">Issued certificates use the existing certificate records. A certificate is ready for public verification once its PDF is stored. Eligibility and issuance use the same rules as the student certificate page. <a href="{% url 'ops:certificate_templates' %}">Manage certificate templates</a>.</p>
 <section class="ops-kpis">
   <article class="ops-kpi"><strong>{{ summary.issued }}</strong><span>Ready certificates</span></article>
   <article class="ops-kpi"><strong>{{ summary.recent }}</strong><span>Issued this week</span></article>

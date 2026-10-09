@@ -15,7 +15,8 @@ class PagesNavigationTests(TestCase):
         self.assertContains(response, f'href="{reverse("games:password_cracker")}"')
         self.assertContains(response, f'href="{reverse("games:network_defense")}"')
         self.assertContains(response, f'href="{reverse("games:steganography")}"')
-        self.assertContains(response, f'href="{reverse("games:osint")}"')
+        self.assertContains(response, "Coming Soon")
+        self.assertNotContains(response, f'href="{reverse("games:osint")}"')
         self.assertContains(response, f'href="{reverse("certificates:page")}"')
         self.assertContains(response, f'href="{reverse("pages:contact")}"')
 

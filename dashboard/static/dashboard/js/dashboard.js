@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (toggleBtn && sidebar) {
         toggleBtn.addEventListener("click", function () {
             sidebar.classList.toggle("open");
+            sidebar.style.transform = sidebar.classList.contains("open") ? "translateX(0)" : "";
         });
 
         document.addEventListener("click", function (e) {
@@ -22,6 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const clickedToggle = toggleBtn.contains(e.target);
             if (sidebar.classList.contains("open") && !clickedInsideSidebar && !clickedToggle) {
                 sidebar.classList.remove("open");
+                sidebar.style.transform = "";
             }
         });
     }
@@ -159,7 +161,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         pulseSection(el, id === "active-missions");
         window.setTimeout(function () { lockObserver = false; }, reduced ? 0 : 700);
-        if (sidebar && sidebar.classList.contains("open")) sidebar.classList.remove("open");
+        if (sidebar && sidebar.classList.contains("open")) {
+            sidebar.classList.remove("open");
+            sidebar.style.transform = "";
+        }
     }
 
     navItems.forEach(function (item) {
@@ -224,6 +229,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /* ---------- Mission cards: homepage-style pointer glow ---------- */
     document.querySelectorAll(".mission-card").forEach(function (card) {
+        if (card.classList.contains("mission-soon")) return;
         card.addEventListener("pointermove", function (e) {
             if (reduced) return;
             const r = card.getBoundingClientRect();
@@ -231,7 +237,7 @@ document.addEventListener("DOMContentLoaded", function () {
             card.style.setProperty("--my", (e.clientY - r.top) + "px");
         });
         card.addEventListener("click", function () {
-            if (card.classList.contains("mission-locked")) return;
+            if (card.classList.contains("mission-locked") || card.classList.contains("mission-soon")) return;
             card.classList.add("mission-card-press");
         });
     });

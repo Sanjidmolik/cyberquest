@@ -32,10 +32,18 @@
       {% if game_results %}
         <h2 class="cq-section-title" style="margin-top:1.5rem;">Games</h2>
         {% for g in game_results %}
+          {% if g.coming_soon %}
+          <div class="cq-search-result cq-search-soon" style="margin-bottom:0.65rem;" aria-disabled="true">
+            <strong>{{ g.emoji }} {{ g.name }}</strong>
+            <span class="cq-soon-badge">Coming Soon</span>
+            <p class="cq-body small" style="margin:0.35rem 0 0;">{{ g.description }}</p>
+          </div>
+          {% else %}
           <a href="{% url g.url_name %}" class="cq-search-result" style="margin-bottom:0.65rem;">
             <strong>{{ g.emoji }} {{ g.name }}</strong>
             <p class="cq-body small" style="margin:0.35rem 0 0;">{{ g.description }}</p>
           </a>
+          {% endif %}
         {% endfor %}
       {% endif %}
     {% endif %}

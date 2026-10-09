@@ -9,7 +9,7 @@ Signatory            -- optional signature lines for the default PDF design
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
-from django.db import models
+from django.db import models, transaction
 
 TEMPLATE_EXTENSIONS = ("pdf", "jpg", "jpeg", "png")
 TEMPLATE_MAX_BYTES = 10 * 1024 * 1024
@@ -65,10 +65,25 @@ class CertificateTemplate(models.Model):
         status = "active" if self.is_active else "inactive"
         return f"{self.name} ({status})"
 
+    def delete(self, using=None, keep_parents=False):
+        permanent = (self.pdf_file.name or "").replace("\\", "/").endswith(
+            "CyberQuest_Certificate_of_Achievement.pdf"
+        )
+        if permanent:
+            # The built-in design file also backs certificates issued with no upload.
+            self.pdf_file.delete = lambda save=True: None
+        super().delete(using=using, keep_parents=keep_parents)
+
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.is_active:
-            type(self).objects.exclude(pk=self.pk).filter(is_active=True).update(is_active=False)
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            if self.is_active:
+                (
+                    type(self).objects.select_for_update()
+                    .exclude(pk=self.pk)
+                    .filter(is_active=True)
+                    .update(is_active=False)
+                )
 
     @classmethod
     def get_active(cls):

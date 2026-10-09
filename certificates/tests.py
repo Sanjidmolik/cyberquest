@@ -269,6 +269,39 @@ class GeneratorUnitTests(TestCase):
         )
         self.assertTrue(pdf.startswith(b"%PDF"))
         self.assertGreater(len(pdf), 1000)
+        import pymupdf
+        doc = pymupdf.open(stream=pdf, filetype="pdf")
+        text = doc[0].get_text()
+        self.assertIn("Abdur Rahman Ibn Mohammad", text)
+        self.assertIn("87%", text)
+        self.assertIn("CQ-2026-8F4A92D1", text)
+        self.assertIn("07 October 2026", text)
+        blocks = []
+        for block in doc[0].get_text("dict")["blocks"]:
+            for line in block.get("lines", []):
+                content = "".join(span["text"] for span in line["spans"])
+                blocks.append((content, line["bbox"]))
+        doc.close()
+        sentence = next(box for content, box in blocks if "proudly presented" in content)
+        name = next(box for content, box in blocks if content == "Abdur Rahman Ibn Mohammad")
+        self.assertGreater(name[1], sentence[3] + 8)
+        self.assertLess(name[3], 308)
+
+    def test_preview_omits_unissued_identity(self):
+        import pymupdf
+        pdf = generate_certificate_pdf(
+            recipient_name="Preview Learner",
+            score=42,
+            certificate_id="",
+            issued_date_display="",
+            verify_url="",
+        )
+        doc = pymupdf.open(stream=pdf, filetype="pdf")
+        text = doc[0].get_text()
+        doc.close()
+        self.assertIn("Preview Learner", text)
+        self.assertIn("42%", text)
+        self.assertNotIn("CQ-", text)
 
     def test_long_name_fitting(self):
         import pymupdf
@@ -300,6 +333,13 @@ class CertificatePageViewTests(TestCase):
         res = self.client.get(reverse("certificates:page"))
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, "Complete all CyberQuest challenges")
+        self.assertContains(res, reverse("certificates:preview"))
+
+    def test_preview_is_png(self):
+        res = self.client.get(reverse("certificates:preview"))
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res["Content-Type"], "image/png")
+        self.assertTrue(res.content.startswith(b"\x89PNG"))
 
     def test_generate_post_when_eligible(self):
         _complete_games(self.user, percent=100)
@@ -394,3 +434,193 @@ class ProtectedCertificateFileTests(TestCase):
                 issued_url = reverse("certificates:issued_file", args=[cert.pk])
                 self.assertContains(change, issued_url)
                 self.assertNotContains(change, "/media/")
+
+
+class TemplateManagementTests(TestCase):
+    def setUp(self):
+        self.superuser = User.objects.create_superuser(
+            email="template.root@gmail.com", password="pass12345", username="templateroot",
+        )
+        self.student = _make_user(email="template.student@gmail.com", username="templatestudent")
+        self.client.force_login(self.superuser)
+
+    def _png(self, name="design.png"):
+        from io import BytesIO
+        from PIL import Image
+        buf = BytesIO()
+        Image.new("RGB", (900, 600), color=(40, 16, 80)).save(buf, format="PNG")
+        return SimpleUploadedFile(name, buf.getvalue(), content_type="image/png")
+
+    def test_student_cannot_manage_templates(self):
+        self.client.force_login(self.student)
+        listing = self.client.get(reverse("ops:certificate_templates"))
+        self.assertEqual(listing.status_code, 403)
+        created = self.client.post(reverse("ops:certificate_template_new"), {"name": "Nope"})
+        self.assertEqual(created.status_code, 403)
+
+    def test_upload_activation_and_sample_preview_do_not_issue(self):
+        before = IssuedCertificate.objects.count()
+        response = self.client.post(reverse("ops:certificate_template_new"), {
+            "name": "Image design",
+            "pdf_file": self._png(),
+            "is_active": "on",
+            "field_config": "{}",
+        })
+        template = CertificateTemplate.objects.get(name="Image design")
+        self.assertRedirects(response, reverse("ops:certificate_template_edit", args=[template.pk]))
+        self.assertTrue(template.is_active)
+        self.assertEqual(CertificateTemplate.objects.filter(is_active=True).count(), 1)
+        preview = self.client.get(reverse("ops:certificate_template_preview", args=[template.pk]))
+        self.assertEqual(preview.status_code, 200)
+        self.assertEqual(preview["Content-Type"], "image/png")
+        self.assertTrue(preview.content.startswith(b"\x89PNG"))
+        self.assertEqual(IssuedCertificate.objects.count(), before)
+        page = self.client.get(reverse("ops:certificate_template_edit", args=[template.pk]))
+        self.assertContains(page, "Sample preview")
+        self.assertContains(page, "SAMPLE-ONLY")
+        self.assertContains(page, "Visual builder")
+        self.assertNotContains(page, "<textarea")
+        self.assertContains(page, 'type="hidden" name="field_config"')
+
+    def test_malformed_coordinates_and_bad_upload_are_rejected(self):
+        bad_json = self.client.post(reverse("ops:certificate_template_new"), {
+            "name": "Broken",
+            "pdf_file": self._png("ok.png"),
+            "field_config": "{",
+        })
+        self.assertEqual(bad_json.status_code, 200)
+        self.assertContains(bad_json, "valid JSON")
+        self.assertFalse(CertificateTemplate.objects.filter(name="Broken").exists())
+        bad_file = SimpleUploadedFile("notes.txt", b"hello", content_type="text/plain")
+        bad_upload = self.client.post(reverse("ops:certificate_template_new"), {
+            "name": "Wrong file",
+            "pdf_file": bad_file,
+            "field_config": "{}",
+        })
+        self.assertEqual(bad_upload.status_code, 200)
+        self.assertFalse(CertificateTemplate.objects.filter(name="Wrong file").exists())
+
+    def test_saved_coordinates_move_the_name(self):
+        import pymupdf
+        from certificates.services.generator import generate_certificate_pdf
+        template = CertificateTemplate.objects.create(
+            name="Positioned",
+            pdf_file=self._png("placed.png"),
+            is_active=True,
+            field_config={
+                "name": {"x": 40, "y": 50, "w": 400, "h": 40, "fontsize": 18, "align": 0, "color": "#FFFFFF"},
+            },
+        )
+        pdf = generate_certificate_pdf(
+            recipient_name="Placed Learner",
+            score=85,
+            certificate_id="CQ-2026-ABCDEF01",
+            issued_date_display="09 October 2026",
+            verify_url="https://example.com/verify/CQ-2026-ABCDEF01/",
+            template=template,
+            require_template=True,
+        )
+        doc = pymupdf.open(stream=pdf, filetype="pdf")
+        name = None
+        for block in doc[0].get_text("dict")["blocks"]:
+            for line in block.get("lines", []):
+                content = "".join(span["text"] for span in line["spans"])
+                if content == "Placed Learner":
+                    name = line["bbox"]
+        doc.close()
+        self.assertIsNotNone(name)
+        self.assertLess(name[1], 80)
+        self.assertGreater(name[1], 40)
+
+    def test_placeholder_is_not_drawn_twice(self):
+        import pymupdf
+        from certificates.services.generator import generate_certificate_pdf
+        doc = pymupdf.open()
+        page = doc.new_page(width=842, height=595)
+        page.insert_text(pymupdf.Point(80, 120), "{{NAME}}", fontsize=18)
+        raw = doc.tobytes()
+        doc.close()
+        uploaded = SimpleUploadedFile("holders.pdf", raw, content_type="application/pdf")
+        template = CertificateTemplate.objects.create(
+            name="Holders",
+            pdf_file=uploaded,
+            is_active=True,
+            field_config={"name": {"x": 400, "y": 400, "w": 200, "h": 40, "fontsize": 18}},
+        )
+        pdf = generate_certificate_pdf(
+            recipient_name="Once Only",
+            score=85,
+            certificate_id="CQ-2026-ABCDEF02",
+            issued_date_display="09 October 2026",
+            verify_url="https://example.com/verify/CQ-2026-ABCDEF02/",
+            template=template,
+            require_template=True,
+        )
+        opened = pymupdf.open(stream=pdf, filetype="pdf")
+        self.assertEqual(opened[0].get_text().count("Once Only"), 1)
+        opened.close()
+
+    def test_outside_coordinates_block_activation(self):
+        template = CertificateTemplate.objects.create(
+            name="Outside",
+            pdf_file=self._png("outside.png"),
+            field_config={"name": {"x": 5000, "y": 10, "w": 100, "h": 20, "fontsize": 12}},
+        )
+        response = self.client.post(reverse("ops:certificate_template_activate", args=[template.pk]))
+        self.assertEqual(response.status_code, 302)
+        template.refresh_from_db()
+        self.assertFalse(template.is_active)
+
+    def test_display_pixels_convert_to_page_points(self):
+        from certificates.layout import display_to_page
+        self.assertEqual(display_to_page(200, 400, 842), 421.0)
+        self.assertEqual(display_to_page(100, 400, 842), display_to_page(50, 200, 842))
+
+    def test_visual_positions_save_and_reload(self):
+        import json
+        template = CertificateTemplate.objects.create(name="Reload", pdf_file=self._png("reload.png"))
+        payload = {
+            "name": {"x": 30, "y": 70, "w": 220, "h": 36, "fontsize": 16, "align": 1, "color": "#FFFFFF"},
+            "score": {"x": 30, "y": 120, "w": 80, "h": 24, "fontsize": 14, "align": 1, "color": "#FFFFFF"},
+            "date": {"x": 30, "y": 180, "w": 160, "h": 20, "fontsize": 10, "align": 0, "color": "#FFFFFF"},
+            "certificate_id": {"x": 30, "y": 210, "w": 180, "h": 20, "fontsize": 10, "align": 0, "color": "#FFFFFF"},
+            "qr": {"x": 320, "y": 180, "size": 48},
+        }
+        saved = self.client.post(reverse("ops:certificate_template_edit", args=[template.pk]), {
+            "name": "Reload",
+            "is_active": "",
+            "field_config": json.dumps(payload),
+            "continue": "1",
+        })
+        self.assertRedirects(saved, reverse("ops:certificate_template_edit", args=[template.pk]))
+        template.refresh_from_db()
+        self.assertEqual(template.field_config["name"]["y"], 70)
+        page = self.client.get(reverse("ops:certificate_template_edit", args=[template.pk]))
+        self.assertContains(page, '"y": 70')
+        turned_off = self.client.post(reverse("ops:certificate_template_activate", args=[template.pk]))
+        self.assertRedirects(turned_off, reverse("ops:certificate_templates"))
+        template.refresh_from_db()
+        self.assertTrue(template.is_active)
+        off = self.client.post(reverse("ops:certificate_template_deactivate", args=[template.pk]))
+        self.assertRedirects(off, reverse("ops:certificate_templates"))
+        template.refresh_from_db()
+        self.assertFalse(template.is_active)
+
+    def test_changing_the_template_leaves_issued_pdfs_unchanged(self):
+        from certificates.services.issuance import issue_certificate_for_user
+        admin = _make_user(email="issued.keep@gmail.com", username="issuedkeep", full_name="Issued Keep")
+        admin.is_staff = True
+        admin.is_superuser = True
+        admin.save()
+        cert = issue_certificate_for_user(admin)
+        original = cert.pdf_file.read()
+        CertificateTemplate.objects.create(
+            name="Later design",
+            pdf_file=self._png("later.png"),
+            is_active=True,
+            field_config={"name": {"x": 12, "y": 12, "w": 200, "h": 30, "fontsize": 14}},
+        )
+        cert.refresh_from_db()
+        cert.pdf_file.open("rb")
+        self.assertEqual(cert.pdf_file.read(), original)
+        self.assertEqual(IssuedCertificate.objects.filter(certificate_id="SAMPLE-ONLY").count(), 0)

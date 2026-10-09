@@ -5,6 +5,7 @@ from . import views
 app_name = "certificates"
 urlpatterns = [
     path("", views.certificate_page, name="page"),
+    path("preview.png", views.certificate_preview, name="preview"),
     path("generate/", views.certificate_generate, name="generate"),
     path("view/", views.certificate_view_pdf, name="view"),
     path("download/", views.certificate_download, name="download"),

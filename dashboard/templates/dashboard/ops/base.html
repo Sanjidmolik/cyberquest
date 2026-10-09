@@ -14,7 +14,7 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'dashboard/css/ops.css' %}?v=theme1">
+<link rel="stylesheet" href="{% static 'dashboard/css/ops.css' %}?v=cert2">
 </head>
 <body>
 <div class="ops-scrim" id="ops-scrim" hidden></div>
@@ -67,9 +67,13 @@
         Leaderboard
       </a>
       <p class="ops-group">Operations</p>
-      <a class="ops-link{% if active == 'certificates' %} is-active{% endif %}" href="{% url 'ops:certificates' %}" {% if active == 'certificates' %}aria-current="page"{% endif %}>
+      <a class="ops-link{% if active == 'certificates' or active == 'certificate_templates' %} is-active{% endif %}" href="{% url 'ops:certificates' %}" {% if active == 'certificates' %}aria-current="page"{% endif %}>
         <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="14" rx="1"/><path d="M9 21l3-2 3 2v-6"/></svg>
         Certificates
+      </a>
+      <a class="ops-link ops-link-sub{% if active == 'certificate_templates' %} is-active{% endif %}" href="{% url 'ops:certificate_templates' %}" {% if active == 'certificate_templates' %}aria-current="page"{% endif %}>
+        <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h9l3 3v13H6z"/><path d="M15 4v3h3"/></svg>
+        Templates
       </a>
       <a class="ops-link{% if active == 'notifications' %} is-active{% endif %}" href="{% url 'ops:notifications' %}" {% if active == 'notifications' %}aria-current="page"{% endif %}>
         <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V10a6 6 0 1 1 12 0v6l1.5 2h-15zM10 19a2 2 0 0 0 4 0"/></svg>
@@ -129,5 +133,6 @@
   </div>
 </div>
 <script src="{% static 'dashboard/js/ops.js' %}?v=theme1"></script>
+{% block ops_scripts %}{% endblock %}
 </body>
 </html>

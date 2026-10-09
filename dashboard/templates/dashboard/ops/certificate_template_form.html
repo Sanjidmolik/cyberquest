@@ -1,0 +1,110 @@
+{% extends "dashboard/ops/base.html" %}
+{% load static %}
+{% block ops_content %}
+<p class="ops-note">Drag Name, Score, Date, Certificate ID, and QR onto the certificate. If the PDF already contains {% verbatim %}{{NAME}} {{SCORE}} {{DATE}} {{CERTIFICATE_ID}} {{QR}}{% endverbatim %}, those tokens are filled in place and are not drawn twice.</p>
+{% if form.non_field_errors %}
+  <div class="ops-flashes">{% for error in form.non_field_errors %}<p class="ops-flash">{{ error }}</p>{% endfor %}</div>
+{% endif %}
+<form method="post" enctype="multipart/form-data" class="ops-template-layout" id="template-form">
+  {% csrf_token %}
+  {{ form.field_config }}
+  {% if form.field_config.errors %}<p class="ops-field-error">{{ form.field_config.errors.0 }}</p>{% endif %}
+  <section class="ops-panel">
+    <h2>Template</h2>
+    <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+    {{ form.name }}
+    {% if form.name.errors %}<p class="ops-field-error">{{ form.name.errors.0 }}</p>{% endif %}
+
+    <label for="{{ form.pdf_file.id_for_label }}">{{ form.pdf_file.label }}</label>
+    {{ form.pdf_file }}
+    <p class="ops-note">{{ form.pdf_file.help_text }}</p>
+    {% if form.pdf_file.errors %}<p class="ops-field-error">{{ form.pdf_file.errors.0 }}</p>{% endif %}
+
+    <label class="ops-check">{{ form.is_active }} {{ form.is_active.label }}</label>
+    <p class="ops-note">{{ form.is_active.help_text }}</p>
+
+    {% if template %}
+    <p class="ops-note">Created {{ template.created_at|date:"Y-m-d H:i" }}. Updated {{ template.updated_at|date:"Y-m-d H:i" }}.
+      {% if template.is_active %}<span class="ops-badge ops-s-active">Currently active</span>{% else %}<span class="ops-badge">Inactive</span>{% endif %}
+    </p>
+    {% endif %}
+
+    <div class="ops-actions">
+      <button type="submit" name="continue" value="1">Save and continue editing</button>
+      <button type="submit">Save</button>
+      <a class="ops-text-btn" href="{% url 'ops:certificate_templates' %}">Back to templates</a>
+    </div>
+  </section>
+
+  <section class="ops-panel">
+    <h2>Visual builder</h2>
+    {% if editor %}
+    <div class="ops-editor" id="cert-editor"
+         data-page-width="{{ editor.page_width }}"
+         data-page-height="{{ editor.page_height }}">
+      <div class="ops-field-toolbar" role="toolbar" aria-label="Certificate fields">
+        <button type="button" class="ops-field-chip is-selected" data-field="name">Name</button>
+        <button type="button" class="ops-field-chip" data-field="score">Score</button>
+        <button type="button" class="ops-field-chip" data-field="date">Date</button>
+        <button type="button" class="ops-field-chip" data-field="certificate_id">Certificate ID</button>
+        <button type="button" class="ops-field-chip" data-field="qr">QR Code</button>
+      </div>
+      <div class="ops-editor-tools">
+        <label for="field-w">Width</label><input id="field-w" type="number" min="8" step="1">
+        <label for="field-h">Height</label><input id="field-h" type="number" min="8" step="1">
+        <label for="field-size">Font size</label><input id="field-size" type="number" min="6" step="1">
+        <label for="field-align">Alignment</label>
+        <select id="field-align">
+          <option value="0">Left</option>
+          <option value="1">Center</option>
+          <option value="2">Right</option>
+        </select>
+        <label for="field-color">Text color</label><input id="field-color" type="color">
+      </div>
+      {% if editor.placeholders %}<p class="ops-note">Already in the file: {{ editor.placeholders|join:", " }}.</p>{% endif %}
+      {% if editor.unknown %}<p class="ops-field-error">Unsupported placeholders: {{ editor.unknown|join:", " }}.</p>{% endif %}
+      {% if editor.outside %}<p class="ops-field-error">{{ editor.outside|join:" " }}</p>{% endif %}
+      <div class="ops-stage" id="cert-stage">
+        <img id="cert-artwork" src="{{ editor.artwork_url }}" alt="Uploaded certificate template">
+        <div class="ops-field-box is-selected" data-field="name" tabindex="0"><span>Sample Learner</span><i class="ops-resize" aria-hidden="true"></i></div>
+        <div class="ops-field-box" data-field="score" tabindex="0"><span>85%</span><i class="ops-resize" aria-hidden="true"></i></div>
+        <div class="ops-field-box" data-field="date" tabindex="0"><span>Issue date</span><i class="ops-resize" aria-hidden="true"></i></div>
+        <div class="ops-field-box" data-field="certificate_id" tabindex="0"><span>SAMPLE-ONLY</span><i class="ops-resize" aria-hidden="true"></i></div>
+        <div class="ops-field-box" data-field="qr" tabindex="0"><span>QR</span><i class="ops-resize" aria-hidden="true"></i></div>
+      </div>
+      <h3>Sample preview</h3>
+      <p class="ops-note">Sample only: Sample Learner, 85%, SAMPLE-ONLY. This image is rendered by the certificate generator and is not saved as an issued certificate. Save the design to refresh it.</p>
+      <img class="ops-sample" src="{{ editor.preview_url }}" alt="Sample certificate preview using the saved template">
+    </div>
+    {{ editor.config|json_script:"editor-config" }}
+    {% else %}
+    <p class="ops-note">Upload a template and save it. The visual builder opens on the next screen.</p>
+    {% endif %}
+  </section>
+</form>
+{% if template %}
+<section class="ops-panel">
+  <h2>Activation and removal</h2>
+  {% if template.is_active %}
+  <form method="post" action="{% url 'ops:certificate_template_deactivate' template.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="ops-btn-quiet">Deactivate</button>
+  </form>
+  {% else %}
+  <form method="post" action="{% url 'ops:certificate_template_activate' template.pk %}">
+    {% csrf_token %}
+    <button type="submit">Activate this template</button>
+  </form>
+  {% endif %}
+  <form method="post" action="{% url 'ops:certificate_template_delete' template.pk %}" onsubmit="return confirm('Delete this template? Issued certificates stay unchanged.');">
+    {% csrf_token %}
+    <button type="submit" class="ops-btn-danger">Delete template</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
+{% block ops_scripts %}
+{% if editor %}
+<script src="{% static 'dashboard/js/cert_template_editor.js' %}?v=builder1"></script>
+{% endif %}
+{% endblock %}

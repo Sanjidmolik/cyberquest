@@ -9,12 +9,14 @@ dashboard's Skill Matrix uses) so the numbers never disagree.
 
 from games.stats import get_best_attempt_percentages
 
+# The five playable missions, in catalog order. OSINT is coming soon and
+# is not part of certificate eligibility.
 CATEGORY_MAP = [
     {"label": "Phishing", "slug": "phishing", "game_key": "phishing_simulator", "color": "#ff2ec4"},
     {"label": "Password Security", "slug": "password", "game_key": "password_cracker", "color": "#ff9800"},
     {"label": "Network Defense", "slug": "network", "game_key": "network_defense", "color": "#3aa0ff"},
     {"label": "Cryptography", "slug": "cryptography", "game_key": "cryptography", "color": "#39ff88"},
-    {"label": "OSINT", "slug": "osint", "game_key": "osint", "color": "#ffd23f"},
+    {"label": "Steganography", "slug": "steganography", "game_key": "steganography", "color": "#ff4d8d"},
 ]
 
 

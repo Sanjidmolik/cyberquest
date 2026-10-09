@@ -1,0 +1,37 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note">Templates control newly issued certificates. Changing or deleting a template leaves PDFs that were already issued as they are.</p>
+<p class="ops-actions"><a class="ops-text-btn" href="{% url 'ops:certificate_template_new' %}">Upload template</a></p>
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>File</th>
+      <th>Status</th>
+      <th>Created</th>
+      <th>Updated</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in templates %}
+    <tr>
+      <td><a href="{% url 'ops:certificate_template_edit' item.pk %}">{{ item.name }}</a></td>
+      <td>{{ item.template_kind|upper }}</td>
+      <td>
+        {% if item.is_active %}
+        <span class="ops-badge ops-s-active">Active</span>
+        {% else %}
+        <span class="ops-badge">Inactive</span>
+        {% endif %}
+      </td>
+      <td>{{ item.created_at|date:"Y-m-d H:i" }}</td>
+      <td>{{ item.updated_at|date:"Y-m-d H:i" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="5">No certificate templates yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

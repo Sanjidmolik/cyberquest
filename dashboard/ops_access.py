@@ -7,7 +7,7 @@ from django.http import HttpResponseForbidden
 def superuser_required(view):
     """Server-side gate. Students and non-superuser staff are refused."""
 
-    @login_required(login_url="/accounts/login/")
+    @login_required(login_url="/admin-login/")
     @wraps(view)
     def wrapped(request, *args, **kwargs):
         if not request.user.is_superuser:

@@ -49,6 +49,8 @@ def practice_link_for_course(course):
         if hint in haystack:
             return reverse(url_name), label
     for game in GAMES_REGISTRY:
+        if game.get("coming_soon") or not game.get("url_name"):
+            continue
         if game["key"].split("_")[0] in haystack:
             return reverse(game["url_name"]), game["name"]
     return "", ""

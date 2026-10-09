@@ -42,12 +42,23 @@ PLACEHOLDERS = {
 }
 
 DEFAULT_FIELD_CONFIG = {
-    "name": {"x": 80, "y": 230, "w": 682, "h": 56, "fontsize": 36},
-    "score": {"x": 80, "y": 320, "w": 682, "h": 36, "fontsize": 22},
-    "date": {"x": 80, "y": 480, "w": 320, "h": 28, "fontsize": 12},
-    "certificate_id": {"x": 80, "y": 508, "w": 320, "h": 28, "fontsize": 11},
+    "name": {"x": 80, "y": 230, "w": 682, "h": 56, "fontsize": 36, "align": 1, "color": "#520EA3"},
+    "score": {"x": 80, "y": 320, "w": 682, "h": 36, "fontsize": 22, "align": 1, "color": "#701FD3"},
+    "date": {"x": 80, "y": 480, "w": 320, "h": 28, "fontsize": 12, "align": 0, "color": "#1B1030"},
+    "certificate_id": {"x": 80, "y": 508, "w": 320, "h": 28, "fontsize": 11, "align": 0, "color": "#1B1030"},
     "qr": {"x": 700, "y": 460, "size": 90},
 }
+
+# Measured on CyberQuest_Certificate_of_Achievement.pdf (A4 landscape, origin top-left, PDF points).
+# The recipient line is y=306.8; the intro sentence ends at y=252.8.
+ACHIEVEMENT_FIELD_CONFIG = {
+    "name": {"x": 169, "y": 280, "w": 504, "h": 26, "fontsize": 20, "align": 1, "color": "#F4EEFF"},
+    "score": {"x": 400, "y": 351, "w": 42, "h": 18, "fontsize": 13, "align": 1, "color": "#FFFFFF"},
+    "date": {"x": 338, "y": 504, "w": 210, "h": 18, "fontsize": 9, "align": 0, "color": "#D1C7F5"},
+    "certificate_id": {"x": 92, "y": 504, "w": 176, "h": 18, "fontsize": 9, "align": 0, "color": "#D1C7F5"},
+    "qr": {"x": 564.5, "y": 485.5, "size": 35},
+}
+ACHIEVEMENT_TEMPLATE_NAME = "CyberQuest_Certificate_of_Achievement.pdf"
 
 DEFAULT_SIGNATORIES = [
     {"name": "Muhammad Mahfuz Hasan", "title": "Course Director"},
@@ -134,8 +145,77 @@ def _default_signatories():
     return list(DEFAULT_SIGNATORIES)
 
 
+def builtin_achievement_template() -> Path:
+    """Permanent CyberQuest Certificate of Achievement design."""
+    return (
+        Path(settings.BASE_DIR)
+        / "media"
+        / "certificate_templates"
+        / "CyberQuest_Certificate_of_Achievement.pdf"
+    )
+
+
+def pdf_bytes_to_png(pdf_bytes: bytes, zoom: float = 2.0) -> bytes:
+    doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+    try:
+        if doc.page_count < 1:
+            raise ValueError("Certificate PDF has no pages.")
+        pix = doc[0].get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False)
+        return pix.tobytes("png")
+    finally:
+        doc.close()
+
+
+def _fill_achievement_template(template_path: str, payload: dict, qr_png: bytes, field_config: dict | None = None) -> bytes:
+    """
+    Stamp the permanent dark certificate. Coordinates are PDF points from the
+    top-left of CyberQuest_Certificate_of_Achievement.pdf (A4 landscape).
+    A blank certificate id is a live learner preview: name and score only.
+    Saved field_config overrides the measured defaults field by field.
+    """
+    doc = pymupdf.open(template_path)
+    try:
+        if doc.page_count < 1:
+            raise ValueError("Certificate template PDF has no pages.")
+        page = doc[0]
+        score_cover = (34 / 255, 18 / 255, 62 / 255)
+        hits = page.search_for("__%")
+        for rect in hits:
+            pad = pymupdf.Rect(rect.x0 - 2, rect.y0 - 1, rect.x1 + 6, rect.y1 + 1)
+            page.add_redact_annot(pad, fill=score_cover)
+        if hits:
+            page.apply_redactions(images=0)
+        else:
+            page.draw_circle(pymupdf.Point(421, 360), 16, color=None, fill=score_cover)
+
+        fonts = _pick_fonts(page)
+        cfg = _merge_field_config(ACHIEVEMENT_FIELD_CONFIG, field_config)
+        _draw_configured_fields(
+            page, cfg, payload, qr_png, fonts,
+            keys={"name", "score", "date", "certificate_id"},
+        )
+        if (payload.get("certificate_id") or "").strip() and (payload.get("verify_url") or "").strip() and qr_png:
+            spec = cfg["qr"]
+            size = float(spec.get("size") or 35)
+            qr_rect = pymupdf.Rect(float(spec["x"]), float(spec["y"]), float(spec["x"]) + size, float(spec["y"]) + size)
+            page.draw_rect(qr_rect, color=None, fill=(1, 1, 1))
+            page.insert_image(qr_rect, stream=qr_png)
+
+        pdf_bytes = doc.tobytes(deflate=True, garbage=3)
+    finally:
+        doc.close()
+    return pdf_bytes
+
+
 def _build_default_pdf(payload: dict, qr_png: bytes) -> bytes:
-    # Landscape A4 in points
+    template = builtin_achievement_template()
+    if template.is_file():
+        return _fill_achievement_template(str(template), payload, qr_png)
+    return _build_legacy_default_pdf(payload, qr_png)
+
+
+def _build_legacy_default_pdf(payload: dict, qr_png: bytes) -> bytes:
+    # Landscape A4 in points — used only if the permanent template file is missing.
     width, height = 842, 595
     doc = pymupdf.open()
     page = doc.new_page(width=width, height=height)
@@ -273,96 +353,123 @@ def _build_default_pdf(payload: dict, qr_png: bytes) -> bytes:
     return pdf_bytes
 
 
-def _replace_placeholder_text(page, needle: str, replacement: str, fonts, fontsize=16, color=INK):
+def _redact_placeholder(page, needle: str):
     hits = page.search_for(needle)
     for rect in hits:
         page.add_redact_annot(rect, fill=PAPER)
+    return hits
+
+
+def _replace_placeholder_text(page, needle: str, replacement: str, fonts, fontsize=16, color=INK):
+    hits = _redact_placeholder(page, needle)
+    if hits:
         page.apply_redactions(images=0)
-        # Expand slightly for long replacements (esp. names)
+    for rect in hits:
         grow = max(0, len(replacement) - len(needle)) * (fontsize * 0.28)
         box = pymupdf.Rect(rect.x0 - grow / 2, rect.y0 - 2, rect.x1 + grow / 2 + 40, rect.y1 + 4)
-        # Keep within page
         box = box & page.rect
         _fit_textbox(page, box, replacement, fonts["bold"], fontsize, min_size=8, color=color, align=1)
     return bool(hits)
 
 
 def _place_qr_at_placeholder(page, qr_png: bytes):
-    hits = page.search_for(PLACEHOLDERS["qr"])
-    for rect in hits:
-        page.add_redact_annot(rect, fill=PAPER)
+    hits = _redact_placeholder(page, PLACEHOLDERS["qr"])
+    if hits:
         page.apply_redactions(images=0)
+    for rect in hits:
         size = max(rect.width, rect.height, 70)
         qr_rect = pymupdf.Rect(rect.x0, rect.y0, rect.x0 + size, rect.y0 + size)
         page.insert_image(qr_rect, stream=qr_png)
     return bool(hits)
 
 
-def _overlay_from_config(page, config: dict, payload: dict, qr_png: bytes, fonts):
-    cfg = {**DEFAULT_FIELD_CONFIG, **(config or {})}
+def _merge_field_config(base: dict, override: dict | None) -> dict:
+    merged = {key: dict(value) for key, value in base.items()}
+    if not isinstance(override, dict):
+        return merged
+    for key, value in override.items():
+        if isinstance(value, dict):
+            merged[key] = {**merged.get(key, {}), **value}
+    return merged
 
-    name_c = cfg.get("name", DEFAULT_FIELD_CONFIG["name"])
-    name_rect = pymupdf.Rect(
-        name_c["x"], name_c["y"], name_c["x"] + name_c["w"], name_c["y"] + name_c["h"]
-    )
-    _fit_textbox(
-        page,
-        name_rect,
-        payload["recipient_name"],
-        fonts["display"],
-        max_size=float(name_c.get("fontsize", 36)),
-        min_size=12,
-        color=PURPLE_DEEP,
-        align=1,
-    )
 
-    score_c = cfg.get("score", DEFAULT_FIELD_CONFIG["score"])
-    score_rect = pymupdf.Rect(
-        score_c["x"], score_c["y"], score_c["x"] + score_c["w"], score_c["y"] + score_c["h"]
-    )
-    _fit_textbox(
-        page,
-        score_rect,
-        f"{payload['score']}%",
-        fonts["bold"],
-        max_size=float(score_c.get("fontsize", 22)),
-        min_size=10,
-        color=PURPLE_RICH,
-        align=1,
-    )
+def _rgb(value, fallback):
+    if isinstance(value, str) and len(value) == 7 and value.startswith("#"):
+        try:
+            return tuple(int(value[index:index + 2], 16) / 255 for index in (1, 3, 5))
+        except ValueError:
+            return fallback
+    return fallback
 
-    date_c = cfg.get("date", DEFAULT_FIELD_CONFIG["date"])
-    date_rect = pymupdf.Rect(
-        date_c["x"], date_c["y"], date_c["x"] + date_c["w"], date_c["y"] + date_c["h"]
-    )
-    _fit_textbox(
-        page,
-        date_rect,
-        payload["issued_date_display"],
-        fonts["regular"],
-        max_size=float(date_c.get("fontsize", 12)),
-        min_size=8,
-        color=INK,
-        align=0,
-    )
 
-    id_c = cfg.get("certificate_id", DEFAULT_FIELD_CONFIG["certificate_id"])
-    id_rect = pymupdf.Rect(id_c["x"], id_c["y"], id_c["x"] + id_c["w"], id_c["y"] + id_c["h"])
-    _fit_textbox(
-        page,
-        id_rect,
-        payload["certificate_id"],
-        fonts["regular"],
-        max_size=float(id_c.get("fontsize", 11)),
-        min_size=8,
-        color=INK,
-        align=0,
-    )
+def _box(spec: dict, width_key="w", height_key="h"):
+    x = float(spec.get("x", 0))
+    y = float(spec.get("y", 0))
+    return pymupdf.Rect(x, y, x + float(spec.get(width_key, 0)), y + float(spec.get(height_key, 0)))
 
-    qr_c = cfg.get("qr", DEFAULT_FIELD_CONFIG["qr"])
-    size = float(qr_c.get("size", 90))
-    qr_rect = pymupdf.Rect(qr_c["x"], qr_c["y"], qr_c["x"] + size, qr_c["y"] + size)
-    page.insert_image(qr_rect, stream=qr_png)
+
+def _draw_configured_fields(page, config: dict, payload: dict, qr_png: bytes, fonts, *, keys=None):
+    """Draw overlay fields. Coordinates are PDF points from the top-left."""
+    selected = set(keys) if keys is not None else set(config)
+    if "name" in selected and config.get("name"):
+        spec = config["name"]
+        _fit_textbox(
+            page,
+            _box(spec),
+            payload["recipient_name"],
+            fonts["display"],
+            max_size=float(spec.get("fontsize", 28)),
+            min_size=8,
+            color=_rgb(spec.get("color"), PURPLE_DEEP),
+            align=int(spec.get("align", 1)),
+        )
+    if "score" in selected and config.get("score"):
+        spec = config["score"]
+        _fit_textbox(
+            page,
+            _box(spec),
+            f"{payload['score']}%",
+            fonts["bold"],
+            max_size=float(spec.get("fontsize", 16)),
+            min_size=7,
+            color=_rgb(spec.get("color"), PURPLE_RICH),
+            align=int(spec.get("align", 1)),
+        )
+    if "date" in selected and config.get("date") and (payload.get("issued_date_display") or "").strip():
+        spec = config["date"]
+        _fit_textbox(
+            page,
+            _box(spec),
+            payload["issued_date_display"],
+            fonts["regular"],
+            max_size=float(spec.get("fontsize", 12)),
+            min_size=7,
+            color=_rgb(spec.get("color"), INK),
+            align=int(spec.get("align", 0)),
+        )
+    if "certificate_id" in selected and config.get("certificate_id") and (payload.get("certificate_id") or "").strip():
+        spec = config["certificate_id"]
+        _fit_textbox(
+            page,
+            _box(spec),
+            payload["certificate_id"],
+            fonts["regular"],
+            max_size=float(spec.get("fontsize", 11)),
+            min_size=7,
+            color=_rgb(spec.get("color"), INK),
+            align=int(spec.get("align", 0)),
+        )
+    verify_url = (payload.get("verify_url") or "").strip()
+    if "qr" in selected and config.get("qr") and qr_png and verify_url and (payload.get("certificate_id") or "").strip():
+        spec = config["qr"]
+        size = float(spec.get("size") or spec.get("w") or 90)
+        rect = pymupdf.Rect(float(spec["x"]), float(spec["y"]), float(spec["x"]) + size, float(spec["y"]) + size)
+        page.insert_image(rect, stream=qr_png)
+
+
+def _overlay_from_config(page, config: dict, payload: dict, qr_png: bytes, fonts, *, keys=None):
+    cfg = _merge_field_config(DEFAULT_FIELD_CONFIG, config)
+    _draw_configured_fields(page, cfg, payload, qr_png, fonts, keys=keys)
 
 
 def _fill_template_pdf(template_path: str, payload: dict, qr_png: bytes, field_config: dict | None) -> bytes:
@@ -372,30 +479,43 @@ def _fill_template_pdf(template_path: str, payload: dict, qr_png: bytes, field_c
         raise ValueError("Certificate template PDF has no pages.")
 
     page = doc[0]
+    placed = set()
+    replacements = {
+        "name": (payload["recipient_name"], 28, PURPLE_DEEP),
+        "score": (f"{payload['score']}%", 20, PURPLE_RICH),
+        "date": (payload.get("issued_date_display") or "", 12, INK),
+        "certificate_id": (payload.get("certificate_id") or "", 11, INK),
+    }
+    pending = []
+    for key, (text, size, color) in replacements.items():
+        if not text:
+            continue
+        hits = _redact_placeholder(page, PLACEHOLDERS[key])
+        if hits:
+            pending.append((key, text, size, color, hits))
+            placed.add(key)
+    qr_hits = []
+    if (payload.get("verify_url") or "").strip() and qr_png:
+        qr_hits = _redact_placeholder(page, PLACEHOLDERS["qr"])
+        if qr_hits:
+            placed.add("qr")
+    if pending or qr_hits:
+        page.apply_redactions(images=0)
+    # Redaction drops embedded fonts, so fonts are chosen after it.
     fonts = _pick_fonts(page)
+    for key, text, size, color, hits in pending:
+        for rect in hits:
+            grow = max(0, len(text) - len(PLACEHOLDERS[key])) * (size * 0.28)
+            box = pymupdf.Rect(rect.x0 - grow / 2, rect.y0 - 2, rect.x1 + grow / 2 + 40, rect.y1 + 4)
+            box = box & page.rect
+            _fit_textbox(page, box, text, fonts["bold"], size, min_size=8, color=color, align=1)
+    for rect in qr_hits:
+        size = max(rect.width, rect.height, 70)
+        page.insert_image(pymupdf.Rect(rect.x0, rect.y0, rect.x0 + size, rect.y0 + size), stream=qr_png)
 
-    used_placeholders = False
-    used_placeholders |= _replace_placeholder_text(
-        page, PLACEHOLDERS["name"], payload["recipient_name"], fonts, fontsize=28, color=PURPLE_DEEP
-    )
-    used_placeholders |= _replace_placeholder_text(
-        page, PLACEHOLDERS["score"], f"{payload['score']}%", fonts, fontsize=20, color=PURPLE_RICH
-    )
-    used_placeholders |= _replace_placeholder_text(
-        page, PLACEHOLDERS["date"], payload["issued_date_display"], fonts, fontsize=12, color=INK
-    )
-    used_placeholders |= _replace_placeholder_text(
-        page,
-        PLACEHOLDERS["certificate_id"],
-        payload["certificate_id"],
-        fonts,
-        fontsize=11,
-        color=INK,
-    )
-    used_placeholders |= _place_qr_at_placeholder(page, qr_png)
-
-    if not used_placeholders:
-        _overlay_from_config(page, field_config or {}, payload, qr_png, fonts)
+    missing = [key for key in ("name", "score", "date", "certificate_id", "qr") if key not in placed]
+    if missing:
+        _overlay_from_config(page, field_config or {}, payload, qr_png, fonts, keys=missing)
 
     pdf_bytes = doc.tobytes(deflate=True, garbage=3)
     doc.close()
@@ -414,6 +534,42 @@ def _page_size_from_image(image_path: str) -> tuple[float, float]:
     height = width * (px_h / px_w) if px_w else 595.0
     height = float(max(280, min(height, 900)))
     return width, height
+
+
+def is_achievement_template(path: str) -> bool:
+    return path.replace("\\", "/").endswith(ACHIEVEMENT_TEMPLATE_NAME)
+
+
+def page_metrics(path: str, kind: str) -> tuple[float, float]:
+    """PDF-point page size the generator will draw on. Origin is the top-left."""
+    if kind == "pdf":
+        doc = pymupdf.open(path)
+        try:
+            if doc.page_count < 1:
+                raise ValueError("Certificate template PDF has no pages.")
+            rect = doc[0].rect
+            return float(rect.width), float(rect.height)
+        finally:
+            doc.close()
+    return _page_size_from_image(path)
+
+
+def editor_field_config(path: str, kind: str, saved: dict | None) -> dict:
+    """Config shown in the visual editor. Empty saves use the same defaults as generation."""
+    if kind == "pdf" and is_achievement_template(path):
+        return _merge_field_config(ACHIEVEMENT_FIELD_CONFIG, saved)
+    if saved:
+        return _merge_field_config(DEFAULT_FIELD_CONFIG, saved)
+    width, height = page_metrics(path, kind)
+    if kind == "image":
+        return {
+            "name": {"x": width * 0.1, "y": height * 0.38, "w": width * 0.8, "h": height * 0.1, "fontsize": 36, "align": 1, "color": "#520EA3"},
+            "score": {"x": width * 0.1, "y": height * 0.52, "w": width * 0.8, "h": height * 0.06, "fontsize": 22, "align": 1, "color": "#701FD3"},
+            "date": {"x": width * 0.08, "y": height * 0.82, "w": width * 0.4, "h": height * 0.05, "fontsize": 12, "align": 0, "color": "#1B1030"},
+            "certificate_id": {"x": width * 0.08, "y": height * 0.88, "w": width * 0.45, "h": height * 0.05, "fontsize": 11, "align": 0, "color": "#1B1030"},
+            "qr": {"x": width * 0.82, "y": height * 0.78, "size": min(width, height) * 0.12},
+        }
+    return _merge_field_config(DEFAULT_FIELD_CONFIG, None)
 
 
 def _scale_field_config(config: dict | None, src_w: float, src_h: float, dst_w: float, dst_h: float) -> dict:
@@ -495,6 +651,8 @@ def _fill_uploaded_template(template, payload: dict, qr_png: bytes) -> bytes:
         kind = "pdf" if lower.endswith(".pdf") else "image"
     config = getattr(template, "field_config", None) or {}
     if kind == "pdf":
+        if path.replace("\\", "/").endswith(ACHIEVEMENT_TEMPLATE_NAME):
+            return _fill_achievement_template(path, payload, qr_png, config)
         return _fill_template_pdf(path, payload, qr_png, config)
     if kind == "image":
         return _fill_template_image(path, payload, qr_png, config)

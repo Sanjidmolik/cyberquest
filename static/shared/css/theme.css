@@ -550,9 +550,41 @@ body.cq-shell::before {
   background: #f8f5ff;
 }
 
+.cq-search-soon { cursor: default; pointer-events: none; }
+.cq-soon-badge {
+  display: inline-flex;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--border-strong);
+  color: var(--lilac);
+}
+.cq-page-card pre,
+.cq-shell pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.cq-quiz-option span,
+.cq-row-name { overflow-wrap: anywhere; }
+
+@media (max-width: 720px) {
+  .cq-page-card { padding: 1.15rem; }
+  .cq-btn,
+  .cq-quiz-option,
+  .cq-choice-pill,
+  .cq-nav-toggle { min-height: 44px; }
+  .cq-quiz-option { display: flex; align-items: flex-start; gap: 0.55rem; }
+  .cq-row { flex-wrap: wrap; }
+}
+
 @media (max-width: 560px) {
   .cq-footer-grid { grid-template-columns: 1fr; }
   .cq-nav-auth .cq-nav-link { display: none; }
+  .cq-heading { overflow-wrap: anywhere; }
 }
 
 /* Keyboard focus for signup and other themed pages. Existing :focus shadows stay.

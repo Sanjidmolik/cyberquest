@@ -1,0 +1,2 @@
+{% if widget.is_initial %}<p class="ops-current-file">Current file: <a href="{{ widget.download_url }}">{{ widget.value }}</a></p>{% endif %}
+<input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>

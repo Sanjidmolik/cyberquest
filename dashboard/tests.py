@@ -48,7 +48,7 @@ class AdminCommandCenterAccessTests(TestCase):
     def test_anonymous_is_redirected(self):
         response = self.client.get(reverse("ops:overview"))
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
 
     def test_student_and_staff_are_forbidden(self):
         for user in (self.student, self.staff):
@@ -149,7 +149,7 @@ class CourseManagementTests(TestCase):
         list_url = reverse("ops:courses")
         response = self.client.get(list_url)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
 
         for user in (self.student, self.staff):
             self.client.force_login(user)
@@ -339,7 +339,7 @@ class QuestionBankManagementTests(TestCase):
         ]
         response = self.client.get(urls[0])
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
         for user in (self.student, self.staff):
             self.client.force_login(user)
             for url in urls:
@@ -527,7 +527,7 @@ class PracticeScenarioManagementTests(TestCase):
         detail_url = reverse("ops:practice_scenario", args=[self.key])
         response = self.client.get(list_url)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
         for user in (self.student, self.staff):
             self.client.force_login(user)
             self.assertEqual(self.client.get(list_url).status_code, 403)
@@ -647,7 +647,7 @@ class GameManagementTests(TestCase):
         detail = reverse("ops:game", args=["phishing_simulator"])
         response = self.client.get(listing)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
         for user in (self.student, self.staff):
             self.client.force_login(user)
             self.assertEqual(self.client.get(listing).status_code, 403)
@@ -796,7 +796,7 @@ class StudentManagementTests(TestCase):
         detail = reverse("ops:student", args=[self.student.pk])
         response = self.client.get(listing)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
         self.assertEqual(self.client.get(detail).status_code, 302)
         for user in (self.student, self.staff):
             self.client.force_login(user)
@@ -961,7 +961,7 @@ class CertificateManagementTests(TestCase):
         issue = reverse("ops:certificate_issue", args=[self.student.pk])
         response = self.client.get(listing)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
         for user in (self.student, self.staff):
             self.client.force_login(user)
             self.assertEqual(self.client.get(listing).status_code, 403)
@@ -1104,7 +1104,7 @@ class AchievementManagementTests(TestCase):
         detail = reverse("ops:achievement", args=[self.badge.pk])
         response = self.client.get(listing)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
         self.assertEqual(self.client.get(detail).status_code, 302)
         for user in (self.student, self.staff):
             self.client.force_login(user)
@@ -1242,7 +1242,7 @@ class LeaderboardManagementTests(TestCase):
         url = reverse("ops:leaderboard")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
         for user in (self.ada, self.staff):
             self.client.force_login(user)
             self.assertEqual(self.client.get(url).status_code, 403)
@@ -1349,7 +1349,7 @@ class NotificationManagementTests(TestCase):
         detail = reverse("ops:notification", args=[self.unread.pk])
         response = self.client.get(listing)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
         for user in (self.student, self.staff):
             self.client.force_login(user)
             self.assertEqual(self.client.get(listing).status_code, 403)
@@ -1503,7 +1503,7 @@ class ContactManagementTests(TestCase):
         self.assertEqual(listing, "/admin-dashboard/contacts/")
         response = self.client.get(listing)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
         self.assertEqual(self.client.post(reply, {"reply": "We can help."}).status_code, 302)
         for user in (self.student, self.staff):
             self.client.force_login(user)
@@ -1750,7 +1750,7 @@ class AnalyticsReportTests(TestCase):
         url = reverse("ops:analytics")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
         for user in (self.ada, self.staff):
             self.client.force_login(user)
             self.assertEqual(self.client.get(url).status_code, 403)
@@ -1846,7 +1846,7 @@ class SystemHealthTests(TestCase):
         url = reverse("ops:settings")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response.url)
+        self.assertIn("/admin-login/", response.url)
         for user in (self.student, self.staff):
             self.client.force_login(user)
             self.assertEqual(self.client.get(url).status_code, 403)

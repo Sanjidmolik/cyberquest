@@ -54,8 +54,7 @@
 .nav.scrolled,
 .cq-nav.scrolled,
 #pc-nav.scrolled,
-.topnav.scrolled,
-.child-topbar.scrolled {
+.topnav.scrolled {
   position: fixed;
   top: 12px;
   left: 50%;
@@ -73,18 +72,36 @@
   z-index: 50;
   transition: box-shadow .28s ease, background .28s ease, border-radius .28s ease;
 }
+/* Child pages sit beside a sidebar. Keep the bar in the same horizontal
+   track as the shell instead of recentering a narrower pill on scroll. */
+.child-topbar.scrolled {
+  position: fixed;
+  top: 12px;
+  left: 24px;
+  right: 24px;
+  transform: none;
+  width: auto;
+  margin: 0;
+  z-index: 40;
+  border-radius: 18px;
+  background: var(--nav-bg-scrolled, var(--nav-bg, rgba(56, 10, 116, .9)));
+  box-shadow: 0 14px 36px -18px var(--nav-shadow, rgba(30, 4, 70, .55));
+}
 .nav.scrolled.open,
 .cq-nav.scrolled.open,
 #pc-nav.scrolled.open {
   border-radius: 22px;
   align-items: center;
 }
+@media (max-width: 860px) {
+  .child-topbar.scrolled { left: 12px; right: 12px; margin: 0; }
+}
 @media (max-width: 720px) {
   .topnav.scrolled { gap: 8px; padding: 6px 8px 6px 10px; }
   .topnav.scrolled .topnav-right { gap: 6px; min-width: 0; }
   .topnav.scrolled .user-chip-text,
   .topnav.scrolled .topnav-divider { display: none; }
-  .child-topbar.scrolled { gap: 8px; }
+  .child-topbar.scrolled { gap: 8px; left: 12px; right: 12px; margin: 0; }
 }
 .cq-nav-tools { display: flex; align-items: center; gap: 8px; }
 .cq-theme-toggle {

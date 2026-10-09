@@ -127,6 +127,19 @@
 
         <div class="missions-row">
             {% for m in active_missions %}
+            {% if m.coming_soon %}
+            <article class="mission-card mission-{{ m.color }} mission-soon"
+               style="--i: {{ forloop.counter0 }};"
+               aria-disabled="true"
+               tabindex="-1">
+                <div class="mission-card-grid"></div>
+                <span class="mission-number">{{ m.number }}</span>
+                <span class="mission-soon-badge">Coming Soon</span>
+                <span class="mission-emoji">{{ m.emoji }}</span>
+                <p class="mission-title">{{ m.name }}</p>
+                <span class="mission-btn mission-btn-soon">COMING SOON</span>
+            </article>
+            {% else %}
             <a href="{% if not missions_locked %}{% url m.url_name %}{% else %}#{% endif %}"
                class="mission-card mission-{{ m.color }} {% if missions_locked %}mission-locked{% elif m.attempted %}mission-played{% endif %}"
                style="--i: {{ forloop.counter0 }};">
@@ -144,6 +157,7 @@
                     <span class="mission-btn">{% if m.attempted %}REPLAY{% else %}START{% endif %}</span>
                 {% endif %}
             </a>
+            {% endif %}
             {% endfor %}
         </div>
         </section>
@@ -175,10 +189,15 @@
                         {% for s in skill_matrix %}
                         <div class="skill-bar-row">
                             <span class="skill-bar-label">{{ s.label }}</span>
+                            {% if s.coming_soon %}
+                            <div class="skill-bar-track" aria-hidden="true"></div>
+                            <span class="skill-bar-pct">Soon</span>
+                            {% else %}
                             <div class="skill-bar-track">
                                 <div class="skill-bar-fill skill-{{ s.color }}" style="--pct: {{ s.percent }};"></div>
                             </div>
                             <span class="skill-bar-pct">{{ s.percent }}%</span>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>

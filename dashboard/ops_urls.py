@@ -1,7 +1,7 @@
 from django.urls import path
 from django.views.generic import RedirectView
 
-from . import ops_views
+from . import ops_certificate_templates, ops_views
 
 app_name = "ops"
 
@@ -27,6 +27,14 @@ urlpatterns = [
     path("review/<int:pk>/approve/", ops_views.approve_bank, name="approve_bank"),
     path("review/set/<int:pk>/reject/", ops_views.reject_set, name="reject_set"),
     path("certificates/", ops_views.certificates, name="certificates"),
+    path("certificates/templates/", ops_certificate_templates.template_list, name="certificate_templates"),
+    path("certificates/templates/new/", ops_certificate_templates.template_create, name="certificate_template_new"),
+    path("certificates/templates/<int:pk>/", ops_certificate_templates.template_edit, name="certificate_template_edit"),
+    path("certificates/templates/<int:pk>/activate/", ops_certificate_templates.template_activate, name="certificate_template_activate"),
+    path("certificates/templates/<int:pk>/deactivate/", ops_certificate_templates.template_deactivate, name="certificate_template_deactivate"),
+    path("certificates/templates/<int:pk>/delete/", ops_certificate_templates.template_delete, name="certificate_template_delete"),
+    path("certificates/templates/<int:pk>/artwork.png", ops_certificate_templates.template_artwork, name="certificate_template_artwork"),
+    path("certificates/templates/<int:pk>/preview.png", ops_certificate_templates.template_sample_preview, name="certificate_template_preview"),
     path("certificates/issue/<int:pk>/", ops_views.issue_certificate, name="certificate_issue"),
     path("certificates/<int:pk>/", ops_views.certificate_detail, name="certificate"),
     path("achievements/", ops_views.achievements, name="achievements"),
