@@ -63,6 +63,11 @@ RENDER_EXTERNAL_HOSTNAME = (os.environ.get("RENDER_EXTERNAL_HOSTNAME") or "").st
 if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
+# Render sets RENDER_EXTERNAL_HOSTNAME on the web service. Only then is the
+# rightmost X-Forwarded-For address (the one Render appended) a client IP.
+# Direct local requests keep using REMOTE_ADDR and ignore forwarded headers.
+BEHIND_RENDER_PROXY = bool(RENDER_EXTERNAL_HOSTNAME)
+
 CSRF_TRUSTED_ORIGINS = [
     o.strip()
     for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
@@ -135,6 +140,16 @@ DATABASES = {
     )
 }
 
+# Shared across Gunicorn workers and still present after a process restart.
+# LocMemCache is per-process, so login limits and verification-code attempt
+# counters would reset on every worker. The table is created by migration.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "cyberquest_cache",
+    }
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -145,12 +160,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 8},
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+    {
+        'NAME': 'accounts.validators.SpecialCharacterValidator',
     },
 ]
 

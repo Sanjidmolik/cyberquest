@@ -5,7 +5,7 @@
 {% block context_name %}Notifications{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">
-<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}">
+<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}?v=theme1">
 {% endblock %}
 
 {% block content %}
@@ -17,7 +17,7 @@
     {% for n in notifications %}
     <a href="{% url 'notifications:redirect' n.pk %}" class="cq-notif-link">
       <div class="cq-notif-card {% if not n.is_read %}cq-notif-unread{% endif %}">
-        <p class="mb-1">{{ n.message }}</p>
+        <p>{{ n.message }}</p>
         <span class="cq-notif-time">{{ n.created_at|timesince }} ago</span>
       </div>
     </a>

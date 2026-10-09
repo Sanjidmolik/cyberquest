@@ -5,7 +5,7 @@
 {% block context_name %}Achievements{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">
-<link rel="stylesheet" href="{% static 'achievements/css/badges.css' %}">
+<link rel="stylesheet" href="{% static 'achievements/css/badges.css' %}?v=theme1">
 {% endblock %}
 
 {% block content %}
@@ -20,8 +20,8 @@
         <div class="cq-badge-card cq-badge-earned">
           <div class="cq-badge-icon">{{ ub.badge.icon_emoji }}</div>
           <h5>{{ ub.badge.name }}</h5>
-          <p class="small text-muted">{{ ub.badge.description }}</p>
-          <p class="cq-badge-date small">Earned {{ ub.earned_at|date:"M j, Y" }}</p>
+          <p class="cq-badge-desc">{{ ub.badge.description }}</p>
+          <p class="cq-badge-date">Earned {{ ub.earned_at|date:"M j, Y" }}</p>
         </div>
       {% empty %}
         <p class="cq-body">No badges earned yet — go play a game or finish a course!</p>
@@ -34,7 +34,7 @@
         <div class="cq-badge-card cq-badge-locked">
           <div class="cq-badge-icon">🔒</div>
           <h5>{{ badge.name }}</h5>
-          <p class="small text-muted">{{ badge.description }}</p>
+          <p class="cq-badge-desc">{{ badge.description }}</p>
         </div>
       {% endfor %}
     </div>

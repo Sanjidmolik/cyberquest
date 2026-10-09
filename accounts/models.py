@@ -58,6 +58,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         default=False,
         help_text="When on, password login emails a 6-digit code. Off unless the user turns it on.",
     )
+    email_verified = models.BooleanField(
+        default=True,
+        help_text="False until a password signup confirms ownership of the email. Existing and Google accounts stay verified.",
+    )
 
     def record_daily_activity(self):
         """
@@ -97,7 +101,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 
 class VerificationCode(models.Model):
-    PURPOSE_CHOICES = [("login_2fa", "Login Verification"), ("password_reset", "Password Reset")]
+    PURPOSE_CHOICES = [
+        ("login_2fa", "Login Verification"),
+        ("password_reset", "Password Reset"),
+        ("email_signup", "Signup Email Verification"),
+    ]
     user = models.ForeignKey("accounts.CustomUser", on_delete=models.CASCADE, related_name="verification_codes")
     code = models.CharField(max_length=6)
     purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES)

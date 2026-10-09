@@ -23,6 +23,22 @@ def validate_cyberquest_email(email):
         raise ValidationError("Only Gmail, Hotmail, Outlook, or .edu email addresses are allowed.")
 
 
+def validate_special_character(password):
+    """Used by AUTH_PASSWORD_VALIDATORS. Digits and letters alone are not enough."""
+    if password and not re.search(r"[^A-Za-z0-9]", password):
+        raise ValidationError("Password must include at least one special character.")
+
+
+class SpecialCharacterValidator:
+    """Django password validator: require a character that is not a letter or digit."""
+
+    def validate(self, password, user=None):
+        validate_special_character(password)
+
+    def get_help_text(self):
+        return "Your password must include at least one special character."
+
+
 def validate_minimum_age(dob, minimum_age=13):
     """Shared by SignupForm and CompleteProfileForm so the age rule lives in one place."""
     if dob:

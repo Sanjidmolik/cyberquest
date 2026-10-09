@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from .validators import validate_cyberquest_email, validate_minimum_age
 
@@ -10,7 +11,15 @@ class SignupForm(forms.Form):
     username = forms.CharField(label="Username", max_length=50,
         widget=forms.TextInput(attrs={"class": "cq-input"}))
     email = forms.EmailField(widget=forms.EmailInput(attrs={"class": "cq-input"}))
-    password = forms.CharField(min_length=8, widget=forms.PasswordInput(attrs={"class": "cq-input"}))
+    password = forms.CharField(
+        min_length=8,
+        widget=forms.PasswordInput(attrs={
+            "class": "cq-input",
+            "autocomplete": "new-password",
+            "aria-describedby": "password-hint",
+        }),
+        help_text="At least 8 characters, including one special character.",
+    )
     confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={"class": "cq-input"}))
     date_of_birth = forms.DateField(widget=forms.DateInput(attrs={"class": "cq-input", "type": "date"}))
     cyber_class = forms.ChoiceField(choices=UserModel.CYBER_CLASS_CHOICES, widget=forms.RadioSelect)
@@ -22,7 +31,11 @@ class SignupForm(forms.Form):
 
     def clean_username(self):
         username = self.cleaned_data.get("username", "").strip()
-        if UserModel.objects.filter(username__iexact=username).exists():
+        taken = UserModel.objects.filter(username__iexact=username)
+        email = (self.data.get("email") or "").strip()
+        if email:
+            taken = taken.exclude(email__iexact=email, email_verified=False)
+        if taken.exists():
             raise ValidationError("That username is already taken.")
         return username
 
@@ -34,9 +47,19 @@ class SignupForm(forms.Form):
     def clean_email(self):
         email = self.cleaned_data.get("email", "")
         validate_cyberquest_email(email)
-        if UserModel.objects.filter(email__iexact=email).exists():
+        existing = UserModel.objects.filter(email__iexact=email).first()
+        if existing is not None and existing.email_verified:
             raise ValidationError("An account with this email already exists.")
         return email
+
+    def clean_password(self):
+        password = self.cleaned_data.get("password") or ""
+        candidate = UserModel(
+            email=(self.data.get("email") or "").strip(),
+            username=(self.data.get("username") or "").strip(),
+        )
+        validate_password(password, user=candidate)
+        return password
 
     def clean(self):
         cleaned_data = super().clean()

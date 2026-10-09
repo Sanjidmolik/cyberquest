@@ -1,11 +1,64 @@
-body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
-.cq-navbar { background: #161b22; border-bottom: 1px solid #30363d; }
-.cq-brand { color: #39ff88; text-decoration: none; font-weight: 700; }
-.cq-heading { font-weight: 700; }
-.cq-notif-link { text-decoration: none; }
-.cq-notif-card {
-    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
-    padding: 14px 18px; margin-bottom: 10px; color: #e6edf3;
+/* Notifications inside the student command center. Colors come from dashboard.css tokens. */
+
+.command-child .cq-page-card {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 18px 40px rgba(32, 3, 78, 0.18);
 }
-.cq-notif-unread { border-left: 3px solid #39ff88; background: rgba(57,255,136,0.05); }
-.cq-notif-time { color: #6b7c8c; font-size: 0.8rem; }
+
+.command-child .cq-heading {
+    color: var(--text-primary);
+}
+
+.command-child .cq-sub,
+.command-child .cq-body,
+.command-child .cq-notif-time {
+    color: var(--text-muted);
+}
+
+.command-child a.cq-notif-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    margin-bottom: 10px;
+}
+
+.command-child a.cq-notif-link:hover .cq-notif-card {
+    border-color: var(--accent-green);
+}
+
+.command-child .cq-notif-card {
+    background: var(--bg-card-solid);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 14px 16px;
+    min-width: 0;
+}
+
+.command-child .cq-notif-card p {
+    margin: 0 0 6px;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.command-child .cq-notif-unread {
+    border-color: var(--accent-green);
+    box-shadow: inset 3px 0 0 var(--accent-green);
+}
+
+.command-child .cq-notif-time {
+    display: inline-block;
+    font-size: 0.8rem;
+}
+
+.command-child .cq-page-card a.cq-inline-link {
+    color: var(--accent-green);
+}
+
+@media (max-width: 420px) {
+    .command-child .cq-page-card {
+        padding: 1.1rem;
+    }
+}

@@ -12,7 +12,36 @@ If both are set, the PDF takes priority (it's the richer e-book format).
 """
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import UploadedFile
 from django.db import models
+
+THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024
+THUMBNAIL_FORMATS = {"JPEG", "PNG", "WEBP", "GIF"}
+
+
+def validate_course_thumbnail(image):
+    """Accept only real raster images. Extension and Content-Type are not proof."""
+    if not image or not isinstance(image, UploadedFile):
+        return
+    if getattr(image, "size", 0) > THUMBNAIL_MAX_BYTES:
+        raise ValidationError("Image must be 2 MB or smaller.")
+    try:
+        from PIL import Image
+
+        image.seek(0)
+        with Image.open(image) as img:
+            img.verify()
+        image.seek(0)
+        with Image.open(image) as img:
+            img.load()
+            if img.format not in THUMBNAIL_FORMATS:
+                raise ValidationError("Upload a JPG, PNG, WEBP, or GIF image.")
+        image.seek(0)
+    except ValidationError:
+        raise
+    except Exception:
+        raise ValidationError("Upload a JPG, PNG, WEBP, or GIF image.")
 
 
 class Course(models.Model):
@@ -21,6 +50,12 @@ class Course(models.Model):
     title = models.CharField(max_length=150)
     short_description = models.CharField(max_length=250,
         help_text="One-line summary shown on the course list page.")
+    thumbnail = models.ImageField(
+        upload_to="course_thumbnails/",
+        blank=True,
+        null=True,
+        help_text="Optional cover image shown on course cards (JPG, PNG, WEBP, or GIF, up to 2 MB).",
+    )
     content = models.TextField(
         blank=True,
         help_text="Plain-text lesson content. Used ONLY if no PDF e-book is uploaded below. "
@@ -43,6 +78,24 @@ class Course(models.Model):
 
     def uses_pdf(self) -> bool:
         return bool(self.pdf_file)
+
+    def clean(self):
+        super().clean()
+        try:
+            validate_course_thumbnail(self.thumbnail)
+        except ValidationError as exc:
+            raise ValidationError({"thumbnail": exc.messages})
+
+    def safe_thumbnail_url(self):
+        field = self.thumbnail
+        if not field or not getattr(field, "name", ""):
+            return ""
+        try:
+            if not field.storage.exists(field.name):
+                return ""
+            return field.url
+        except Exception:
+            return ""
 
 
 class CourseProgress(models.Model):

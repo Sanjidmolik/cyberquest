@@ -1,20 +1,40 @@
 """
 Lightweight request throttling using Django's cache (no extra packages).
+
+The cache backend is the database, so counters are shared by every worker
+and survive a process restart. Client IPs come from REMOTE_ADDR unless this
+process is behind Render, in which case the rightmost X-Forwarded-For entry
+is the address Render itself appended.
 """
 
+import ipaddress
 from functools import wraps
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect
 
 
+def _valid_ip(value: str) -> str:
+    try:
+        return str(ipaddress.ip_address((value or "").strip()))
+    except ValueError:
+        return ""
+
+
 def client_ip(request) -> str:
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    if forwarded:
-        return forwarded.split(",")[0].strip() or "unknown"
-    return request.META.get("REMOTE_ADDR") or "unknown"
+    """Return the client address the hosting proxy actually observed."""
+    remote = _valid_ip(request.META.get("REMOTE_ADDR") or "") or "unknown"
+    if not getattr(settings, "BEHIND_RENDER_PROXY", False):
+        return remote
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR") or ""
+    parts = [part.strip() for part in forwarded.split(",") if part.strip()]
+    if not parts:
+        return remote
+    # Render appends the connecting client. Earlier values are caller-supplied.
+    return _valid_ip(parts[-1]) or remote
 
 
 def is_rate_limited(key: str, *, limit: int, window_seconds: int) -> bool:

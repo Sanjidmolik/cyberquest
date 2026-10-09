@@ -51,9 +51,11 @@ node_modules/
 staticfiles/
 
 # User-uploaded media. Named course and certificate source files stay trackable.
+# Course-card uploads land here. The fallback image stays under courses/static.
 media/issued_certificates/
 media/profile_pictures/*
 !media/profile_pictures/dragon.png
+media/course_thumbnails/
 media/course_ebooks/*
 !media/course_ebooks/The_Phishing_Detectives_Handbook.pdf
 !media/course_ebooks/course1.pdf

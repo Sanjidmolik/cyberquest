@@ -19,6 +19,14 @@ MAX_ATTEMPTS = 5
 GENERATE_COOLDOWN_SECONDS = 45
 
 
+def cooldown_active(user, purpose: str) -> bool:
+    return bool(cache.get(f"vc_gen:{user.pk}:{purpose}"))
+
+
+def clear_generation_cooldown(user, purpose: str) -> None:
+    cache.delete(f"vc_gen:{user.pk}:{purpose}")
+
+
 def generate_code(user, purpose: str) -> VerificationCode:
     """
     Create a new cryptographically random 6-digit code for this user + purpose.

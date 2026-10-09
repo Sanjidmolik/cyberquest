@@ -1,13 +1,17 @@
-from datetime import date
+from datetime import date, timedelta
 from io import BytesIO
+import re
 import tempfile
 from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core import mail
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from PIL import Image
 
 UserModel = get_user_model()
@@ -20,6 +24,26 @@ def _make_image(fmt="JPEG", size=(64, 64), color=(20, 180, 200)):
     ext = "jpg" if fmt == "JPEG" else fmt.lower()
     content_type = "image/jpeg" if fmt == "JPEG" else f"image/{ext}"
     return SimpleUploadedFile(f"avatar.{ext}", buffer.read(), content_type=content_type)
+
+
+def _signup_data(**overrides):
+    payload = {
+        "username": "newrecruit",
+        "email": "new.recruit@gmail.com",
+        "password": "securepass1!",
+        "confirm_password": "securepass1!",
+        "date_of_birth": "2000-01-15",
+        "cyber_class": "general",
+        "skill_level": "beginner",
+        "ethical_agreement": "on",
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _latest_code():
+    match = re.search(r"\b(\d{6})\b", mail.outbox[-1].body)
+    return match.group(1)
 
 
 class ProfileSettingsTests(TestCase):
@@ -265,19 +289,21 @@ class AuthFlowFixTests(TestCase):
         self.assertIn(".cq-choice-card:focus-within", theme_css)
         self.assertIn("outline-color: #4c1d95", theme_css)
 
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_signup_lands_on_the_dashboard(self):
-        response = self.client.post(reverse("accounts:signup"), {
-            "username": "newrecruit",
-            "email": "new.recruit@gmail.com",
-            "password": "securepass1",
-            "confirm_password": "securepass1",
-            "date_of_birth": "2000-01-15",
-            "cyber_class": "general",
-            "skill_level": "beginner",
-            "ethical_agreement": "on",
-        })
-        self.assertRedirects(response, reverse("dashboard:home"))
-        self.assertNotEqual(response.url, reverse("courses:intro"))
+        cache.clear()
+        response = self.client.post(reverse("accounts:signup"), _signup_data())
+        self.assertRedirects(response, reverse("accounts:verify_email"))
+        self.assertNotIn("_auth_user_id", self.client.session)
+        user = UserModel.objects.get(email="new.recruit@gmail.com")
+        self.assertFalse(user.email_verified)
+        self.assertFalse(user.is_active)
+        verified = self.client.post(reverse("accounts:verify_email"), {"code": _latest_code()})
+        self.assertRedirects(verified, reverse("dashboard:home"))
+        self.assertNotEqual(verified.url, reverse("courses:intro"))
+        user.refresh_from_db()
+        self.assertTrue(user.email_verified)
+        self.assertTrue(user.is_active)
 
     def test_admin_login_is_superuser_only_and_rejects_open_redirects(self):
         student = UserModel.objects.create_user(
@@ -372,3 +398,369 @@ class AuthFlowFixTests(TestCase):
         fresh.refresh_from_db()
         self.assertEqual(fresh.username, "freshgoogle")
         self.assertTrue(fresh.ethical_agreement)
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+class SignupVerificationTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def _start(self, **overrides):
+        response = self.client.post(reverse("accounts:signup"), _signup_data(**overrides))
+        self.assertRedirects(response, reverse("accounts:verify_email"))
+        return UserModel.objects.get(email=overrides.get("email", "new.recruit@gmail.com"))
+
+    def test_wrong_expired_reused_and_resent_codes(self):
+        user = self._start()
+        self.assertFalse(user.email_verified)
+        wrong = self.client.post(reverse("accounts:verify_email"), {"code": "000000"})
+        self.assertEqual(wrong.status_code, 200)
+        user.refresh_from_db()
+        self.assertFalse(user.is_active)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+        record = user.verification_codes.get()
+        record.expires_at = timezone.now() - timedelta(minutes=1)
+        record.save(update_fields=["expires_at"])
+        expired = self.client.post(reverse("accounts:verify_email"), {"code": record.code})
+        self.assertEqual(expired.status_code, 200)
+        user.refresh_from_db()
+        self.assertFalse(user.email_verified)
+
+        cache.clear()
+        resent = self.client.post(reverse("accounts:verify_email"), {"resend": "1"})
+        self.assertEqual(resent.status_code, 200)
+        self.assertEqual(len(mail.outbox), 2)
+        old_code = record.code
+        new_code = _latest_code()
+        self.assertNotEqual(old_code, new_code)
+        reused = self.client.post(reverse("accounts:verify_email"), {"code": old_code})
+        self.assertEqual(reused.status_code, 200)
+        user.refresh_from_db()
+        self.assertFalse(user.email_verified)
+        done = self.client.post(reverse("accounts:verify_email"), {"code": new_code})
+        self.assertRedirects(done, reverse("dashboard:home"))
+        used = user.verification_codes.order_by("-created_at").first()
+        self.assertTrue(used.is_used)
+        self.client.logout()
+        session = self.client.session
+        session["pending_signup_user_id"] = user.pk
+        session.save()
+        reused_success = self.client.post(reverse("accounts:verify_email"), {"code": new_code})
+        self.assertRedirects(reused_success, reverse("accounts:login"))
+
+    def test_resend_cooldown_and_duplicate_signup(self):
+        user = self._start()
+        resent = self.client.post(reverse("accounts:verify_email"), {"resend": "1"})
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertContains(resent, "Please wait a moment before requesting another code.")
+        again = self.client.post(reverse("accounts:signup"), _signup_data(username="newrecruit"))
+        self.assertRedirects(again, reverse("accounts:verify_email"))
+        self.assertEqual(UserModel.objects.filter(email__iexact="new.recruit@gmail.com").count(), 1)
+        user.refresh_from_db()
+        self.assertFalse(user.email_verified)
+
+    def test_smtp_failure_does_not_claim_the_email_was_sent(self):
+        from unittest.mock import patch
+        with patch("accounts.emails.send_mail", side_effect=OSError("smtp down")):
+            response = self.client.post(
+                reverse("accounts:signup"),
+                _signup_data(email="smtp.fail@gmail.com", username="smtpfail"),
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("accounts:verify_email"))
+        page = self.client.get(reverse("accounts:verify_email"))
+        self.assertContains(page, "could not send the verification email")
+        self.assertNotContains(page, "We sent a verification code")
+        user = UserModel.objects.get(email="smtp.fail@gmail.com")
+        self.assertFalse(user.email_verified)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_google_cannot_bypass_unverified_signup(self):
+        from unittest.mock import patch
+        user = self._start(email="pending.google@gmail.com", username="pendinggoogle")
+        self.client.logout()
+        session = self.client.session
+        session["google_oauth_state"] = "state-pending"
+        session.save()
+        with patch("accounts.views.exchange_code_for_token", return_value={"access_token": "token"}), \
+             patch("accounts.views.fetch_google_userinfo", return_value={
+                 "email": "pending.google@gmail.com", "email_verified": True, "name": "Pending",
+             }):
+            blocked = self.client.get(reverse("accounts:google_callback"), {"code": "c", "state": "state-pending"})
+        self.assertRedirects(blocked, reverse("accounts:verify_email"))
+        self.assertNotIn("_auth_user_id", self.client.session)
+        user.refresh_from_db()
+        self.assertFalse(user.email_verified)
+        self.assertFalse(user.google_linked)
+        self.assertFalse(user.is_active)
+
+    def test_password_policy_on_signup_and_reset(self):
+        short = self.client.post(reverse("accounts:signup"), _signup_data(password="Ab1!", confirm_password="Ab1!"))
+        self.assertEqual(short.status_code, 200)
+        self.assertContains(short, "at least 8 characters")
+        plain = self.client.post(reverse("accounts:signup"), _signup_data(password="securepass1", confirm_password="securepass1"))
+        self.assertEqual(plain.status_code, 200)
+        self.assertContains(plain, "special character")
+        self.assertFalse(UserModel.objects.filter(email="new.recruit@gmail.com").exists())
+
+        user = UserModel.objects.create_user(
+            email="reset.me@gmail.com", password="securepass1!", username="resetme", ethical_agreement=True,
+        )
+        from accounts.codes import generate_code
+        record = generate_code(user, purpose="password_reset")
+        session = self.client.session
+        session["pending_reset_user_id"] = user.pk
+        session.save()
+        rejected = self.client.post(reverse("accounts:reset_password"), {
+            "code": record.code,
+            "new_password": "securepass1",
+            "confirm_password": "securepass1",
+        })
+        self.assertEqual(rejected.status_code, 200)
+        self.assertContains(rejected, "special character")
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("securepass1!"))
+        record.refresh_from_db()
+        self.assertFalse(record.is_used)
+        accepted = self.client.post(reverse("accounts:reset_password"), {
+            "code": record.code,
+            "new_password": "betterpass1!",
+            "confirm_password": "betterpass1!",
+        })
+        self.assertRedirects(accepted, reverse("accounts:login"))
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("betterpass1!"))
+
+    def test_signup_can_retry_after_smtp_failure(self):
+        from unittest.mock import patch
+
+        with patch("accounts.emails.send_mail", side_effect=OSError("smtp down")) as send:
+            failed = self.client.post(
+                reverse("accounts:signup"),
+                _signup_data(email="retry.signup@gmail.com", username="retrysignup"),
+            )
+        self.assertEqual(failed.status_code, 302)
+        self.assertFalse(send.call_args.kwargs["fail_silently"])
+        user = UserModel.objects.get(email="retry.signup@gmail.com")
+        self.assertFalse(user.email_verified)
+        self.assertFalse(user.is_active)
+        resent = self.client.post(reverse("accounts:verify_email"), {"resend": "1"})
+        self.assertEqual(resent.status_code, 200)
+        self.assertContains(resent, "We sent a verification code")
+        verified = self.client.post(reverse("accounts:verify_email"), {"code": _latest_code()})
+        self.assertRedirects(verified, reverse("dashboard:home"))
+        user.refresh_from_db()
+        self.assertTrue(user.email_verified)
+        self.assertTrue(user.is_active)
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+class AuthMailFailureTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = UserModel.objects.create_user(
+            email="mail.fail@gmail.com",
+            password="securepass1!",
+            username="mailfail",
+            ethical_agreement=True,
+            email_2fa_enabled=True,
+        )
+
+    def test_login_code_smtp_failure_does_not_sign_in_and_can_retry(self):
+        from unittest.mock import patch
+
+        from accounts.views import RESET_REQUEST_MESSAGE
+
+        with patch("accounts.emails.send_mail", side_effect=OSError("smtp down")) as send:
+            failed = self.client.post(reverse("accounts:login"), {
+                "email": self.user.email,
+                "password": "securepass1!",
+            })
+        self.assertEqual(failed.status_code, 200)
+        self.assertFalse(send.call_args.kwargs["fail_silently"])
+        self.assertContains(failed, "could not send the login verification email")
+        self.assertNotContains(failed, "A new code has been sent")
+        self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertNotIn("pending_2fa_user_id", self.client.session)
+
+        retried = self.client.post(reverse("accounts:login"), {
+            "email": self.user.email,
+            "password": "securepass1!",
+        })
+        self.assertRedirects(retried, reverse("accounts:verify_login"))
+        self.assertNotIn("_auth_user_id", self.client.session)
+        denied = self.client.post(reverse("accounts:verify_login"), {"code": "000000"})
+        self.assertEqual(denied.status_code, 200)
+        self.assertNotIn("_auth_user_id", self.client.session)
+        allowed = self.client.post(reverse("accounts:verify_login"), {"code": _latest_code()})
+        self.assertEqual(allowed.status_code, 302)
+        self.assertIn("_auth_user_id", self.client.session)
+
+        self.client.logout()
+        with patch("accounts.emails.send_mail", side_effect=OSError("smtp down")):
+            missing = self.client.post(reverse("accounts:forgot_password"), {
+                "email": "nobody.reset@gmail.com",
+            }, follow=True)
+            failed_reset = self.client.post(reverse("accounts:forgot_password"), {
+                "email": self.user.email,
+            }, follow=True)
+        self.assertContains(missing, RESET_REQUEST_MESSAGE)
+        self.assertContains(failed_reset, RESET_REQUEST_MESSAGE)
+        self.assertContains(missing, "Please request a password reset code first.")
+        self.assertContains(failed_reset, "Please request a password reset code first.")
+        self.assertNotContains(failed_reset, "has been sent")
+        self.assertNotContains(failed_reset, self.user.email)
+        self.assertNotContains(missing, "nobody.reset@gmail.com")
+        self.assertNotIn("pending_reset_user_id", self.client.session)
+        burned = self.user.verification_codes.filter(purpose="password_reset").order_by("-created_at").first()
+        self.assertIsNotNone(burned)
+        self.assertTrue(burned.is_used)
+
+        sent = self.client.post(reverse("accounts:forgot_password"), {
+            "email": self.user.email,
+        }, follow=True)
+        self.assertContains(sent, "Reset Password")
+        self.assertNotContains(sent, "Please request a password reset code first.")
+        rejected = self.client.post(reverse("accounts:reset_password"), {
+            "code": burned.code,
+            "new_password": "otherpass1!",
+            "confirm_password": "otherpass1!",
+        })
+        self.assertEqual(rejected.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("securepass1!"))
+        accepted = self.client.post(reverse("accounts:reset_password"), {
+            "code": _latest_code(),
+            "new_password": "otherpass1!",
+            "confirm_password": "otherpass1!",
+        })
+        self.assertRedirects(accepted, reverse("accounts:login"))
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("otherpass1!"))
+
+    def test_login_code_resend_reports_smtp_failure(self):
+        from unittest.mock import patch
+
+        started = self.client.post(reverse("accounts:login"), {
+            "email": self.user.email,
+            "password": "securepass1!",
+        })
+        self.assertRedirects(started, reverse("accounts:verify_login"))
+        with patch("accounts.emails.send_mail", side_effect=OSError("smtp down")):
+            failed = self.client.post(reverse("accounts:verify_login"), {"resend": "1"})
+        self.assertEqual(failed.status_code, 200)
+        self.assertContains(failed, "could not send the login verification email")
+        self.assertNotContains(failed, "A new code has been sent")
+        self.assertNotIn("_auth_user_id", self.client.session)
+        resent = self.client.post(reverse("accounts:verify_login"), {"resend": "1"})
+        self.assertEqual(resent.status_code, 200)
+        self.assertContains(resent, "A new code has been sent to your email.")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_google_welcome_smtp_failure_still_finishes_sign_in(self):
+        from unittest.mock import patch
+
+        session = self.client.session
+        session["google_oauth_state"] = "state-welcome"
+        session.save()
+        with patch("accounts.emails.send_mail", side_effect=OSError("smtp down")) as send, \
+             patch("accounts.views.exchange_code_for_token", return_value={"access_token": "token"}), \
+             patch("accounts.views.fetch_google_userinfo", return_value={
+                 "email": "welcome.google@gmail.com",
+                 "email_verified": True,
+                 "name": "Welcome Google",
+             }):
+            created = self.client.get(
+                reverse("accounts:google_callback"),
+                {"code": "c", "state": "state-welcome"},
+            )
+        self.assertEqual(created.status_code, 302)
+        self.assertFalse(send.call_args.kwargs["fail_silently"])
+        self.assertRedirects(created, reverse("accounts:complete_profile"))
+        self.assertIn("_auth_user_id", self.client.session)
+        user = UserModel.objects.get(email="welcome.google@gmail.com")
+        self.assertTrue(user.google_linked)
+        self.assertTrue(user.email_verified)
+        self.assertEqual(mail.outbox, [])
+
+    def test_requirements_pin_pyotp(self):
+        import pyotp
+
+        pinned = (settings.BASE_DIR / "requirements.txt").read_text(encoding="utf-8")
+        self.assertIn("pyotp==2.9.0", pinned)
+        self.assertTrue(pyotp.TOTP(pyotp.random_base32()).provisioning_uri(
+            "recruit@gmail.com", issuer_name="CyberQuest"
+        ))
+
+
+@override_settings(BEHIND_RENDER_PROXY=False)
+class ProxyRateLimitTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = UserModel.objects.create_user(
+            email="limit.user@gmail.com",
+            password="securepass1!",
+            username="limituser",
+            ethical_agreement=True,
+        )
+
+    def _attempt(self, forwarded=None):
+        extra = {}
+        if forwarded is not None:
+            extra["HTTP_X_FORWARDED_FOR"] = forwarded
+        return self.client.post(reverse("accounts:login"), {
+            "email": self.user.email,
+            "password": "wrong-pass!",
+        }, **extra)
+
+    def test_forged_forwarded_header_does_not_reset_the_limit(self):
+        for index in range(20):
+            response = self._attempt(f"198.51.100.{index}")
+            self.assertEqual(response.status_code, 200, index)
+        blocked = self._attempt("203.0.113.50")
+        self.assertRedirects(blocked, reverse("accounts:login"), fetch_redirect_response=False)
+        page = self.client.get(reverse("accounts:login"))
+        self.assertContains(page, "Too many attempts")
+
+    @override_settings(BEHIND_RENDER_PROXY=True)
+    def test_render_proxy_uses_the_rightmost_forwarded_address(self):
+        for index in range(20):
+            response = self._attempt(f"198.51.100.{index}, 203.0.113.10")
+            self.assertEqual(response.status_code, 200, index)
+        blocked = self._attempt("1.2.3.4, 203.0.113.10")
+        self.assertRedirects(blocked, reverse("accounts:login"))
+        other = self._attempt("203.0.113.10, 203.0.113.11")
+        self.assertEqual(other.status_code, 200)
+        self.assertContains(other, "Invalid email or password.")
+
+    def test_limits_and_code_attempts_persist_in_the_database(self):
+        from django.db import connection
+
+        from accounts.codes import check_code, generate_code
+        from cyberquest.ratelimit import is_rate_limited
+
+        self.assertEqual(
+            settings.CACHES["default"]["BACKEND"],
+            "django.core.cache.backends.db.DatabaseCache",
+        )
+        self.assertFalse(is_rate_limited("rl:persist:203.0.113.8", limit=1, window_seconds=60))
+        self.assertTrue(is_rate_limited("rl:persist:203.0.113.8", limit=1, window_seconds=60))
+        record = generate_code(self.user, purpose="login_2fa")
+        self.assertFalse(check_code(self.user, purpose="login_2fa", submitted_code="000000"))
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM cyberquest_cache WHERE cache_key LIKE %s",
+                ["%rl:persist:203.0.113.8%"],
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+            cursor.execute(
+                "SELECT COUNT(*) FROM cyberquest_cache WHERE cache_key LIKE %s",
+                ["%vc_attempts%"],
+            )
+            self.assertGreaterEqual(cursor.fetchone()[0], 1)
+        for _ in range(4):
+            self.assertFalse(check_code(self.user, purpose="login_2fa", submitted_code="000000"))
+        record.refresh_from_db()
+        self.assertTrue(record.is_used)
+        self.assertFalse(check_code(self.user, purpose="login_2fa", submitted_code=record.code))

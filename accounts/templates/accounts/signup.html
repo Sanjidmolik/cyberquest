@@ -37,7 +37,8 @@
       <div class="cq-field">
         <label for="{{ form.password.id_for_label }}">Password</label>
         {{ form.password }}
-        {% if form.password.errors %}<p class="cq-msg cq-msg-error">{{ form.password.errors.0 }}</p>{% endif %}
+        <p class="cq-body" id="password-hint" style="font-size:0.85rem;margin:0.35rem 0 0;">At least 8 characters, including one special character.</p>
+        {% for error in form.password.errors %}<p class="cq-msg cq-msg-error">{{ error }}</p>{% endfor %}
       </div>
 
       <div class="cq-field">

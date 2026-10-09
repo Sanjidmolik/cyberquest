@@ -1,0 +1,39 @@
+{% extends "shared/base.html" %}
+{% load static %}
+
+{% block title %}CyberQuest — Verify Email{% endblock %}
+
+{% block content %}
+<div class="cq-container" style="max-width:480px;">
+  <div class="cq-page-card">
+    <h1 class="cq-heading">Verify your email</h1>
+    <p class="cq-sub">
+      Enter the 6-digit code for <strong>{{ email }}</strong> to finish creating your account.
+    </p>
+
+    {% if messages %}
+      {% for message in messages %}
+        {% if "XP earned" not in message.message and "Level up!" not in message.message and "badge unlocked" not in message.message %}
+        <p class="cq-msg cq-msg-{{ message.tags }}">{{ message }}</p>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="cq-field">
+        <label for="id_code">Verification code</label>
+        <input id="id_code" type="text" name="code" class="cq-input" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" autofocus required>
+      </div>
+      <button type="submit" class="cq-btn" style="width:100%;">Verify and continue</button>
+    </form>
+
+    <form method="post" style="margin-top:0.85rem;">
+      {% csrf_token %}
+      <button type="submit" name="resend" value="1" class="cq-btn cq-btn-ghost" style="width:100%;">
+        Resend code
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

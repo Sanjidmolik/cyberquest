@@ -296,6 +296,24 @@ body.cq-shell::before {
   transform: translateY(-2px);
   box-shadow: 0 12px 28px rgba(32, 3, 78, .25);
 }
+.course-card-layout {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  min-width: 0;
+}
+.course-card-copy { min-width: 0; flex: 1; }
+.course-card-copy strong { overflow-wrap: anywhere; }
+.course-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 12px;
+  flex: none;
+  background: rgba(255, 255, 255, .08);
+}
 .course-done, .cq-notif-unread, .cq-badge-earned, .cq-my-rank {
   border-color: var(--lilac);
   box-shadow: 0 0 0 1px rgba(181, 125, 236, .25);

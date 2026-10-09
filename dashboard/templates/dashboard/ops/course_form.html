@@ -35,6 +35,15 @@
   {% if form.short_description.help_text %}<small>{{ form.short_description.help_text }}</small>{% endif %}
   {{ form.short_description.errors }}
 
+  <label for="{{ form.thumbnail.id_for_label }}">Thumbnail</label>
+  {{ form.thumbnail }}
+  {% if form.thumbnail.help_text %}<small>{{ form.thumbnail.help_text }}</small>{% endif %}
+  {{ form.thumbnail.errors }}
+  {% if course and course.safe_thumbnail_url %}
+  <p class="ops-note">Current thumbnail:</p>
+  <img class="ops-course-thumb ops-course-thumb-lg" src="{{ course.safe_thumbnail_url }}" alt="">
+  {% endif %}
+
   <h2>Learning material</h2>
   <label for="{{ form.pdf_file.id_for_label }}">Learning PDF</label>
   {{ form.pdf_file }}

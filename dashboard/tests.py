@@ -233,6 +233,47 @@ class CourseManagementTests(TestCase):
         self.assertTrue(course.is_published)
         self.assertEqual(course.order, 4)
 
+    def test_course_thumbnail_upload_display_and_rejection(self):
+        from io import BytesIO
+        from PIL import Image
+        self.client.force_login(self.superuser)
+        buffer = BytesIO()
+        Image.new("RGB", (12, 12), (20, 40, 80)).save(buffer, format="PNG")
+        png = SimpleUploadedFile("cover.png", buffer.getvalue(), content_type="image/png")
+        created = self.client.post(reverse("ops:course_create"), {
+            "code": "MOD-11",
+            "title": "Thumb lesson",
+            "short_description": "Has a picture",
+            "content": "Read this",
+            "thumbnail": png,
+            "order": "5",
+            "is_published": "on",
+        })
+        self.assertEqual(created.status_code, 302)
+        course = Course.objects.get(code="MOD-11")
+        self.assertTrue(course.thumbnail.name.endswith(".png"))
+        self.assertTrue(course.safe_thumbnail_url())
+        self.assertTrue(course.pdf_file.name in ("", None) or not course.uses_pdf())
+
+        fake = SimpleUploadedFile("cover.png", b"MZ\x90\x00not-an-image", content_type="image/png")
+        rejected = self.client.post(reverse("ops:course_edit", args=["MOD-11"]), {
+            "code": "MOD-11",
+            "title": "Thumb lesson",
+            "short_description": "Has a picture",
+            "content": "Read this",
+            "thumbnail": fake,
+            "order": "5",
+            "is_published": "on",
+        })
+        self.assertEqual(rejected.status_code, 200)
+        course.refresh_from_db()
+        self.assertTrue(course.thumbnail.name.endswith(".png"))
+
+        self.client.force_login(self.student)
+        page = self.client.get(reverse("courses:intro"))
+        self.assertContains(page, course.safe_thumbnail_url())
+        self.assertContains(page, "course-placeholder.svg")
+
     def test_publish_requires_post_and_stays_on_site(self):
         self.client.force_login(self.superuser)
         blocked = self.client.get(reverse("ops:course_publish", args=["MOD-02"]))

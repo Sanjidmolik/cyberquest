@@ -1,13 +1,93 @@
-body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
-.cq-navbar { background: #161b22; border-bottom: 1px solid #30363d; }
-.cq-brand { color: #39ff88; text-decoration: none; font-weight: 700; }
-.cq-heading { font-weight: 700; }
-.cq-section-title { color: #8b949e; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
-.cq-badge-card {
-    background: #161b22; border: 1px solid #30363d; border-radius: 10px;
-    padding: 20px; text-align: center; height: 100%;
+/* Badges inside the student command center. Colors come from dashboard.css tokens. */
+
+.command-child .cq-page-card {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 18px 40px rgba(32, 3, 78, 0.18);
 }
-.cq-badge-earned { border-color: #39ff88; box-shadow: 0 0 12px rgba(57,255,136,0.15); }
-.cq-badge-locked { opacity: 0.5; }
-.cq-badge-icon { font-size: 2.2rem; margin-bottom: 8px; }
-.cq-badge-date { color: #39ff88; }
+
+.command-child .cq-heading,
+.command-child .cq-section-title,
+.command-child .cq-badge-card h2,
+.command-child .cq-badge-card h5 {
+    color: var(--text-primary);
+}
+
+.command-child .cq-sub,
+.command-child .cq-body,
+.command-child .cq-muted,
+.command-child .cq-badge-desc {
+    color: var(--text-muted);
+}
+
+.command-child .cq-section-title {
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+}
+
+.cq-badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+    gap: 12px;
+    margin: 0 0 1.5rem;
+}
+
+.command-child .cq-badge-card {
+    background: var(--bg-card-solid);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    padding: 16px 14px;
+    text-align: center;
+    min-width: 0;
+    height: 100%;
+}
+
+.command-child .cq-badge-card h5 {
+    margin: 0 0 6px;
+    font-family: "Comic Neue", "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-shadow: none;
+    overflow-wrap: anywhere;
+}
+
+.command-child .cq-badge-desc {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.command-child .cq-badge-earned {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-green) 35%, transparent);
+}
+
+.command-child .cq-badge-locked {
+    border-style: dashed;
+}
+
+.cq-badge-icon {
+    font-size: 2rem;
+    line-height: 1.2;
+    margin-bottom: 8px;
+}
+
+.command-child .cq-badge-date {
+    color: var(--accent-green);
+    margin: 8px 0 0;
+    font-size: 0.8rem;
+}
+
+.command-child .cq-page-card a {
+    color: var(--accent-green);
+}
+
+@media (max-width: 420px) {
+    .command-child .cq-page-card {
+        padding: 1.1rem;
+    }
+}

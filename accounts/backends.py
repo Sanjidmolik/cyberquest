@@ -32,7 +32,7 @@ class EmailAuthBackend(ModelBackend):
             # This is a security best-practice — avoid "user enumeration".
             return None
 
-        if user.check_password(password) and self.user_can_authenticate(user):
+        if user.check_password(password) and self.user_can_authenticate(user) and user.email_verified:
             return user
 
         return None

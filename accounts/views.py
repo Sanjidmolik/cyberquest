@@ -28,17 +28,34 @@ import requests
 
 from cyberquest.ratelimit import rate_limit
 
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+
 from .forms import AdminLoginForm, LoginForm, SignupForm, ProfileSettingsForm, CompleteProfileForm
 from .routing import next_step_url_name
-from .codes import generate_code, check_code
-from .emails import send_welcome_email, send_login_2fa_email, send_password_reset_email
+from .codes import generate_code, check_code, cooldown_active, clear_generation_cooldown
+from .emails import (
+    send_welcome_email,
+    send_login_2fa_email,
+    send_password_reset_email,
+    send_signup_verification_email,
+)
 from .oauth import build_google_auth_url, exchange_code_for_token, fetch_google_userinfo
 
 UserModel = get_user_model()
 
 PENDING_LOGIN_SESSION_KEY = "pending_2fa_user_id"
 PENDING_RESET_SESSION_KEY = "pending_reset_user_id"
+PENDING_SIGNUP_SESSION_KEY = "pending_signup_user_id"
+SIGNUP_CODE_PURPOSE = "email_signup"
+LOGIN_CODE_PURPOSE = "login_2fa"
+RESET_CODE_PURPOSE = "password_reset"
 GOOGLE_OAUTH_STATE_SESSION_KEY = "google_oauth_state"
+# True for a missing account and for a delivery failure, so the wording
+# does not reveal whether the address exists or claim that mail went out.
+RESET_REQUEST_MESSAGE = (
+    "If that email is registered, a reset code will be sent when email delivery succeeds."
+)
 
 
 def _safe_next(request, fallback):
@@ -52,6 +69,50 @@ def _safe_next(request, fallback):
     return fallback
 
 
+def _apply_signup_details(user, cleaned):
+    user.username = cleaned["username"]
+    user.date_of_birth = cleaned["date_of_birth"]
+    user.cyber_class = cleaned["cyber_class"]
+    user.skill_level = cleaned["skill_level"]
+    user.ethical_agreement = cleaned["ethical_agreement"]
+    user.email_verified = False
+    user.is_active = False
+    user.set_password(cleaned["password"])
+    user.save()
+    return user
+
+
+def _send_signup_code(request, user):
+    """Email a signup code. Never reports success when the backend did not accept it."""
+    if cooldown_active(user, SIGNUP_CODE_PURPOSE):
+        messages.error(request, "Please wait a moment before requesting another code.")
+        return False
+    code = generate_code(user, purpose=SIGNUP_CODE_PURPOSE)
+    if not send_signup_verification_email(user, code.code):
+        clear_generation_cooldown(user, SIGNUP_CODE_PURPOSE)
+        messages.error(request, "We could not send the verification email. Please try again.")
+        return False
+    messages.success(request, "We sent a verification code to your email.")
+    return True
+
+
+def _activate_verified_signup(request, user):
+    user.email_verified = True
+    user.is_active = True
+    user.save(update_fields=["email_verified", "is_active"])
+    request.session.pop(PENDING_SIGNUP_SESSION_KEY, None)
+    login(request, user, backend="accounts.backends.EmailAuthBackend")
+    user.record_daily_activity()
+    try:
+        send_welcome_email(user)
+    except Exception:
+        pass
+    from notifications.utils import notify
+    notify(user, "Welcome to CyberQuest! Complete your first course to unlock the games.")
+    messages.success(request, f"Welcome to CyberQuest, {user.display_name()}!")
+    return redirect(next_step_url_name(user))
+
+
 @rate_limit(key_prefix="signup", limit=10, window_seconds=3600)
 def signup_view(request):
     if request.user.is_authenticated:
@@ -60,22 +121,56 @@ def signup_view(request):
     if request.method == "POST":
         form = SignupForm(request.POST)
         if form.is_valid():
-            user = UserModel.objects.create_user(
-                email=form.cleaned_data["email"], password=form.cleaned_data["password"],
-                username=form.cleaned_data["username"], date_of_birth=form.cleaned_data["date_of_birth"],
-                cyber_class=form.cleaned_data["cyber_class"], skill_level=form.cleaned_data["skill_level"],
-                ethical_agreement=form.cleaned_data["ethical_agreement"],
-            )
-            send_welcome_email(user)
-            from notifications.utils import notify
-            notify(user, "Welcome to CyberQuest! Complete your first course to unlock the games.")
-            login(request, user, backend="accounts.backends.EmailAuthBackend")
-            user.record_daily_activity()
-            messages.success(request, f"Welcome to CyberQuest, {user.display_name()}!")
-            return redirect(next_step_url_name(user))
+            email = form.cleaned_data["email"]
+            existing = UserModel.objects.filter(email__iexact=email).first()
+            if existing is not None and not existing.email_verified:
+                user = _apply_signup_details(existing, form.cleaned_data)
+            else:
+                user = UserModel.objects.create_user(
+                    email=email,
+                    password=form.cleaned_data["password"],
+                    username=form.cleaned_data["username"],
+                    date_of_birth=form.cleaned_data["date_of_birth"],
+                    cyber_class=form.cleaned_data["cyber_class"],
+                    skill_level=form.cleaned_data["skill_level"],
+                    ethical_agreement=form.cleaned_data["ethical_agreement"],
+                    email_verified=False,
+                    is_active=False,
+                )
+            request.session[PENDING_SIGNUP_SESSION_KEY] = user.pk
+            _send_signup_code(request, user)
+            return redirect("accounts:verify_email")
     else:
         form = SignupForm()
     return render(request, "accounts/signup.html", {"form": form})
+
+
+@rate_limit(key_prefix="verify_email", limit=30, window_seconds=900)
+def verify_email_view(request):
+    """Finish password signup only after the emailed code matches."""
+    if request.user.is_authenticated:
+        return redirect(next_step_url_name(request.user))
+
+    pending_user_id = request.session.get(PENDING_SIGNUP_SESSION_KEY)
+    user = UserModel.objects.filter(pk=pending_user_id).first() if pending_user_id else None
+    if user is None:
+        messages.error(request, "Submit the signup form before entering a verification code.")
+        return redirect("accounts:signup")
+    if user.email_verified:
+        request.session.pop(PENDING_SIGNUP_SESSION_KEY, None)
+        messages.success(request, "That email is already verified. Please log in.")
+        return redirect("accounts:login")
+
+    if request.method == "POST":
+        if "resend" in request.POST:
+            _send_signup_code(request, user)
+        else:
+            submitted_code = request.POST.get("code", "")
+            if check_code(user, purpose=SIGNUP_CODE_PURPOSE, submitted_code=submitted_code):
+                return _activate_verified_signup(request, user)
+            messages.error(request, "Incorrect or expired code. Please try again.")
+
+    return render(request, "accounts/verify_email.html", {"email": user.email})
 
 
 @rate_limit(key_prefix="login", limit=20, window_seconds=900)
@@ -95,6 +190,13 @@ def login_view(request):
 
             if user is None or not user.has_usable_password() or not user.check_password(password):
                 messages.error(request, "Invalid email or password.")
+            elif not user.email_verified:
+                request.session[PENDING_SIGNUP_SESSION_KEY] = user.pk
+                if cooldown_active(user, SIGNUP_CODE_PURPOSE):
+                    messages.info(request, "Enter the verification code we already sent to your email.")
+                else:
+                    _send_signup_code(request, user)
+                return redirect("accounts:verify_email")
             elif not user.is_active:
                 messages.error(request, "Your account has been suspended. Please contact support if you believe this is a mistake.")
             else:
@@ -103,8 +205,14 @@ def login_view(request):
                     request.session["pending_auth"] = "totp"
                     return redirect("accounts:verify_totp")
                 if user.email_2fa_enabled:
-                    code = generate_code(user, purpose="login_2fa")
-                    send_login_2fa_email(user, code.code)
+                    code = generate_code(user, purpose=LOGIN_CODE_PURPOSE)
+                    if not send_login_2fa_email(user, code.code):
+                        clear_generation_cooldown(user, LOGIN_CODE_PURPOSE)
+                        messages.error(
+                            request,
+                            "We could not send the login verification email. Please try again.",
+                        )
+                        return render(request, "accounts/login.html", {"form": form})
                     request.session[PENDING_LOGIN_SESSION_KEY] = user.pk
                     return redirect("accounts:verify_login")
                 login(request, user, backend="accounts.backends.EmailAuthBackend")
@@ -163,12 +271,18 @@ def verify_login_pin(request):
 
     if request.method == "POST":
         if "resend" in request.POST:
-            code = generate_code(user, purpose="login_2fa")
-            send_login_2fa_email(user, code.code)
-            messages.success(request, "A new code has been sent to your email.")
+            code = generate_code(user, purpose=LOGIN_CODE_PURPOSE)
+            if send_login_2fa_email(user, code.code):
+                messages.success(request, "A new code has been sent to your email.")
+            else:
+                clear_generation_cooldown(user, LOGIN_CODE_PURPOSE)
+                messages.error(
+                    request,
+                    "We could not send the login verification email. Please try again.",
+                )
         else:
             submitted_code = request.POST.get("code", "")
-            if check_code(user, purpose="login_2fa", submitted_code=submitted_code):
+            if check_code(user, purpose=LOGIN_CODE_PURPOSE, submitted_code=submitted_code):
                 del request.session[PENDING_LOGIN_SESSION_KEY]
                 login(request, user, backend="accounts.backends.EmailAuthBackend")
                 user.record_daily_activity()
@@ -186,10 +300,16 @@ def forgot_password_view(request):
         email = request.POST.get("email", "").strip()
         user = UserModel.objects.filter(email__iexact=email).first()
         if user is not None and user.has_usable_password():
-            code = generate_code(user, purpose="password_reset")
-            send_password_reset_email(user, code.code)
-            request.session[PENDING_RESET_SESSION_KEY] = user.pk
-        messages.success(request, "If that email is registered, a reset code has been sent.")
+            code = generate_code(user, purpose=RESET_CODE_PURPOSE)
+            if send_password_reset_email(user, code.code):
+                request.session[PENDING_RESET_SESSION_KEY] = user.pk
+            else:
+                # The code never left the server. Drop it so a later request
+                # can send a new one, and do not open the reset form.
+                clear_generation_cooldown(user, RESET_CODE_PURPOSE)
+                code.is_used = True
+                code.save(update_fields=["is_used"])
+        messages.success(request, RESET_REQUEST_MESSAGE)
         return redirect("accounts:reset_password")
     return render(request, "accounts/forgot_password.html")
 
@@ -208,12 +328,22 @@ def reset_password_view(request):
         new_password = request.POST.get("new_password", "")
         confirm_password = request.POST.get("confirm_password", "")
 
-        if not check_code(user, purpose="password_reset", submitted_code=submitted_code):
+        password_error = ""
+        confirm_error = ""
+        if new_password != confirm_password:
+            confirm_error = "Passwords do not match."
+        else:
+            try:
+                validate_password(new_password, user=user)
+            except ValidationError as exc:
+                password_error = " ".join(exc.messages)
+        if password_error or confirm_error:
+            return render(request, "accounts/reset_password.html", {
+                "password_error": password_error,
+                "confirm_error": confirm_error,
+            })
+        if not check_code(user, purpose=RESET_CODE_PURPOSE, submitted_code=submitted_code):
             messages.error(request, "Incorrect or expired code.")
-        elif len(new_password) < 8:
-            messages.error(request, "Password must be at least 8 characters.")
-        elif new_password != confirm_password:
-            messages.error(request, "Passwords do not match.")
         else:
             user.set_password(new_password)
             user.save(update_fields=["password"])
@@ -360,6 +490,14 @@ def google_login_callback(request):
                     )
             except requests.RequestException:
                 pass
+    elif not user.email_verified:
+        request.session[PENDING_SIGNUP_SESSION_KEY] = user.pk
+        if cooldown_active(user, SIGNUP_CODE_PURPOSE):
+            messages.info(request, "Enter the verification code we already sent to your email.")
+        else:
+            _send_signup_code(request, user)
+        messages.error(request, "Verify your email with the signup code before using this account.")
+        return redirect("accounts:verify_email")
     elif not user.google_linked:
         user.google_linked = True
         user.save(update_fields=["google_linked"])

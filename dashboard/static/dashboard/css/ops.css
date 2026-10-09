@@ -39,6 +39,16 @@ html[data-theme="light"] {
 html { color-scheme: dark; }
 html[data-theme="light"] { color-scheme: light; }
 
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+html.theme-fade,
+html.theme-fade *,
+html.theme-fade *::before,
+html.theme-fade *::after {
+  transition: background-color .45s ease, background .45s ease, color .45s ease, border-color .45s ease, box-shadow .45s ease !important;
+}
+
 * { box-sizing: border-box; }
 body {
   margin: 0;
@@ -543,10 +553,24 @@ a:hover { text-decoration: none; }
 @keyframes ops-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes ops-rise { from { transform: scaleY(0.35); } to { transform: none; } }
 @keyframes ops-meter { from { transform: scaleX(0); } to { transform: none; } }
+.ops-course-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.ops-course-thumb-lg { width: 96px; height: 96px; margin: 8px 0; }
+
 @media (prefers-reduced-motion: reduce) {
   .ops-body, .ops-kpi strong, .ops-bars span, .ops-meter span { animation: none; }
   .ops-kpi, .ops-link, .ops-table tbody tr, .ops-banks li, button, .ops-bell, .ops-theme { transition: none; }
   .ops-kpi:hover, button:active { transform: none; }
+  html.theme-fade,
+  html.theme-fade *,
+  html.theme-fade *::before,
+  html.theme-fade *::after { transition: none !important; }
 }
 @media (max-width: 980px) {
   .ops-who-email { display: none; }

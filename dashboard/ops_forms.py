@@ -17,6 +17,7 @@ class CourseManageForm(forms.ModelForm):
             "code",
             "title",
             "short_description",
+            "thumbnail",
             "content",
             "pdf_file",
             "order",
@@ -26,6 +27,7 @@ class CourseManageForm(forms.ModelForm):
             "code": "Course code",
             "title": "Title",
             "short_description": "Short summary",
+            "thumbnail": "Thumbnail",
             "content": "Lesson text",
             "pdf_file": "Learning PDF",
             "order": "Display order",
@@ -34,6 +36,7 @@ class CourseManageForm(forms.ModelForm):
         help_texts = {
             "code": "A short name students can recognize, such as MOD-01.",
             "short_description": "One line shown on the student course list.",
+            "thumbnail": "Optional image on course cards. JPG, PNG, WEBP, or GIF, up to 2 MB.",
             "content": "Used when no PDF is uploaded. If both exist, students see the PDF.",
             "pdf_file": "Optional PDF. Students page through the file in the reader.",
             "order": "Lower numbers appear first for students.",
@@ -44,6 +47,9 @@ class CourseManageForm(forms.ModelForm):
         }
         widgets = {
             "content": forms.Textarea(attrs={"rows": 8}),
+            "thumbnail": forms.ClearableFileInput(attrs={
+                "accept": "image/jpeg,image/png,image/webp,image/gif",
+            }),
         }
 
     def clean_code(self):

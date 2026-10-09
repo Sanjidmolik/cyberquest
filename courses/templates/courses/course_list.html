@@ -15,8 +15,13 @@
 
     {% for course in courses %}
       <a href="{% url 'courses:detail' course.code %}" class="course-card {% if course.is_done %}course-done{% endif %}" style="margin-bottom:0.85rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
-          <div>
+        <div class="course-card-layout">
+          {% if course.safe_thumbnail_url %}
+            <img class="course-thumb" src="{{ course.safe_thumbnail_url }}" alt="">
+          {% else %}
+            <img class="course-thumb" src="{% static 'courses/img/course-placeholder.svg' %}" alt="">
+          {% endif %}
+          <div class="course-card-copy">
             <strong>[{{ course.code }}] {{ course.title }}</strong>
             <p class="cq-body small" style="margin:0.35rem 0 0;">{{ course.short_description }}</p>
           </div>

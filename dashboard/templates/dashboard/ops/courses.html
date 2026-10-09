@@ -40,6 +40,9 @@
     {% for row in rows %}
     <tr>
       <td>
+        {% if row.course.safe_thumbnail_url %}
+        <img class="ops-course-thumb" src="{{ row.course.safe_thumbnail_url }}" alt="">
+        {% endif %}
         <a href="{% url 'ops:course_edit' row.course.code %}">{{ row.course.title }}</a>
         <br><small>{{ row.course.code }}</small>
       </td>

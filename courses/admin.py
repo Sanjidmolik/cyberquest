@@ -9,7 +9,7 @@ class CourseAdmin(admin.ModelAdmin):
     ordering = ("order",)
     search_fields = ("code", "title")
     fieldsets = (
-        (None, {"fields": ("code", "title", "short_description", "order", "is_published")}),
+        (None, {"fields": ("code", "title", "short_description", "thumbnail", "order", "is_published")}),
         ("Content — choose ONE", {
             "fields": ("pdf_file", "content"),
             "description": "Upload a PDF e-book OR type plain text below. "

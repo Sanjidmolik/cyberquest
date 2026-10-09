@@ -5,14 +5,14 @@ from .models import CustomUser, VerificationCode
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
-    list_display = ("email", "username", "google_linked", "is_staff", "is_active", "date_joined")
-    list_filter = ("google_linked", "is_active", "is_staff")
+    list_display = ("email", "username", "google_linked", "email_verified", "is_staff", "is_active", "date_joined")
+    list_filter = ("google_linked", "email_verified", "is_active", "is_staff")
     ordering = ("-date_joined",)
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Profile", {"fields": ("username", "full_name", "date_of_birth", "cyber_class", "skill_level",
                                  "ethical_agreement", "google_linked", "profile_picture",
-                                 "email_2fa_enabled", "totp_enabled")}),
+                                 "email_2fa_enabled", "totp_enabled", "email_verified")}),
         ("Gamification", {"fields": ("xp", "level")}),
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser")}),
     )
