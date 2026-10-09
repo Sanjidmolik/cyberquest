@@ -299,7 +299,8 @@ class AuthFlowFixTests(TestCase):
         self.assertNotContains(login_page, 'id="cq-nav"')
         self.assertNotContains(signup_page, 'id="cq-nav"')
         self.assertContains(login_page, "Create an account")
-        self.assertContains(login_page, "Administrator sign in")
+        self.assertNotContains(login_page, "Administrator sign in")
+        self.assertNotContains(login_page, reverse("accounts:admin_login"))
         self.assertContains(signup_page, "Sign up with Google")
         self.assertContains(signup_page, "Create Account")
 
@@ -341,8 +342,11 @@ class AuthFlowFixTests(TestCase):
         admin = UserModel.objects.create_superuser(
             email="root.login@gmail.com", password="securepass1", username="rootlogin",
         )
-        page = self.client.get(reverse("accounts:admin_login"))
+        page = self.client.get("/admin-login/")
         self.assertContains(page, "Administrator sign in")
+        self.assertEqual(page.request["PATH_INFO"], "/admin-login/")
+        aliased = self.client.get(reverse("accounts:admin_login"))
+        self.assertContains(aliased, "Administrator sign in")
         denied = self.client.post(reverse("accounts:admin_login"), {
             "email": student.email, "password": "securepass1",
         })
@@ -499,6 +503,42 @@ class SignupVerificationTests(TestCase):
         user = UserModel.objects.get(email="smtp.fail@gmail.com")
         self.assertFalse(user.email_verified)
         self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_smtp_timeout_keeps_signup_unverified_with_a_resend_path(self):
+        from unittest.mock import patch
+
+        from django.core.mail import get_connection
+
+        with override_settings(EMAIL_TIMEOUT=8, EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"):
+            self.assertEqual(get_connection().timeout, 8)
+        with patch("accounts.emails.send_mail", side_effect=TimeoutError("timed out")):
+            response = self.client.post(
+                reverse("accounts:signup"),
+                _signup_data(email="smtp.timeout@gmail.com", username="smtptimeout"),
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("accounts:verify_email"))
+        page = self.client.get(reverse("accounts:verify_email"))
+        self.assertContains(page, "could not send the verification email")
+        self.assertContains(page, 'name="resend"')
+        self.assertNotContains(page, "We sent a verification code")
+        user = UserModel.objects.get(email="smtp.timeout@gmail.com")
+        self.assertFalse(user.email_verified)
+        self.assertFalse(user.is_active)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_welcome_email_timeout_does_not_fail_verified_signup(self):
+        from unittest.mock import patch
+
+        user = self._start(email="welcome.timeout@gmail.com", username="welcometimeout")
+        code = _latest_code()
+        with patch("accounts.emails.send_mail", side_effect=TimeoutError("timed out")):
+            done = self.client.post(reverse("accounts:verify_email"), {"code": code})
+        self.assertEqual(done.status_code, 302)
+        user.refresh_from_db()
+        self.assertTrue(user.email_verified)
+        self.assertTrue(user.is_active)
+        self.assertIn("_auth_user_id", self.client.session)
 
     def test_google_cannot_bypass_unverified_signup(self):
         from unittest.mock import patch
@@ -688,7 +728,7 @@ class AuthMailFailureTests(TestCase):
         session = self.client.session
         session["google_oauth_state"] = "state-welcome"
         session.save()
-        with patch("accounts.emails.send_mail", side_effect=OSError("smtp down")) as send, \
+        with patch("accounts.emails.send_mail", side_effect=TimeoutError("timed out")) as send, \
              patch("accounts.views.exchange_code_for_token", return_value={"access_token": "token"}), \
              patch("accounts.views.fetch_google_userinfo", return_value={
                  "email": "welcome.google@gmail.com",
@@ -701,6 +741,7 @@ class AuthMailFailureTests(TestCase):
             )
         self.assertEqual(created.status_code, 302)
         self.assertFalse(send.call_args.kwargs["fail_silently"])
+        self.assertEqual(send.call_count, 1)
         self.assertRedirects(created, reverse("accounts:complete_profile"))
         self.assertIn("_auth_user_id", self.client.session)
         user = UserModel.objects.get(email="welcome.google@gmail.com")

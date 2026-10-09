@@ -9,10 +9,14 @@ Delivery failures return False instead of raising, and fail_silently stays
 False so a backend error is not reported as a successful send.
 """
 
+import logging
+
 from django.core.mail import send_mail
 from django.conf import settings
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 def _deliver(subject, message, recipient) -> bool:
@@ -27,7 +31,11 @@ def _deliver(subject, message, recipient) -> bool:
     sender = settings.DEFAULT_FROM_EMAIL
     try:
         accepted = send_mail(subject, message, sender, [recipient], fail_silently=False)
+    except (TimeoutError, OSError) as exc:
+        logger.warning("SMTP delivery failed: %s", type(exc).__name__)
+        return False
     except Exception:
+        logger.warning("Email delivery failed")
         return False
     return bool(accepted)
 

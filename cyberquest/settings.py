@@ -243,6 +243,22 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL_ADDRESS')
+# Seconds to wait for the SMTP connection. Unset means the socket blocks until
+# the worker is killed. Keep this below the Gunicorn request timeout.
+def _env_bounded_int(name: str, default: int, minimum: int, maximum: int) -> int:
+    raw = (os.environ.get(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    if value < minimum or value > maximum:
+        return default
+    return value
+
+
+EMAIL_TIMEOUT = _env_bounded_int("EMAIL_TIMEOUT", default=10, minimum=1, maximum=20)
 
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
