@@ -292,6 +292,10 @@ class VerificationCodeSecurityTests(TestCase):
         )
 
 
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    BREVO_API_KEY="",
+)
 class AuthFlowFixTests(TestCase):
     def test_login_and_signup_pages_drop_the_site_nav(self):
         login_page = self.client.get(reverse("accounts:login"))
@@ -314,7 +318,10 @@ class AuthFlowFixTests(TestCase):
         self.assertIn(".cq-choice-card:focus-within", theme_css)
         self.assertIn("outline-color: #4c1d95", theme_css)
 
-    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        BREVO_API_KEY="",
+    )
     def test_signup_lands_on_the_dashboard(self):
         cache.clear()
         response = self.client.post(reverse("accounts:signup"), _signup_data())
@@ -428,7 +435,10 @@ class AuthFlowFixTests(TestCase):
         self.assertTrue(fresh.ethical_agreement)
 
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    BREVO_API_KEY="",
+)
 class SignupVerificationTests(TestCase):
     def setUp(self):
         cache.clear()
@@ -509,7 +519,11 @@ class SignupVerificationTests(TestCase):
 
         from django.core.mail import get_connection
 
-        with override_settings(EMAIL_TIMEOUT=8, EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"):
+        with override_settings(
+            EMAIL_TIMEOUT=8,
+            EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend",
+            BREVO_API_KEY="",
+        ):
             self.assertEqual(get_connection().timeout, 8)
         with patch("accounts.emails.send_mail", side_effect=TimeoutError("timed out")):
             response = self.client.post(
@@ -619,7 +633,10 @@ class SignupVerificationTests(TestCase):
         self.assertTrue(user.is_active)
 
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    BREVO_API_KEY="",
+)
 class AuthMailFailureTests(TestCase):
     def setUp(self):
         cache.clear()
@@ -757,6 +774,100 @@ class AuthMailFailureTests(TestCase):
         self.assertTrue(pyotp.TOTP(pyotp.random_base32()).provisioning_uri(
             "recruit@gmail.com", issuer_name="CyberQuest"
         ))
+
+
+@override_settings(
+    BREVO_API_KEY="brevo-test-key",
+    DEFAULT_FROM_EMAIL="CyberQuest <verified@example.com>",
+    EMAIL_TIMEOUT=8,
+)
+class BrevoApiDeliveryTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_api_posts_existing_messages_without_using_smtp(self):
+        from unittest.mock import MagicMock, patch
+
+        from accounts.emails import send_password_reset_email, send_signup_verification_email, send_welcome_email
+
+        user = UserModel.objects.create_user(
+            email="api.mail@gmail.com",
+            password="securepass1!",
+            username="apimail",
+            full_name="Api Mail",
+        )
+        response = MagicMock(status_code=201, text="queued")
+        with patch("accounts.emails.requests.post", return_value=response) as post, \
+             patch("accounts.emails.send_mail") as smtp:
+            self.assertTrue(send_signup_verification_email(user, "246810"))
+            self.assertTrue(send_welcome_email(user))
+            self.assertTrue(send_password_reset_email(user, "135790"))
+        smtp.assert_not_called()
+        self.assertEqual(post.call_count, 3)
+        first = post.call_args_list[0]
+        self.assertEqual(first.args[0], "https://api.brevo.com/v3/smtp/email")
+        self.assertEqual(first.kwargs["timeout"], 8)
+        self.assertEqual(first.kwargs["headers"]["api-key"], "brevo-test-key")
+        self.assertEqual(first.kwargs["json"]["sender"]["email"], "verified@example.com")
+        self.assertEqual(first.kwargs["json"]["to"], [{"email": "api.mail@gmail.com"}])
+        self.assertEqual(first.kwargs["json"]["subject"], "Confirm your CyberQuest email")
+        self.assertIn("246810", first.kwargs["json"]["textContent"])
+        self.assertEqual(post.call_args_list[1].kwargs["json"]["subject"], "Welcome to CyberQuest!")
+        self.assertEqual(post.call_args_list[2].kwargs["json"]["subject"], "Reset your CyberQuest password")
+        self.assertIn("135790", post.call_args_list[2].kwargs["json"]["textContent"])
+
+    def test_timeout_and_http_error_are_not_delivered_or_logged_with_secrets(self):
+        from unittest.mock import MagicMock, patch
+
+        import requests
+        from accounts.emails import send_signup_verification_email
+
+        user = UserModel.objects.create_user(
+            email="api.fail@gmail.com",
+            password="securepass1!",
+            username="apifail",
+        )
+        with self.assertLogs("accounts.emails", level="WARNING") as timed_out:
+            with patch("accounts.emails.requests.post", side_effect=requests.Timeout("timed out")):
+                self.assertFalse(send_signup_verification_email(user, "111222"))
+        timed = " ".join(timed_out.output)
+        self.assertIn("timeout", timed)
+        self.assertNotIn("brevo-test-key", timed)
+        self.assertNotIn("111222", timed)
+
+        denied = MagicMock(status_code=401, text="brevo-test-key 333444")
+        with self.assertLogs("accounts.emails", level="WARNING") as http_error:
+            with patch("accounts.emails.requests.post", return_value=denied):
+                self.assertFalse(send_signup_verification_email(user, "333444"))
+        logged = " ".join(http_error.output)
+        self.assertIn("HTTP 401", logged)
+        self.assertNotIn("brevo-test-key", logged)
+        self.assertNotIn("333444", logged)
+
+    def test_signup_api_failure_stays_unverified_and_can_resend(self):
+        from unittest.mock import MagicMock, patch
+
+        denied = MagicMock(status_code=503, text="unavailable")
+        with patch("accounts.emails.requests.post", return_value=denied):
+            failed = self.client.post(
+                reverse("accounts:signup"),
+                _signup_data(email="api.signup@gmail.com", username="apisignup"),
+            )
+        self.assertEqual(failed.status_code, 302)
+        self.assertEqual(failed.url, reverse("accounts:verify_email"))
+        page = self.client.get(reverse("accounts:verify_email"))
+        self.assertContains(page, "could not send the verification email")
+        self.assertContains(page, 'name="resend"')
+        user = UserModel.objects.get(email="api.signup@gmail.com")
+        self.assertFalse(user.email_verified)
+        self.assertFalse(user.is_active)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+        accepted = MagicMock(status_code=201, text="queued")
+        with patch("accounts.emails.requests.post", return_value=accepted):
+            resent = self.client.post(reverse("accounts:verify_email"), {"resend": "1"})
+        self.assertContains(resent, "We sent a verification code")
+        self.assertFalse(user.email_verified)
 
 
 @override_settings(BEHIND_RENDER_PROXY=False)

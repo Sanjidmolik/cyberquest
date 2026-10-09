@@ -1470,6 +1470,10 @@ class NotificationManagementTests(TestCase):
         self.assertRedirects(followed, "/dashboard/", fetch_redirect_response=False)
 
 
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    BREVO_API_KEY="",
+)
 class ContactManagementTests(TestCase):
     def setUp(self):
         self.student = User.objects.create_user(email="contact.student@example.com", password="pass12345")
@@ -1631,7 +1635,7 @@ class ContactManagementTests(TestCase):
         )
         self.assertEqual(len(mail.outbox), 0)
         ContactMessage.objects.filter(pk=self.open_message.pk).update(email="ada.writer@example.com")
-        with patch("dashboard.ops.send_mail", side_effect=Exception("smtp://user:supersecret@mail.internal")):
+        with patch("accounts.emails.send_mail", side_effect=Exception("smtp://user:supersecret@mail.internal")):
             failed = self.client.post(url, {"reply": "Hello there"})
         self.assertRedirects(failed, reverse("ops:contact_message", args=[self.open_message.pk]), fetch_redirect_response=False)
         followed = self.client.get(failed.url)
@@ -1886,6 +1890,7 @@ class SystemHealthTests(TestCase):
         EMAIL_HOST_USER="",
         EMAIL_HOST_PASSWORD="",
         DEFAULT_FROM_EMAIL="",
+        BREVO_API_KEY="",
         GEMINI_API_KEY="",
         PUBLIC_BASE_URL="",
     )
@@ -1941,6 +1946,10 @@ class SystemHealthTests(TestCase):
         self.assertContains(page, "[redacted]")
 
 
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    BREVO_API_KEY="",
+)
 class AdministratorAndStatusEmailTests(TestCase):
     def setUp(self):
         self.student = User.objects.create_user(
