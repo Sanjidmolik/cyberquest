@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 from django.http import Http404
 
 from achievements.checks import check_and_award_badges
-from games.views import _apply_xp_and_level_up
+from games.xp import apply_xp_and_level_up as _apply_xp_and_level_up
 from .models import PracticeSession
 from .scenarios import (
     DOMAIN_BY_SLUG,

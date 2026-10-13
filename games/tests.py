@@ -232,3 +232,42 @@ class QuestionSetArchitectureTests(TestCase):
         self.assertGreaterEqual(len(rows), 100)
         courses = {r["course"] for r in rows}
         self.assertTrue(set(SET_COURSE_KEYS).issubset(courses))
+
+
+class XPModuleTests(TestCase):
+    """P2-03: XP logic lives in games/xp.py, not views.py."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            email="xptest@example.com",
+            password="testpass1!",
+            username="xptest",
+            ethical_agreement=True,
+        )
+
+    def test_xp_credited(self):
+        from games.xp import apply_xp_and_level_up
+        apply_xp_and_level_up(self.user, 20)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.xp, 20)
+
+    def test_level_up_boundary(self):
+        from games.xp import apply_xp_and_level_up
+        # Each 100 XP = 1 level; user starts at level 1 with 0 XP.
+        # Awarding 100 XP takes xp to 100 → level = (100 // 100) + 1 = 2.
+        leveled = apply_xp_and_level_up(self.user, 100)
+        self.user.refresh_from_db()
+        self.assertTrue(leveled)
+        self.assertEqual(self.user.level, 2)
+
+    def test_no_level_up_below_threshold(self):
+        from games.xp import apply_xp_and_level_up
+        leveled = apply_xp_and_level_up(self.user, 99)
+        self.user.refresh_from_db()
+        self.assertFalse(leveled)
+        self.assertEqual(self.user.level, 1)
+
+    def test_xp_constant_importable_from_xp_module(self):
+        from games.xp import XP_PER_CORRECT_ANSWER
+        self.assertEqual(XP_PER_CORRECT_ANSWER, 20)

@@ -20,17 +20,11 @@ from . import attempts as attempt_service
 from .registry import game_by_key
 from .quiz_data import QUIZ_GAMES
 from .question_sets import pick_set_for_user, ensure_set_slots
+from .xp import XP_PER_CORRECT_ANSWER, apply_xp_and_level_up
 from courses.progress import has_completed_all_courses
 
-XP_PER_CORRECT_ANSWER = 20
-
-
-def _apply_xp_and_level_up(user, xp_awarded):
-    old_level = user.level
-    user.xp += xp_awarded
-    user.level = (user.xp // 100) + 1
-    user.save(update_fields=["xp", "level"])
-    return user.level > old_level
+# Backward-compat alias — remove once no external code imports the old name.
+_apply_xp_and_level_up = apply_xp_and_level_up
 
 
 SESSION_QSET = "active_qset_{}"

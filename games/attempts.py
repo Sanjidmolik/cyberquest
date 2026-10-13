@@ -359,7 +359,7 @@ def _finish_locked(attempt: GameAttempt, answer_map: dict, method: str, now) -> 
     attempt.completed_at = now
     xp_awarded = 0
     if not prior:
-        from .views import XP_PER_CORRECT_ANSWER, _apply_xp_and_level_up
+        from .xp import XP_PER_CORRECT_ANSWER, apply_xp_and_level_up
         xp_awarded = score * XP_PER_CORRECT_ANSWER
     attempt.xp_awarded = xp_awarded
     attempt.save()
@@ -367,7 +367,7 @@ def _finish_locked(attempt: GameAttempt, answer_map: dict, method: str, now) -> 
     user = attempt.user
     leveled_up = False
     if xp_awarded:
-        leveled_up = _apply_xp_and_level_up(user, xp_awarded)
+        leveled_up = apply_xp_and_level_up(user, xp_awarded)
     attempt._result_cache = results
     attempt._leveled_up = leveled_up
     attempt._prior_finish = prior
