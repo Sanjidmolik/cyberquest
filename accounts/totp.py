@@ -96,20 +96,30 @@ def clear_user_failures(user) -> None:
     cache.delete(_failure_key(user))
 
 
+def _format_recovery_code(raw: str) -> str:
+    """Return a 32-char hex code grouped as XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX."""
+    return "-".join(raw[i:i+8] for i in range(0, 32, 8))
+
+
+def _normalize_recovery_code(code: str) -> str:
+    """Strip hyphens, spaces, and lowercase so both formatted and raw input match."""
+    return (code or "").strip().replace("-", "").replace(" ", "").lower()
+
+
 def issue_recovery_codes(user, count: int = 8) -> list[str]:
     user.recovery_codes.all().delete()
     raw = []
     rows = []
     for _ in range(count):
-        code = secrets.token_hex(5)
-        raw.append(code)
+        code = secrets.token_hex(16)  # 128-bit entropy (NIST SP 800-63B §5.1.2 min is 112 bits)
+        raw.append(_format_recovery_code(code))
         rows.append(RecoveryCode(user=user, code_hash=make_password(code)))
     RecoveryCode.objects.bulk_create(rows)
     return raw
 
 
 def consume_recovery_code(user, code: str) -> bool:
-    submitted = (code or "").strip().lower()
+    submitted = _normalize_recovery_code(code)
     if not submitted:
         return False
     for row in user.recovery_codes.filter(used=False):

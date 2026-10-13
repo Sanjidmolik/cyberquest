@@ -306,3 +306,40 @@ class LogoutMethodTests(TestCase):
         self.assertRedirects(response, "/", fetch_redirect_response=False)
         # Session should be cleared
         self.assertNotIn("_auth_user_id", self.client.session)
+
+
+class RecoveryCodeEntropyTests(TestCase):
+    """P1-02: recovery codes must be 128-bit (32 hex chars)."""
+
+    def setUp(self):
+        from accounts.totp import issue_recovery_codes, consume_recovery_code
+        self.issue = issue_recovery_codes
+        self.consume = consume_recovery_code
+        self.user = _user("recovery_test@example.com")
+
+    def test_new_code_is_32_hex_chars(self):
+        codes = self.issue(self.user)
+        self.assertEqual(len(codes), 8)
+        for code in codes:
+            # Formatted as XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX (35 chars with 3 hyphens)
+            raw = code.replace("-", "")
+            self.assertEqual(len(raw), 32)
+            int(raw, 16)  # must be valid hex
+
+    def test_hyphenated_code_verifies(self):
+        codes = self.issue(self.user)
+        # Formatted code with hyphens should be accepted
+        self.assertTrue(self.consume(self.user, codes[0]))
+
+    def test_raw_unhyphenated_code_also_verifies(self):
+        codes = self.issue(self.user)
+        raw = codes[1].replace("-", "")
+        self.assertTrue(self.consume(self.user, raw))
+
+    def test_legacy_short_code_still_verifies(self):
+        """10-char (40-bit) codes already in the database must keep working."""
+        from django.contrib.auth.hashers import make_password
+        from accounts.models import RecoveryCode
+        legacy_raw = "abcde12345"
+        RecoveryCode.objects.create(user=self.user, code_hash=make_password(legacy_raw))
+        self.assertTrue(self.consume(self.user, legacy_raw))

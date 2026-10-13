@@ -9,8 +9,8 @@
     <h1 class="cq-heading">Two-factor authentication is on</h1>
     <p class="cq-sub">Save these recovery codes now. Each code works once. They will not be shown again.</p>
 
-    <ul class="cq-code-list">
-      {% for code in codes %}<li><code>{{ code }}</code></li>{% endfor %}
+    <ul class="cq-code-list" style="font-family:monospace;font-size:0.97rem;letter-spacing:0.04em;list-style:none;padding:0;">
+      {% for code in codes %}<li style="padding:4px 0;">{{ code }}</li>{% endfor %}
     </ul>
 
     <a href="{% url 'accounts:settings' %}" class="cq-btn">Back to settings</a>
