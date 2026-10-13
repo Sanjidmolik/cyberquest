@@ -14,7 +14,7 @@
   </ul>
   <ul class="cq-nav-auth">
     {% if user.is_authenticated %}
-    <li><a class="cq-btn cq-btn-sm" href="{% url 'accounts:logout' %}">Logout</a></li>
+    <li><form method="post" action="{% url 'accounts:logout' %}" class="logout-form">{% csrf_token %}<button type="submit" class="cq-btn cq-btn-sm logout-btn">Logout</button></form></li>
     {% else %}
     <li><a class="cq-nav-link" href="{% url 'accounts:login' %}">Login</a></li>
     {% endif %}

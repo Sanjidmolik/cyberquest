@@ -24,6 +24,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.core.files.base import ContentFile
+from django.views.decorators.http import require_POST
 import requests
 
 from cyberquest.ratelimit import rate_limit
@@ -412,6 +413,7 @@ def reset_password_view(request):
     return render(request, "accounts/reset_password.html")
 
 
+@require_POST
 @login_required(login_url="/accounts/login/")
 def logout_view(request):
     logout(request)

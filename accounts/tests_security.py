@@ -288,3 +288,21 @@ class AdminSignInPageTests(TestCase):
         page = self.client.post(reverse("admin_login"), {"email": "nobody@example.com", "password": "x"})
         self.assertContains(page, 'role="alert"')
         self.assertContains(page, "Invalid email or password.")
+
+
+class LogoutMethodTests(TestCase):
+    """P1-01: logout_view must only accept POST."""
+
+    def setUp(self):
+        self.user = _user("logout_test@example.com")
+        self.client.force_login(self.user)
+
+    def test_get_returns_405(self):
+        response = self.client.get(reverse("accounts:logout"))
+        self.assertEqual(response.status_code, 405)
+
+    def test_post_logs_out_and_redirects(self):
+        response = self.client.post(reverse("accounts:logout"))
+        self.assertRedirects(response, "/", fetch_redirect_response=False)
+        # Session should be cleared
+        self.assertNotIn("_auth_user_id", self.client.session)

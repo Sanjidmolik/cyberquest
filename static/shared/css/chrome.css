@@ -205,3 +205,6 @@
   .topnav.scrolled,
   .child-topbar.scrolled { transition: none; }
 }
+
+/* P1-01: logout form wrapper — keeps the nav layout identical to the old <a> link */
+.logout-form { display: inline; }
