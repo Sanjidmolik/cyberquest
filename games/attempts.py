@@ -301,17 +301,17 @@ def finish_attempt(attempt: GameAttempt, answer_map: dict, method: str) -> GameA
 def finalize_expired_attempts(user=None, limit=100) -> int:
     """Idempotently close attempts whose deadline has passed."""
     now = timezone.now()
-    qs = GameAttempt.objects.filter(
-        status=GameAttempt.STATUS_IN_PROGRESS,
-        deadline_at__lte=now,
+    qs = (
+        GameAttempt.objects.filter(
+            status=GameAttempt.STATUS_IN_PROGRESS,
+            deadline_at__lte=now,
+        )
+        .select_related("user")
     )
     if user is not None:
         qs = qs.filter(user=user)
     count = 0
-    for attempt_id in qs.values_list("pk", flat=True)[:limit]:
-        attempt = GameAttempt.objects.filter(pk=attempt_id).first()
-        if attempt is None:
-            continue
+    for attempt in qs[:limit]:
         try:
             finish_attempt(attempt, attempt.answers or {}, METHOD_EXPIRY)
         except AttemptQuestionsMissing:
