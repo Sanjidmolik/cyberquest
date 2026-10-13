@@ -97,7 +97,7 @@ The local virtualenv also contains `reportlab` and `weasyprint`, which are not i
 |---|---|---|---|
 | page-flip (StPageFlip) | 2.0.7 | MIT, Copyright (c) 2020 Nodlik | Served from our static files (`courses/static/courses/js/vendor/page-flip.browser.js` and via `node_modules`). The minified file has no header, so the licence is shipped next to it as `page-flip.LICENSE.txt` and in [`LICENSES/MIT-page-flip.txt`](LICENSES/MIT-page-flip.txt). |
 | react-pageflip | 2.0.3 | MIT | Installed by `npm install` but not referenced by any template. |
-| GSAP + ScrollTrigger | 3.12.5 | GreenSock "Standard No Charge" licence (pre-3.13 terms) | Loaded from jsDelivr on the homepage. Free for sites that do not charge end users for access. **Needs review** if CyberQuest ever charges users; upgrading to GSAP 3.13+ (released under Webflow's free GSAP licence) would simplify this. |
+| GSAP + ScrollTrigger | 3.15.0 | GSAP Standard "No Charge" License (https://gsap.com/standard-license) | Loaded from jsDelivr on the homepage. Free for sites that do not charge end users for access. **Needs review** if CyberQuest ever charges users. Note: GSAP 3.13+ did **not** change to MIT — the licence URL moved from greensock.com to gsap.com but the terms remain the "Standard No Charge" licence. Verified against npm registry metadata 14 Oct 2026. |
 | Lenis | 1.1.13 | MIT | Loaded from jsDelivr on the homepage. |
 | PDF.js | 3.11.174 | Apache-2.0 (Mozilla) | Loaded from cdnjs in the course reader. |
 
@@ -137,4 +137,4 @@ plan in use and keep human review in place (the admin review step already exists
    whole, and is the public-repository source offer on `/legal/notices/` sufficient?
 2. Is a commercial Artifex licence preferable given how the project will be operated?
 3. Provenance and licences of the media listed in section 5.
-4. GSAP 3.12.5 licence terms if the service is ever monetised.
+4. GSAP 3.15.0 licence terms if the service is ever monetised. The licence is "GSAP Standard No Charge" — free for non-commercial use; a paid licence is required if end users are charged for access.
