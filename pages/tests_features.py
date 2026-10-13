@@ -113,7 +113,8 @@ class AnalyticsTests(TestCase):
     def test_staff_only_and_real_counts(self):
         player = User.objects.create_user(email="play@gmail.com", password="securepass1", username="playera")
         staff = User.objects.create_user(
-            email="analyst@gmail.com", password="securepass1", username="analyst", is_staff=True,
+            email="analyst@gmail.com", password="securepass1", username="analyst",
+            is_staff=True, is_superuser=True,
         )
         player.record_daily_activity()
         GameAttempt.objects.create(
