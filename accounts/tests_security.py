@@ -343,3 +343,27 @@ class RecoveryCodeEntropyTests(TestCase):
         legacy_raw = "abcde12345"
         RecoveryCode.objects.create(user=self.user, code_hash=make_password(legacy_raw))
         self.assertTrue(self.consume(self.user, legacy_raw))
+
+
+class AnalyticsAuthorizationTests(TestCase):
+    """P1-03: admin_analytics must require is_superuser, not just is_staff."""
+
+    def setUp(self):
+        self.staff_user = _user("staff_only@example.com", is_staff=True, is_superuser=False)
+        self.superuser = _user("super@example.com", is_staff=True, is_superuser=True)
+        self.url = "/dashboard/analytics/"
+
+    def test_staff_non_superuser_gets_403(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_superuser_gets_200(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_anonymous_redirects_to_admin_login(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin-login/", response["Location"])

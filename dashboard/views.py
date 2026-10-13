@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
 from django.shortcuts import render
 from .analytics import analytics_payload
+from .ops_access import superuser_required
 from .utils import get_dashboard_context, build_radar_points
 
 
@@ -20,10 +20,8 @@ def dashboard_home(request):
     return render(request, "dashboard/dashboard.html", context)
 
 
-@login_required(login_url="/accounts/login/")
+@superuser_required
 def admin_analytics(request):
-    if not request.user.is_staff:
-        return HttpResponseForbidden("Staff only.")
     try:
         days = int(request.GET.get("days", "30"))
     except ValueError:
