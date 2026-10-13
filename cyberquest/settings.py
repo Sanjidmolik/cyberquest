@@ -317,6 +317,11 @@ SOURCE_CODE_REVISION = (
     os.environ.get("SOURCE_CODE_REVISION") or os.environ.get("RENDER_GIT_COMMIT") or ""
 ).strip()
 
+# ---- Session lifetime ----
+# 7 days; sliding window so active users stay logged in (SESSION_SAVE_EVERY_REQUEST).
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
+SESSION_SAVE_EVERY_REQUEST = True
+
 # ---- Production HTTPS / cookie hardening (DEBUG keeps local HTTP working) ----
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
