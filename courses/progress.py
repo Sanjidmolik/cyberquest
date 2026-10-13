@@ -6,6 +6,36 @@ from .models import Course, CourseProgress
 _TEXT_CHARS_PER_PAGE = 5000
 
 
+def _pdf_page_count(field) -> int:
+    """Body pages of a stored e-book, cached by its stored name.
+
+    With remote storage, counting pages means downloading the whole PDF, and
+    this runs on every reading-progress save. Stored names are never reused,
+    so a cached count cannot belong to a different file.
+    """
+    from django.core.cache import cache
+
+    from cyberquest.media_access import read_stored_bytes
+
+    key = f"ebook_pages:{field.name}"
+    cached = cache.get(key)
+    if cached is not None:
+        return int(cached)
+    try:
+        import pymupdf
+
+        data = read_stored_bytes(field)
+        if data is None:
+            raise FileNotFoundError(field.name)
+        with pymupdf.open(stream=data, filetype="pdf") as doc:
+            body = max(1, int(doc.page_count))
+    except Exception:
+        # A missing or unreadable file is not cached, so a later fix is picked up.
+        return 1
+    cache.set(key, body, 60 * 60 * 24 * 30)
+    return body
+
+
 def server_total_pages(course) -> int:
     """
     Authoritative flip-book page count: 1 cover sheet + body pages.
@@ -13,19 +43,7 @@ def server_total_pages(course) -> int:
     lower-bound estimate (client layout can only add more pages).
     """
     if course.uses_pdf() and course.pdf_file:
-        try:
-            import pymupdf
-
-            from cyberquest.media_access import stored_file_path
-
-            path = stored_file_path(course.pdf_file)
-            if path is None:
-                raise FileNotFoundError(course.pdf_file.name)
-            with pymupdf.open(path) as doc:
-                body = max(1, int(doc.page_count))
-        except Exception:
-            body = 1
-        return body + 1
+        return _pdf_page_count(course.pdf_file) + 1
 
     text = (course.content or "").strip()
     if not text:

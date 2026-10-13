@@ -1,0 +1,67 @@
+{% extends "shared/base.html" %}
+{% load static %}
+
+{% block title %}Terms of Service — CyberQuest{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'pages/css/pages.css' %}">
+<link rel="stylesheet" href="{% static 'pages/css/legal.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="cq-container cq-legal">
+  <article class="cq-page-card">
+    <h1 class="cq-heading">Terms of Service</h1>
+    <p class="cq-legal-meta">Last updated {{ policy_updated }}</p>
+
+    <p class="cq-body">These terms apply when you use CyberQuest{% if operator_name %}, operated by {{ operator_name }}{% endif %}. By creating an account you agree to them and to the <a href="{% url 'pages:privacy' %}">Privacy Policy</a>.</p>
+
+    <h2 class="cq-section-title">1. Who can use CyberQuest</h2>
+    <p class="cq-body">You must be at least 13 years old, and old enough under the law where you live to agree to these terms or have a parent or guardian agree for you. You need a working email address or a Google account.</p>
+
+    <h2 class="cq-section-title">2. Your account</h2>
+    <ul class="cq-legal-list">
+      <li>Give accurate sign-up details and keep your password private. You are responsible for activity on your account.</li>
+      <li>One account per person. Do not share, sell or transfer accounts.</li>
+      <li>Tell us through the contact page if you think someone else has used your account.</li>
+    </ul>
+
+    <h2 class="cq-section-title">3. Ethical and legal use</h2>
+    <p class="cq-body">CyberQuest teaches security through simulations. When you signed up you agreed to use what you learn ethically and legally. In particular you must not:</p>
+    <ul class="cq-legal-list">
+      <li>use techniques from CyberQuest against any system, account or person without clear permission;</li>
+      <li>attack, probe, overload or try to bypass the security of CyberQuest itself, including its timers, scoring, rate limits or other learners' accounts;</li>
+      <li>automate play, submit answers on someone else's behalf, or otherwise manipulate scores, XP, streaks, badges or certificates;</li>
+      <li>post or send unlawful, abusive or misleading content through the contact form or any other feature.</li>
+    </ul>
+    <p class="cq-body">If you find a security problem in CyberQuest, please report it through the contact page instead of exploiting it.</p>
+
+    <h2 class="cq-section-title">4. Missions, scores and certificates</h2>
+    <ul class="cq-legal-list">
+      <li>Mission timers, scores and XP are calculated by the server. If a mission's time runs out, unanswered questions count as incorrect. XP for a mission is awarded once.</li>
+      <li>A certificate records completion of CyberQuest's learning activities at the score shown. It is an educational record, not a professional qualification, licence or accreditation.</li>
+      <li>Certificate verification pages are public to anyone who has the certificate ID. Deleting your account deletes your certificate, after which it can no longer be verified.</li>
+    </ul>
+
+    <h2 class="cq-section-title">5. Content and software</h2>
+    <p class="cq-body">Course material, mission content and the CyberQuest name and design are provided for your personal learning. The CyberQuest source code is published under the MIT License, and it includes third-party software and fonts under their own licences, listed on the <a href="{% url 'pages:notices' %}">third-party notices</a> page. Nothing in these terms limits your rights under those licences.</p>
+
+    <h2 class="cq-section-title">6. Suspension and deletion</h2>
+    <p class="cq-body">Administrators may suspend an account that breaks these terms or puts other people or the service at risk. You can delete your account at any time from Settings; what happens to your data is explained in the Privacy Policy.</p>
+
+    <h2 class="cq-section-title">7. Availability and warranty</h2>
+    <p class="cq-body">CyberQuest is an educational service provided "as is" and "as available". We work to keep it running and your data safe, but we do not promise uninterrupted availability or that every scenario reflects every real-world situation. Use real-world security advice from qualified professionals for real systems.</p>
+
+    <h2 class="cq-section-title">8. Liability</h2>
+    <p class="cq-body">To the extent the law allows, we are not liable for indirect or consequential losses arising from use of CyberQuest. Nothing in these terms excludes liability that cannot be excluded by law.</p>
+
+    <h2 class="cq-section-title">9. Changes</h2>
+    <p class="cq-body">We may update these terms. The date at the top shows the latest version. If you keep using CyberQuest after a change, the new terms apply; if you do not agree, you can delete your account.</p>
+
+    <h2 class="cq-section-title">10. Contact</h2>
+    <p class="cq-body">
+      {% if contact_email %}Email <a href="mailto:{{ contact_email }}">{{ contact_email }}</a> or use the <a href="{% url 'pages:contact' %}">contact page</a>.
+      {% else %}Use the <a href="{% url 'pages:contact' %}">contact page</a>.{% endif %}
+    </p>
+  </article>
+</div>
+{% endblock %}

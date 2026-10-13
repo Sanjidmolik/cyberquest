@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -27,3 +28,23 @@ class PagesNavigationTests(TestCase):
     def test_contact_page_brand_links_home(self):
         response = self.client.get(reverse("pages:contact"))
         self.assertContains(response, f'href="{reverse("pages:home")}"')
+
+
+@override_settings(ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1"])
+class LoadingBarTests(TestCase):
+    def test_threshold_lives_in_one_script(self):
+        script = (settings.BASE_DIR / "static/shared/js/loading.js").read_text(encoding="utf-8")
+        css = (settings.BASE_DIR / "static/shared/css/loading.css").read_text(encoding="utf-8")
+        self.assertIn("var CQ_LOADING_DELAY_MS = 1500;", script)
+        self.assertIn("data-cq-blocking", script)
+        self.assertIn("cqBlocking", script)
+        self.assertIn(".cq-loadbar", css)
+        self.assertIn("prefers-reduced-motion", css)
+
+    def test_public_pages_include_the_existing_bar(self):
+        home = self.client.get(reverse("pages:home"))
+        login = self.client.get(reverse("accounts:login"))
+        about = self.client.get(reverse("pages:about"))
+        for page in (home, login, about):
+            self.assertContains(page, "shared/js/loading.js")
+            self.assertContains(page, "shared/css/loading.css")

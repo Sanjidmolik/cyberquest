@@ -12,7 +12,7 @@ from .models import GameAttempt
 
 def get_best_attempt_percentages(user) -> dict:
     """Returns {game_key: best_percentage_int} for every game the user has played."""
-    attempts = GameAttempt.objects.filter(user=user)
+    attempts = GameAttempt.objects.filter(user=user).finished()
     best_by_game = {}
     for attempt in attempts:
         pct = (attempt.score / attempt.total_questions * 100) if attempt.total_questions else 0

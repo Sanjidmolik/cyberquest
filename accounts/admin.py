@@ -21,6 +21,14 @@ class CustomUserAdmin(UserAdmin):
 
     actions = ["make_admin", "remove_admin", "suspend_accounts", "reactivate_accounts"]
 
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        # Phase 1 — Step 5: link the photo through the protected view, never a bucket URL.
+        if db_field.name == "profile_picture":
+            from certificates.admin import ProtectedFileWidget
+
+            kwargs["widget"] = ProtectedFileWidget("accounts:profile_photo")
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
     @admin.action(description="Make selected users ADMIN (staff access)")
     def make_admin(self, request, queryset):
         queryset.update(is_staff=True)
@@ -39,4 +47,20 @@ class CustomUserAdmin(UserAdmin):
 
 
 admin.site.register(CustomUser, CustomUserAdmin)
-admin.site.register(VerificationCode)
+
+
+@admin.register(VerificationCode)
+class VerificationCodeAdmin(admin.ModelAdmin):
+    """Audit view only. The code itself is never stored, so there is nothing to reveal."""
+
+    list_display = ("user", "purpose", "created_at", "expires_at", "is_used")
+    list_filter = ("purpose", "is_used")
+    search_fields = ("user__email",)
+    exclude = ("code_hash",)
+    readonly_fields = ("user", "purpose", "created_at", "expires_at", "is_used")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

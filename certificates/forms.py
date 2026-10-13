@@ -130,8 +130,16 @@ def _template_path(upload, instance):
             return handle.name, kind, handle.name
     stored = getattr(instance, "pdf_file", None)
     if stored and getattr(stored, "name", None):
-        try:
-            return stored.path, instance.template_kind, None
-        except Exception:
-            return None, instance.template_kind, None
+        # Phase 1 — Step 6: no stored.path, which remote storage cannot provide.
+        from certificates.services.generator import builtin_achievement_template, is_builtin_template_name
+        from cyberquest.media_access import materialize
+
+        if is_builtin_template_name(stored.name) and builtin_achievement_template().is_file():
+            return str(builtin_achievement_template()), instance.template_kind, None
+        path, temporary = materialize(stored)
+        return (
+            str(path) if path is not None else None,
+            instance.template_kind,
+            str(temporary) if temporary is not None else None,
+        )
     return None, "unknown", None

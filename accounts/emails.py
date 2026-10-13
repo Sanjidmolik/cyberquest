@@ -11,6 +11,7 @@ False so a backend error is not reported as a successful send.
 
 import logging
 
+import requests
 from django.core.mail import send_mail
 from django.conf import settings
 from django.core.validators import validate_email
@@ -19,16 +20,59 @@ from django.core.exceptions import ValidationError
 logger = logging.getLogger(__name__)
 
 
+def _sender_email() -> str:
+    """Use the configured From address. Accept Django's Name <email> form."""
+    value = (settings.DEFAULT_FROM_EMAIL or "").strip()
+    if "<" in value and value.endswith(">"):
+        value = value[value.rfind("<") + 1:-1].strip()
+    return value
+
+
+def _deliver_via_brevo(subject, message, recipient, sender) -> bool:
+    """POST one plain-text message. Never logs the key, body, or response text."""
+    try:
+        response = requests.post(
+            settings.BREVO_API_URL,
+            json={
+                "sender": {"email": sender, "name": "CyberQuest"},
+                "to": [{"email": recipient}],
+                "subject": subject,
+                "textContent": message,
+            },
+            headers={
+                "accept": "application/json",
+                "api-key": settings.BREVO_API_KEY,
+                "content-type": "application/json",
+            },
+            timeout=settings.EMAIL_TIMEOUT,
+        )
+    except requests.Timeout:
+        logger.warning("Brevo API delivery failed: timeout")
+        return False
+    except requests.RequestException:
+        logger.warning("Brevo API delivery failed: network")
+        return False
+    if response.status_code not in (200, 201):
+        logger.warning("Brevo API delivery failed: HTTP %s", response.status_code)
+        return False
+    return True
+
+
 def _deliver(subject, message, recipient) -> bool:
     """
-    Hand one message to the email backend.
-    Returns False when the backend raises or accepts nothing. Never swallows
-    a failure by pretending the message was sent.
+    Hand one message to Brevo's HTTPS API when BREVO_API_KEY is set, otherwise
+    to the configured Django email backend (SMTP locally, locmem in tests).
+    Returns False when delivery raises or accepts nothing.
     """
     recipient = (recipient or "").strip()
     if not recipient:
         return False
-    sender = settings.DEFAULT_FROM_EMAIL
+    sender = _sender_email()
+    if (settings.BREVO_API_KEY or "").strip():
+        if not sender:
+            logger.warning("Brevo API delivery failed: missing sender")
+            return False
+        return _deliver_via_brevo(subject, message, recipient, sender)
     try:
         accepted = send_mail(subject, message, sender, [recipient], fail_silently=False)
     except (TimeoutError, OSError) as exc:
@@ -139,8 +183,4 @@ def send_account_status_email(user, active):
             "You cannot sign in until it is restored.\n\n"
             "-- The CyberQuest Team"
         )
-    try:
-        send_mail(subject, body, sender, [recipient], fail_silently=False)
-    except Exception:
-        return False
-    return True
+    return _deliver(subject, body, recipient)

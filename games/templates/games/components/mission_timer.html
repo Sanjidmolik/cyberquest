@@ -1,0 +1,41 @@
+<div class="{% if mirror %}cq-clock-mirror{% else %}cq-clock-live{% endif %} cq-clock-block"
+     {% if not mirror %}data-mission-timer data-running="{% if phase == 'play' %}1{% else %}0{% endif %}" data-remaining-ms="{% if phase == 'play' %}{{ remaining_ms }}{% else %}{{ limit_seconds }}000{% endif %}" data-limit="{{ limit_seconds|default:60 }}"{% if phase == "play" %} data-deadline="{{ deadline_iso }}" data-server-now="{{ server_now_iso }}"{% endif %}{% else %}data-clock-mirror aria-hidden="true"{% endif %}>
+  <div class="cq-stopwatch" data-clock>
+    <span class="cq-crown" aria-hidden="true"></span>
+    <span class="cq-crown-stem" aria-hidden="true"></span>
+    <svg class="cq-clock-face" viewBox="0 0 200 200" {% if not mirror %}role="img" aria-label="Analog mission stopwatch"{% else %}aria-hidden="true"{% endif %}>
+      <circle class="cq-clock-shadow" cx="100" cy="104" r="90"></circle>
+      <circle class="cq-clock-outer" cx="100" cy="100" r="92"></circle>
+      <circle class="cq-clock-rim" cx="100" cy="100" r="84"></circle>
+      <circle class="cq-clock-paper" cx="100" cy="100" r="76"></circle>
+      <g class="cq-ticks" fill="#1a120c">
+        <rect x="97" y="28" width="6" height="14"></rect>
+        <rect x="97" y="158" width="6" height="14"></rect>
+        <rect x="28" y="97" width="14" height="6"></rect>
+        <rect x="158" y="97" width="14" height="6"></rect>
+        <rect x="98" y="34" width="4" height="9" transform="rotate(30 100 100)"></rect>
+        <rect x="98" y="34" width="4" height="9" transform="rotate(60 100 100)"></rect>
+        <rect x="98" y="34" width="4" height="9" transform="rotate(120 100 100)"></rect>
+        <rect x="98" y="34" width="4" height="9" transform="rotate(150 100 100)"></rect>
+        <rect x="98" y="34" width="4" height="9" transform="rotate(210 100 100)"></rect>
+        <rect x="98" y="34" width="4" height="9" transform="rotate(240 100 100)"></rect>
+        <rect x="98" y="34" width="4" height="9" transform="rotate(300 100 100)"></rect>
+        <rect x="98" y="34" width="4" height="9" transform="rotate(330 100 100)"></rect>
+      </g>
+      <g data-hand="second" class="cq-hand cq-hand-second" transform="rotate(0 100 100)">
+        <polygon points="100,30 104,100 100,114 96,100"></polygon>
+        <circle cx="100" cy="38" r="4"></circle>
+      </g>
+      <circle class="cq-hub" cx="100" cy="100" r="7"></circle>
+      <circle class="cq-hub-shine" cx="97.5" cy="97.5" r="2.2"></circle>
+    </svg>
+  </div>
+  <p class="cq-time-readout">
+    <span class="cq-time-kicker">Time left</span>
+    <strong data-digital {% if not mirror %}aria-hidden="true"{% endif %}>{{ remaining_label|default:"01:00" }}</strong>
+  </p>
+  {% if not mirror %}
+  <p class="cq-sr-time" data-time-label aria-live="polite">Time remaining {{ remaining_label|default:"01:00" }}.</p>
+  <p class="cq-comic-caption" data-caption hidden></p>
+  {% endif %}
+</div>

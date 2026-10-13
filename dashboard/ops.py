@@ -7,7 +7,7 @@ from pathlib import Path
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
+from accounts.emails import _deliver
 from django.core.validators import validate_email
 from django.db import connection
 from django.db.models import Avg, Count, F, IntegerField, Max, Min, OuterRef, Q, Subquery, Sum, Value
@@ -298,7 +298,7 @@ def student_learning(user):
 
 def student_games(user):
     names = {game["key"]: game["name"] for game in GAMES_REGISTRY}
-    qs = GameAttempt.objects.filter(user=user)
+    qs = GameAttempt.objects.filter(user=user).finished()
     summary = qs.aggregate(
         attempts=Count("id"),
         games=Count("game_key", distinct=True),
@@ -498,6 +498,7 @@ def eligible_students_without_certificate():
             user__is_superuser=False,
             total_questions__gt=0,
             game_key__in=REQUIRED_GAME_KEYS,
+            status__in=["completed", "timed_out"],
         )
         .exclude(user_id__in=ready_ids)
         .values("user_id")
@@ -602,13 +603,13 @@ def overview_kpis():
     possible = published * total_students
     completion_rate = round(completions / possible * 100) if possible else 0
 
-    attempts = GameAttempt.objects.count()
-    attempts_week = GameAttempt.objects.filter(completed_at__gte=start_dt).count()
-    attempts_prev = GameAttempt.objects.filter(completed_at__gte=prev_dt, completed_at__lt=start_dt).count()
+    attempts = GameAttempt.objects.finished().count()
+    attempts_week = GameAttempt.objects.finished().filter(completed_at__gte=start_dt).count()
+    attempts_prev = GameAttempt.objects.finished().filter(completed_at__gte=prev_dt, completed_at__lt=start_dt).count()
 
     practice_n = PracticeSession.objects.count()
     score_avg = (
-        GameAttempt.objects.filter(total_questions__gt=0)
+        GameAttempt.objects.finished().filter(total_questions__gt=0)
         .aggregate(v=Avg(F("score") * 100.0 / F("total_questions")))
         .get("v")
     )
@@ -653,7 +654,7 @@ def recent_activity(limit=24):
             "when": row.completed_at,
             "status": "Completed",
         })
-    for row in GameAttempt.objects.select_related("user").order_by("-completed_at")[:8]:
+    for row in GameAttempt.objects.finished().select_related("user").order_by("-completed_at")[:8]:
         rows.append({
             "kind": "Game attempt",
             "who": row.user.display_name(),
@@ -810,15 +811,7 @@ def send_contact_reply(message, reply):
         f"{original}\n\n"
         "-- The CyberQuest Team"
     )
-    try:
-        send_mail(
-            "Reply from CyberQuest",
-            body,
-            sender,
-            [recipient],
-            fail_silently=False,
-        )
-    except Exception:
+    if not _deliver("Reply from CyberQuest", body, recipient):
         return False, "The reply could not be sent. The contact message was not changed."
     return True, ""
 
@@ -1249,7 +1242,7 @@ _PLAY_DIFFICULTY = {
 
 def _student_game_attempts():
     """Finished student plays. Staff and superuser activity is left out."""
-    return GameAttempt.objects.filter(
+    return GameAttempt.objects.finished().filter(
         user__is_staff=False,
         user__is_superuser=False,
         total_questions__gt=0,
@@ -1388,7 +1381,7 @@ def game_detail(key):
 def game_rows():
     names = {g["key"]: g["name"] for g in GAMES_REGISTRY}
     grouped = (
-        GameAttempt.objects.filter(total_questions__gt=0).values("game_key")
+        GameAttempt.objects.finished().filter(total_questions__gt=0).values("game_key")
         .annotate(
             attempts=Count("id"),
             players=Count("user", distinct=True),
@@ -1643,6 +1636,7 @@ def _redact(text):
         getattr(settings, "SECRET_KEY", ""),
         getattr(settings, "EMAIL_HOST_PASSWORD", "") or "",
         getattr(settings, "EMAIL_HOST_USER", "") or "",
+        getattr(settings, "BREVO_API_KEY", "") or "",
         getattr(settings, "GOOGLE_CLIENT_SECRET", "") or "",
         getattr(settings, "GOOGLE_CLIENT_ID", "") or "",
         getattr(settings, "GEMINI_API_KEY", "") or "",
@@ -1818,30 +1812,43 @@ def system_health():
             "Collected static files are present." if present else "Collected static files were not found.",
             "Live check",
         ))
-    media_configured = bool(settings.MEDIA_URL and settings.MEDIA_ROOT)
-    files.append(_health_item(
-        "Media configuration",
-        "healthy" if media_configured else "attention",
-        "Media URL and storage location are configured." if media_configured else "Media settings are incomplete.",
-        "Configuration",
-    ))
-    try:
-        media_ready = Path(settings.MEDIA_ROOT).is_dir()
-    except OSError:
-        media_ready = False
-    files.append(_health_item(
-        "Media directory",
-        "healthy" if media_ready else "warning",
-        "The media directory is present." if media_ready else "The media directory is not present.",
-        "Live check",
-    ))
+    if getattr(settings, "MEDIA_STORAGE", "filesystem") == "r2":
+        # Phase 1 — Step 4: no live bucket request on a page view; the settings
+        # refuse to start with an incomplete R2 configuration.
+        files.append(_health_item(
+            "Media storage",
+            "healthy",
+            "Private Cloudflare R2 bucket. Files are served through permission-checked pages.",
+            "Configuration",
+        ))
+    else:
+        media_configured = bool(settings.MEDIA_URL and settings.MEDIA_ROOT)
+        files.append(_health_item(
+            "Media configuration",
+            "healthy" if media_configured else "attention",
+            "Media URL and storage location are configured." if media_configured else "Media settings are incomplete.",
+            "Configuration",
+        ))
+        try:
+            media_ready = Path(settings.MEDIA_ROOT).is_dir()
+        except OSError:
+            media_ready = False
+        files.append(_health_item(
+            "Media directory",
+            "healthy" if media_ready else "warning",
+            "The media directory is present." if media_ready else "The media directory is not present.",
+            "Live check",
+        ))
     groups.append({"title": "Files", "items": files})
 
     email_backend = (settings.EMAIL_BACKEND or "").rsplit(".", 1)[-1]
     smtp = "smtp" in (settings.EMAIL_BACKEND or "").lower()
+    brevo_api = bool((getattr(settings, "BREVO_API_KEY", "") or "").strip())
     email = [_health_item(
-        "Email backend", "healthy" if settings.EMAIL_BACKEND else "attention",
-        "SMTP is selected." if smtp else f"{email_backend or 'Not set'} is selected.",
+        "Email backend", "healthy" if settings.EMAIL_BACKEND or brevo_api else "attention",
+        "Brevo HTTPS API is selected." if brevo_api else (
+            "SMTP is selected." if smtp else f"{email_backend or 'Not set'} is selected."
+        ),
         "Configuration",
     )]
     credentials = all([
@@ -1849,7 +1856,19 @@ def system_health():
         (settings.EMAIL_HOST_PASSWORD or "").strip(),
         (settings.DEFAULT_FROM_EMAIL or "").strip(),
     ])
-    if smtp and credentials:
+    if brevo_api and (settings.DEFAULT_FROM_EMAIL or "").strip():
+        email.append(_health_item(
+            "Email credentials", "warning",
+            "The Brevo API key and from address are set. Delivery was not tested.",
+            "Configuration",
+        ))
+    elif brevo_api:
+        email.append(_health_item(
+            "Email credentials", "attention",
+            "The Brevo API key is set, and the from address is missing.",
+            "Configuration",
+        ))
+    elif smtp and credentials:
         email.append(_health_item(
             "Email credentials", "warning",
             "The SMTP username, password, and from address are set. Delivery was not tested.",

@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 # Repository-relative names. Do not expand this list to every file under media/.
 SEED_FILES = (
@@ -29,6 +29,13 @@ class Command(BaseCommand):
     help = "Copy the eight Git-tracked course and certificate files onto MEDIA_ROOT if they are absent."
 
     def handle(self, *args, **options):
+        if getattr(settings, "MEDIA_STORAGE", "filesystem") != "filesystem":
+            # Phase 1 — Step 9: this copies onto a local disk only. Moving files
+            # into R2 is the Phase 2 migration, which is not implemented yet.
+            raise CommandError(
+                "seed_persistent_media only works with MEDIA_STORAGE=filesystem. "
+                "R2 migration is a separate, reviewed step."
+            )
         source_root = Path(settings.BASE_DIR) / "media"
         dest_root = Path(settings.MEDIA_ROOT).resolve()
         copied = 0

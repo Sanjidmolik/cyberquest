@@ -62,7 +62,7 @@ def get_dashboard_context(user):
     my_rank = (ranked_ids.index(user.id) + 1) if user.id in ranked_ids else None
 
     # ---- Per-game best attempt (used for both Active Missions and Skill Matrix) ----
-    attempts = GameAttempt.objects.filter(user=user)
+    attempts = GameAttempt.objects.filter(user=user).finished()
     best_by_game = {}
     for attempt in attempts:
         pct = (attempt.score / attempt.total_questions * 100) if attempt.total_questions else 0

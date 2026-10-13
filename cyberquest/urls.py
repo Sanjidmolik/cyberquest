@@ -21,9 +21,14 @@ from django.templatetags.static import static as static_url
 
 from accounts.views import admin_login_view
 from certificates.views import verify_certificate
+from cyberquest.health import healthz
 
 urlpatterns = [
+    path('healthz/', healthz, name='healthz'),
     path('admin-login/', admin_login_view, name='admin_login'),
+    # Django's own admin login checks only the password. Send it through the
+    # CyberQuest admin sign-in, which also enforces the account's second factor.
+    path('admin/login/', RedirectView.as_view(pattern_name='admin_login', query_string=True)),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('dashboard/', include('dashboard.urls')),

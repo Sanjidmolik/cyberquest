@@ -1,0 +1,55 @@
+{% extends "dashboard/base_command.html" %}
+{% load static %}
+
+{% block title %}CyberQuest — Delete account{% endblock %}
+{% block context_name %}Profile{% endblock %}
+{% block body_class %}command-child cq-shell{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">{% endblock %}
+
+{% block content %}
+<div class="cq-container command-page-inner" style="max-width:640px;">
+  <div class="cq-page-card">
+    <h1 class="cq-heading" style="margin-bottom:0.35rem;">Delete your account</h1>
+    {% if blocked %}
+      <p class="cq-body">Administrator accounts cannot be deleted from this page, so the Command Center is never left without an administrator by mistake. Ask another administrator to remove the account.</p>
+      <a href="{% url 'accounts:settings' %}" class="cq-btn cq-btn-ghost">Back to settings</a>
+    {% else %}
+      <p class="cq-body">This permanently deletes your profile, profile picture, XP, streaks, badges, mission attempts, practice history, course progress, notifications, and your certificate. A deleted certificate can no longer be verified. This cannot be undone.</p>
+      <p class="cq-body">Want a copy first? <a href="{% url 'accounts:settings' %}#your-data">Download your data</a> before you continue.</p>
+      <p class="cq-body">Some records are kept for a limited time after deletion, such as messages sent through the contact form and encrypted hosting backups. The <a href="{% url 'pages:privacy' %}#retention">Privacy Policy</a> explains what and for how long.</p>
+
+      {% if errors %}
+      <div role="alert">
+        {% for error in errors %}<p class="cq-msg cq-msg-error">{{ error }}</p>{% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% if has_password %}
+        <div class="cq-field">
+          <label for="delete-password">Password</label>
+          <input id="delete-password" class="cq-input" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        {% else %}
+        <p class="cq-body">This account signs in with Google. You must have signed in within the last 15 minutes.</p>
+        {% endif %}
+        {% if totp_enabled %}
+        <div class="cq-field">
+          <label for="delete-code">Authenticator or recovery code</label>
+          <input id="delete-code" class="cq-input" name="code" inputmode="numeric" autocomplete="one-time-code" required>
+        </div>
+        {% endif %}
+        <div class="cq-field">
+          <label for="delete-confirm">Type <strong>{{ confirm_phrase }}</strong> to confirm</label>
+          <input id="delete-confirm" class="cq-input" name="confirm" autocomplete="off" required>
+        </div>
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+          <a href="{% url 'accounts:settings' %}" class="cq-btn cq-btn-ghost">Cancel</a>
+          <button type="submit" class="cq-btn" style="background:var(--danger);border-color:var(--danger);">Permanently delete account</button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "shared/base.html" %}
+{% load static %}
+
+{% block title %}Licenses &amp; source code — CyberQuest{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'pages/css/pages.css' %}">
+<link rel="stylesheet" href="{% static 'pages/css/legal.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="cq-container cq-legal">
+  <article class="cq-page-card">
+    <h1 class="cq-heading">Licenses &amp; source code</h1>
+    <p class="cq-legal-meta">Last updated {{ policy_updated }}</p>
+
+    <h2 id="source" class="cq-section-title">Source code</h2>
+    <p class="cq-body">CyberQuest is open source under the MIT License. It uses PyMuPDF and MuPDF by Artifex Software, which are licensed under the GNU Affero General Public License version 3 (AGPL-3.0). As a user of this service you are entitled to the complete corresponding source code of the version you are using, free of charge.</p>
+    {% if source_url %}
+    <p class="cq-body">
+      Get the source: <a href="{{ source_url }}" rel="noopener">{{ source_url }}</a>
+      {% if source_revision_url %}<br>Exact version running here: <a href="{{ source_revision_url }}" rel="noopener"><code>{{ source_revision }}</code></a>{% endif %}
+    </p>
+    {% else %}
+    <p class="cq-body">Request the source code for this deployment through the <a href="{% url 'pages:contact' %}">contact page</a>{% if contact_email %} or at <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>{% endif %}.</p>
+    {% endif %}
+
+    <h2 class="cq-section-title">Software we use</h2>
+    <div class="cq-legal-table-wrap">
+      <table class="cq-legal-table">
+        <thead><tr><th scope="col">Component</th><th scope="col">License</th><th scope="col">Copyright</th></tr></thead>
+        <tbody>
+          <tr><td>PyMuPDF 1.28.2 with MuPDF</td><td><a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener">AGPL-3.0</a> (or Artifex commercial license)</td><td>Artifex Software, Inc.</td></tr>
+          <tr><td>Django 6.0.7</td><td>BSD-3-Clause</td><td>Django Software Foundation and contributors</td></tr>
+          <tr><td>cryptography 50.0.1</td><td>Apache-2.0 or BSD-3-Clause</td><td>The cryptography developers</td></tr>
+          <tr><td>Pillow 12.1.1</td><td>MIT-CMU</td><td>Secret Labs AB, Fredrik Lundh, Jeffrey A. Clark and contributors</td></tr>
+          <tr><td>psycopg2 2.9.13</td><td>LGPL-3.0 with exceptions</td><td>Federico Di Gregorio, Daniele Varrazzo, The Psycopg Team</td></tr>
+          <tr><td>gunicorn, WhiteNoise, pyotp, urllib3, charset-normalizer</td><td>MIT</td><td>Their respective authors</td></tr>
+          <tr><td>requests, tzdata, boto3, botocore, s3transfer</td><td>Apache-2.0</td><td>Their respective authors</td></tr>
+          <tr><td>django-storages</td><td>BSD-3-Clause</td><td>The django-storages authors</td></tr>
+          <tr><td>jmespath, six</td><td>MIT</td><td>Their respective authors</td></tr>
+          <tr><td>python-dateutil</td><td>Apache-2.0 or BSD-3-Clause</td><td>The dateutil authors</td></tr>
+          <tr><td>asgiref, dj-database-url, idna, python-dotenv, qrcode, sqlparse, colorama, pycparser</td><td>BSD</td><td>Their respective authors</td></tr>
+          <tr><td>certifi</td><td>MPL-2.0</td><td>Kenneth Reitz and contributors</td></tr>
+          <tr><td>StPageFlip (page-flip) 2.0.7</td><td>MIT</td><td>Copyright (c) 2020 Nodlik</td></tr>
+          <tr><td>PDF.js 3.11.174</td><td>Apache-2.0</td><td>Mozilla Foundation</td></tr>
+          <tr><td>GSAP and ScrollTrigger 3.12.5</td><td>GreenSock Standard "No Charge" License</td><td>GreenSock, Inc.</td></tr>
+          <tr><td>Lenis 1.1.13</td><td>MIT</td><td>darkroom.engineering</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="cq-section-title">Fonts</h2>
+    <div class="cq-legal-table-wrap">
+      <table class="cq-legal-table">
+        <thead><tr><th scope="col">Font</th><th scope="col">License</th><th scope="col">Copyright</th></tr></thead>
+        <tbody>
+          <tr><td>Comic Neue (embedded in certificates)</td><td>SIL Open Font License 1.1</td><td>Copyright 2014 The Comic Neue Project Authors</td></tr>
+          <tr><td>Noto Sans Bengali (embedded in certificates)</td><td>SIL Open Font License 1.1</td><td>Copyright The Noto Project Authors</td></tr>
+          <tr><td>Bangers, Inter, JetBrains Mono, IBM Plex, Cinzel, Cormorant Garamond, Great Vibes (via Google Fonts)</td><td>SIL Open Font License 1.1</td><td>Their respective designers</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="cq-body">Full license texts are included with the source code in the <code>LICENSES</code> folder, and the complete audit is in <code>THIRD_PARTY_NOTICES.md</code>.</p>
+  </article>
+</div>
+{% endblock %}

@@ -15,6 +15,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/ops.css' %}?v=cert2">
+{% block ops_head %}{% endblock %}
+{% include "shared/_loading.html" %}
 </head>
 <body>
 <div class="ops-scrim" id="ops-scrim" hidden></div>
@@ -30,6 +32,14 @@
       <a class="ops-link{% if active == 'analytics' %} is-active{% endif %}" href="{% url 'ops:analytics' %}" {% if active == 'analytics' %}aria-current="page"{% endif %}>
         <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M7 16V10M12 16V5M17 16v-6"/></svg>
         Analytics
+      </a>
+      <a class="ops-link{% if active == 'mission_analytics' %} is-active{% endif %}" href="{% url 'ops:mission_analytics' %}" {% if active == 'mission_analytics' %}aria-current="page"{% endif %}>
+        <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 8v4l2 2"/></svg>
+        Mission timing
+      </a>
+      <a class="ops-link{% if active == 'mission_attempts' %} is-active{% endif %}" href="{% url 'ops:mission_attempts' %}" {% if active == 'mission_attempts' %}aria-current="page"{% endif %}>
+        <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h9M5 20h6"/><path d="M17 16l2 2 3-4"/></svg>
+        Mission attempts
       </a>
       <p class="ops-group">Learning</p>
       <a class="ops-link{% if active == 'courses' %} is-active{% endif %}" href="{% url 'ops:courses' %}" {% if active == 'courses' %}aria-current="page"{% endif %}>

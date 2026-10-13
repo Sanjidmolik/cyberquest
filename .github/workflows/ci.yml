@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DEBUG: "True"
+      SECRET_KEY: ci-only-not-a-real-secret
+      BREVO_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+      - name: System packages for mysqlclient
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends default-libmysqlclient-dev pkg-config
+      - run: pip install -r requirements.txt
+      - run: npm ci
+      - name: Django system checks
+        run: python manage.py check
+      - name: Migrations are committed
+        run: python manage.py makemigrations --check --dry-run
+      - name: Tests
+        run: python manage.py test --parallel 1
+
+  deploy-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+      - name: System packages for mysqlclient
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends default-libmysqlclient-dev pkg-config
+      - run: pip install -r requirements.txt
+      - run: npm ci
+      - name: Production settings pass check --deploy
+        run: |
+          export DEBUG=False
+          export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')"
+          export FIELD_ENCRYPTION_KEYS="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
+          export ALLOWED_HOSTS=ci.example.invalid
+          python manage.py check --deploy --fail-level WARNING

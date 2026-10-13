@@ -1,0 +1,209 @@
+/*
+  Administrator sign-in (accounts/admin_login.html).
+  Deep purple and plum. Light card in a light colour scheme, dark card in a
+  dark one. Colours live in the custom properties below.
+*/
+:root {
+  --al-page-a: #12061f;
+  --al-page-b: #2a0d47;
+  --al-plum: #5b1a7a;
+  --al-purple: #6d28d9;
+  --al-purple-strong: #5b21b6;
+  --al-lilac: #c4a5f5;
+  --al-surface: #ffffff;
+  --al-surface-2: #f7f2fd;
+  --al-text: #1d1230;
+  --al-muted: #5b4d73;
+  --al-line: #ddd0f0;
+  --al-focus: #8b5cf6;
+  --al-danger: #b42343;
+  --al-danger-bg: #fdecef;
+  --al-ok: #1f6b45;
+  --al-ok-bg: #e7f6ee;
+  --al-radius: 18px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --al-surface: #1c1030;
+    --al-surface-2: #251641;
+    --al-text: #f3ecff;
+    --al-muted: #b7a8d3;
+    --al-line: #3b2a5c;
+    --al-focus: #b794f6;
+    --al-danger: #ffb3c1;
+    --al-danger-bg: rgba(180, 35, 67, 0.22);
+    --al-ok: #a7f3c9;
+    --al-ok-bg: rgba(31, 107, 69, 0.25);
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+.al-body {
+  min-height: 100vh;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--al-text);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(139, 92, 246, 0.35), transparent 60%),
+    radial-gradient(900px 500px at 110% 110%, rgba(190, 24, 93, 0.22), transparent 60%),
+    linear-gradient(160deg, var(--al-page-a), var(--al-page-b));
+  -webkit-font-smoothing: antialiased;
+}
+.al-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 4vw, 48px);
+}
+
+.al-card {
+  width: min(960px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  background: var(--al-surface);
+  border-radius: var(--al-radius);
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(8, 2, 20, 0.55), 0 0 0 1px rgba(196, 165, 245, 0.18);
+}
+
+/* Brand panel */
+.al-aside {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 40px 36px;
+  color: #f5edff;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(155deg, var(--al-purple) 0%, var(--al-plum) 55%, #3b0d4f 100%);
+}
+.al-aside .cq-logo-word { color: #fff; }
+.al-kicker {
+  margin: 14px 0 0;
+  font: 500 12px/1 "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--al-lilac);
+}
+.al-shield svg {
+  width: 96px; height: 96px;
+  fill: rgba(255, 255, 255, 0.08);
+  stroke: #e9d8ff; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
+  filter: drop-shadow(0 10px 30px rgba(10, 0, 30, 0.45));
+}
+.al-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font-size: 14px; line-height: 1.5; color: #eadcff; }
+.al-points li { position: relative; padding-left: 22px; }
+.al-points li::before {
+  content: ""; position: absolute; left: 0; top: 0.5em;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--al-lilac); box-shadow: 0 0 0 3px rgba(196, 165, 245, 0.25);
+}
+
+/* Form side */
+.al-main { padding: clamp(28px, 5vw, 48px); display: flex; flex-direction: column; gap: 22px; }
+.al-mobile-brand { display: none; text-decoration: none; }
+.al-eyebrow {
+  margin: 0 0 8px;
+  font: 600 12px/1 "Inter", sans-serif; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--al-purple);
+}
+@media (prefers-color-scheme: dark) { .al-eyebrow { color: var(--al-lilac); } }
+.al-head h1 { margin: 0 0 10px; font-size: clamp(1.5rem, 2.6vw, 1.9rem); line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; }
+.al-sub { margin: 0; color: var(--al-muted); line-height: 1.55; font-size: 15px; }
+.al-sub a, .al-foot a { color: var(--al-purple); font-weight: 600; text-underline-offset: 3px; }
+@media (prefers-color-scheme: dark) { .al-sub a, .al-foot a { color: var(--al-lilac); } }
+
+.al-alerts { display: grid; gap: 8px; }
+.al-alert {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin: 0; padding: 12px 14px; border-radius: 12px;
+  font-size: 14px; line-height: 1.45;
+  background: var(--al-surface-2); color: var(--al-text);
+  border: 1px solid var(--al-line);
+}
+.al-alert svg { flex: none; width: 18px; height: 18px; margin-top: 1px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.al-alert-error { background: var(--al-danger-bg); color: var(--al-danger); border-color: transparent; }
+.al-alert-success { background: var(--al-ok-bg); color: var(--al-ok); border-color: transparent; }
+
+.al-form { display: grid; gap: 18px; }
+.al-field { display: grid; gap: 7px; }
+.al-field label { font-size: 14px; font-weight: 600; }
+.al-input {
+  width: 100%; min-height: 48px;
+  padding: 12px 14px;
+  font: 500 16px/1.2 "Inter", sans-serif;
+  color: var(--al-text);
+  background: var(--al-surface-2);
+  border: 1.5px solid var(--al-line);
+  border-radius: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.al-input:hover { border-color: color-mix(in srgb, var(--al-focus) 45%, var(--al-line)); }
+.al-input:focus { outline: none; border-color: var(--al-focus); background: var(--al-surface); box-shadow: 0 0 0 4px color-mix(in srgb, var(--al-focus) 25%, transparent); }
+.has-error .al-input { border-color: var(--al-danger); }
+.al-error { margin: 0; font-size: 13px; color: var(--al-danger); }
+.al-hint { margin: 0; font-size: 13px; color: var(--al-muted); }
+
+.al-password { position: relative; }
+.al-password .al-input { padding-right: 52px; }
+.al-reveal {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  width: 40px; height: 40px; display: grid; place-items: center;
+  border: 0; border-radius: 10px; background: transparent; color: var(--al-muted);
+  cursor: pointer;
+}
+.al-reveal:hover { color: var(--al-text); background: color-mix(in srgb, var(--al-focus) 12%, transparent); }
+.al-reveal svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.al-reveal .al-eye-off, .al-reveal[aria-pressed="true"] .al-eye { display: none; }
+.al-reveal[aria-pressed="true"] .al-eye-off { display: block; }
+
+.al-submit {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 50px; margin-top: 4px;
+  border: 0; border-radius: 12px;
+  font: 600 16px/1 "Inter", sans-serif; color: #fff;
+  background: linear-gradient(135deg, var(--al-purple), var(--al-plum));
+  box-shadow: 0 10px 24px rgba(91, 33, 182, 0.35);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.al-submit:hover { filter: brightness(1.08); box-shadow: 0 14px 30px rgba(91, 33, 182, 0.45); }
+.al-submit:active { transform: translateY(1px); }
+.al-submit[aria-busy="true"] { cursor: progress; filter: saturate(0.85); }
+.al-spinner {
+  display: none; width: 18px; height: 18px; border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.35); border-top-color: #fff;
+  animation: al-spin 0.8s linear infinite;
+}
+.al-submit[aria-busy="true"] .al-spinner { display: inline-block; }
+@keyframes al-spin { to { transform: rotate(360deg); } }
+.al-after { margin: 0; font-size: 13px; color: var(--al-muted); text-align: center; }
+
+.al-foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; font-size: 14px; color: var(--al-muted); padding-top: 4px; border-top: 1px solid var(--al-line); padding-block-start: 18px; }
+
+/* Keyboard focus that is always visible */
+a:focus-visible, button:focus-visible {
+  outline: 3px solid var(--al-focus);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+@media (max-width: 860px) {
+  .al-card { grid-template-columns: 1fr; max-width: 520px; }
+  .al-aside { display: none; }
+  .al-mobile-brand { display: inline-flex; }
+  .al-mobile-brand .cq-logo-word { color: var(--al-text); }
+}
+@media (max-width: 420px) {
+  .al-page { padding: 12px; place-items: start center; padding-top: 24px; }
+  .al-main { padding: 24px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation-duration: 0.01ms !important; }
+}

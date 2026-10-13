@@ -1,0 +1,27 @@
+/* Mission attempt review (Admin Command Center). Uses ops.css tokens. */
+.ma-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.ma-filters { align-items: flex-end; }
+.ma-filters label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.ma-filters .ma-wide { flex: 1 1 220px; }
+.ma-filters .ma-wide input { width: 100%; }
+/* ops.css gives search inputs flex: 1 1 180px; inside a column label that would set the height. */
+.ma-filters input[type="search"], .ma-filters input[type="number"], .ma-filters input[type="date"], .ma-filters select { flex: none; }
+.ma-range { display: flex; gap: 6px; }
+.ma-range input { width: 5.5em; }
+.ma-check { flex-direction: row !important; align-items: center; gap: 6px !important; padding-bottom: 8px; }
+.ma-actions { display: flex; gap: 10px; align-items: center; padding-bottom: 2px; }
+.ma-actions a { color: var(--muted); font-size: 13px; }
+.ma-table { min-width: 1080px; }
+.ma-table td { vertical-align: top; }
+.ma-email { color: var(--muted); word-break: break-all; }
+.ma-caption { caption-side: top; text-align: left; padding: 10px 14px; font-size: 12px; color: var(--muted); }
+.ma-o-completed { color: var(--good); background: var(--good-bg); border-color: transparent; }
+.ma-o-timed_out { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
+.ma-o-abandoned { color: var(--bad); background: var(--bad-bg); border-color: transparent; }
+.ma-o-active { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+@media (max-width: 1100px) { .ma-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .ma-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ma-filters label, .ma-filters .ma-wide { flex: 1 1 100%; }
+  .ma-range input { flex: 1; width: auto; }
+}

@@ -3,12 +3,12 @@ from .models import Badge, UserBadge
 
 def _perfect_score(user, game_key):
     from games.models import GameAttempt
-    return GameAttempt.objects.filter(user=user, game_key=game_key, score=5, total_questions=5).exists()
+    return GameAttempt.objects.filter(user=user, game_key=game_key, score=5, total_questions=5).finished().exists()
 
 
 def check_first_steps(user):
     from games.models import GameAttempt
-    return GameAttempt.objects.filter(user=user).exists()
+    return GameAttempt.objects.filter(user=user).finished().exists()
 
 
 def check_phishing_expert(user):
@@ -38,7 +38,7 @@ def check_network_guardian(user):
 def check_dedicated_learner(user):
     from games.models import GameAttempt
     from games.registry import playable_games
-    played = set(GameAttempt.objects.filter(user=user).values_list("game_key", flat=True))
+    played = set(GameAttempt.objects.filter(user=user).finished().values_list("game_key", flat=True))
     required = {g["key"] for g in playable_games()}
     return required.issubset(played)
 
@@ -89,7 +89,7 @@ def check_steady_practice(user):
 
 def check_ten_games(user):
     from games.models import GameAttempt
-    return GameAttempt.objects.filter(user=user).count() >= 10
+    return GameAttempt.objects.filter(user=user).finished().count() >= 10
 
 
 CHECKS = {

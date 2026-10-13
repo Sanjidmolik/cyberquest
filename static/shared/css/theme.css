@@ -170,14 +170,13 @@ body.cq-shell::before {
   align-items: center;
   gap: 6px;
   border: 1px solid var(--nav-edge);
-  background: rgba(255, 255, 255, .08);
+  background: rgba(255, 255, 255, .14);
   color: var(--nav-link);
   border-radius: 999px;
   padding: 7px 12px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 .cq-theme-toggle svg { width: 15px; height: 15px; }
 .cq-theme-toggle .ico-moon { display: none; }
@@ -350,19 +349,24 @@ body.cq-shell::before {
   z-index: 1;
   margin-top: 3rem;
   padding: 2.5rem 0 1.5rem;
-  border-top: 1px solid var(--border);
+  background: #241433;
+  color: #f6efe4;
+  border-top: 4px solid #120a18;
 }
 .cq-footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  grid-template-columns: 1.4fr repeat(4, 1fr);
   gap: 1.5rem;
 }
-.cq-footer h4 { margin: 0 0 0.75rem; font-size: 0.85rem; letter-spacing: .08em; text-transform: uppercase; }
+.cq-footer h4 { margin: 0 0 0.75rem; font-size: 0.85rem; letter-spacing: .08em; text-transform: uppercase; color: #fff8ea; }
 .cq-footer ul { list-style: none; margin: 0; padding: 0; }
 .cq-footer li { margin-bottom: 0.45rem; }
-.cq-footer a { color: var(--muted); }
-.cq-footer a:hover { color: var(--text); }
-.cq-copy { margin: 1.75rem 0 0; color: var(--muted); font-size: 0.85rem; }
+.cq-footer a,
+.cq-footer .cq-body,
+.cq-footer .cq-copy { color: #f0e6d6; }
+.cq-footer a:hover { color: #ffffff; }
+.cq-footer .cq-logo-word { color: #fff6e8; }
+.cq-copy { margin: 1.75rem 0 0; font-size: 0.85rem; }
 
 /* Login-page type: Bangers + stacked shadow on titles, logo, and buttons.
    Body copy stays Comic Neue. Code keeps the monospace stack below. */

@@ -8,11 +8,11 @@ from .question_sets import regenerate_auto_sets, ensure_set_slots
 @admin.register(GameAttempt)
 class GameAttemptAdmin(admin.ModelAdmin):
     list_display = (
-        "user", "game_key", "set_number", "score", "total_questions",
-        "xp_awarded", "completed_at",
+        "user", "game_key", "status", "set_number", "score", "total_questions",
+        "elapsed_seconds", "xp_awarded", "completed_at",
     )
-    list_filter = ("game_key", "set_number")
-    readonly_fields = ("completed_at",)
+    list_filter = ("game_key", "status", "set_number")
+    readonly_fields = ("completed_at", "started_at", "deadline_at")
 
 
 class QuestionSetItemInline(admin.TabularInline):

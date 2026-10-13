@@ -17,7 +17,7 @@ separate 2FA step here would be redundant friction, not extra security.
 """
 
 import secrets
-from django.contrib.auth import login, logout, get_user_model
+from django.contrib.auth import login, logout, get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -51,6 +51,9 @@ SIGNUP_CODE_PURPOSE = "email_signup"
 LOGIN_CODE_PURPOSE = "login_2fa"
 RESET_CODE_PURPOSE = "password_reset"
 GOOGLE_OAUTH_STATE_SESSION_KEY = "google_oauth_state"
+# Where to go after a second factor succeeds. Set only by the admin sign-in.
+POST_AUTH_NEXT_SESSION_KEY = "post_auth_next"
+PENDING_TOTP_SESSION_KEY = "pending_totp_secret"
 # True for a missing account and for a delivery failure, so the wording
 # does not reveal whether the address exists or claim that mail went out.
 RESET_REQUEST_MESSAGE = (
@@ -88,7 +91,10 @@ def _send_signup_code(request, user):
         messages.error(request, "Please wait a moment before requesting another code.")
         return False
     code = generate_code(user, purpose=SIGNUP_CODE_PURPOSE)
-    if not send_signup_verification_email(user, code.code):
+    if code.raw_code is None:
+        messages.info(request, "Enter the verification code we already sent to your email.")
+        return False
+    if not send_signup_verification_email(user, code.raw_code):
         clear_generation_cooldown(user, SIGNUP_CODE_PURPOSE)
         messages.error(request, "We could not send the verification email. Please try again.")
         return False
@@ -206,7 +212,11 @@ def login_view(request):
                     return redirect("accounts:verify_totp")
                 if user.email_2fa_enabled:
                     code = generate_code(user, purpose=LOGIN_CODE_PURPOSE)
-                    if not send_login_2fa_email(user, code.code):
+                    if code.raw_code is None:
+                        request.session[PENDING_LOGIN_SESSION_KEY] = user.pk
+                        messages.info(request, "Enter the code we already sent to your email.")
+                        return redirect("accounts:verify_login")
+                    if not send_login_2fa_email(user, code.raw_code):
                         clear_generation_cooldown(user, LOGIN_CODE_PURPOSE)
                         messages.error(
                             request,
@@ -224,13 +234,40 @@ def login_view(request):
     return render(request, "accounts/login.html", {"form": form})
 
 
+def _admin_target_allowed(user, target: str) -> bool:
+    """Superusers may go anywhere. Plain staff may only reach the Django admin."""
+    if user.is_superuser:
+        return True
+    return bool(user.is_staff) and target.startswith(reverse("admin:index"))
+
+
+def _finish_login(request, user):
+    """Log in after every required factor passed, then follow a stored admin target."""
+    target = request.session.pop(POST_AUTH_NEXT_SESSION_KEY, "")
+    login(request, user, backend="accounts.backends.EmailAuthBackend")
+    user.record_daily_activity()
+    if target and url_has_allowed_host_and_scheme(
+        url=target,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ) and _admin_target_allowed(user, target):
+        return redirect(target)
+    messages.success(request, f"Welcome back, {user.email}!")
+    return redirect(next_step_url_name(user))
+
+
 @rate_limit(key_prefix="admin_login", limit=20, window_seconds=900)
 def admin_login_view(request):
-    """Password sign-in for superusers. Students and staff are not signed in here."""
+    """Password sign-in for administrators, followed by the account's second factor.
+
+    Superusers reach the Command Center. Staff without superuser rights may
+    only continue to the Django admin. Students are refused.
+    """
     fallback = reverse("ops:overview")
     if request.user.is_authenticated:
-        if request.user.is_superuser:
-            return redirect(_safe_next(request, fallback))
+        target = _safe_next(request, fallback)
+        if _admin_target_allowed(request.user, target):
+            return redirect(target)
         return redirect(next_step_url_name(request.user))
 
     form = AdminLoginForm(request.POST or None)
@@ -245,12 +282,31 @@ def admin_login_view(request):
             messages.error(request, "Invalid email or password.")
         elif not user.is_active:
             messages.error(request, "This administrator account is suspended.")
-        elif not user.is_superuser:
+        elif not _admin_target_allowed(user, _safe_next(request, fallback)):
             messages.error(request, "This sign-in is only for CyberQuest administrators.")
         else:
-            login(request, user, backend="accounts.backends.EmailAuthBackend")
-            user.record_daily_activity()
-            return redirect(_safe_next(request, fallback))
+            target = _safe_next(request, fallback)
+            # The admin sign-in never skips the account's second factor.
+            if user.totp_enabled:
+                request.session.cycle_key()
+                request.session[PENDING_LOGIN_SESSION_KEY] = user.pk
+                request.session["pending_auth"] = "totp"
+                request.session[POST_AUTH_NEXT_SESSION_KEY] = target
+                return redirect("accounts:verify_totp")
+            if user.email_2fa_enabled:
+                code = generate_code(user, purpose=LOGIN_CODE_PURPOSE)
+                if code.raw_code is not None and not send_login_2fa_email(user, code.raw_code):
+                    clear_generation_cooldown(user, LOGIN_CODE_PURPOSE)
+                    messages.error(request, "We could not send the login verification email. Please try again.")
+                else:
+                    request.session.cycle_key()
+                    request.session[PENDING_LOGIN_SESSION_KEY] = user.pk
+                    request.session[POST_AUTH_NEXT_SESSION_KEY] = target
+                    return redirect("accounts:verify_login")
+            else:
+                login(request, user, backend="accounts.backends.EmailAuthBackend")
+                user.record_daily_activity()
+                return redirect(target)
     return render(request, "accounts/admin_login.html", {
         "form": form,
         "next": request.POST.get("next") or request.GET.get("next") or "",
@@ -272,7 +328,9 @@ def verify_login_pin(request):
     if request.method == "POST":
         if "resend" in request.POST:
             code = generate_code(user, purpose=LOGIN_CODE_PURPOSE)
-            if send_login_2fa_email(user, code.code):
+            if code.raw_code is None:
+                messages.error(request, "Please wait a moment before requesting another code.")
+            elif send_login_2fa_email(user, code.raw_code):
                 messages.success(request, "A new code has been sent to your email.")
             else:
                 clear_generation_cooldown(user, LOGIN_CODE_PURPOSE)
@@ -284,10 +342,7 @@ def verify_login_pin(request):
             submitted_code = request.POST.get("code", "")
             if check_code(user, purpose=LOGIN_CODE_PURPOSE, submitted_code=submitted_code):
                 del request.session[PENDING_LOGIN_SESSION_KEY]
-                login(request, user, backend="accounts.backends.EmailAuthBackend")
-                user.record_daily_activity()
-                messages.success(request, f"Welcome back, {user.email}!")
-                return redirect(next_step_url_name(user))
+                return _finish_login(request, user)
             else:
                 messages.error(request, "Incorrect or expired code. Please try again.")
 
@@ -301,7 +356,10 @@ def forgot_password_view(request):
         user = UserModel.objects.filter(email__iexact=email).first()
         if user is not None and user.has_usable_password():
             code = generate_code(user, purpose=RESET_CODE_PURPOSE)
-            if send_password_reset_email(user, code.code):
+            if code.raw_code is None:
+                # A code sent moments ago is still valid. Do not send another.
+                request.session[PENDING_RESET_SESSION_KEY] = user.pk
+            elif send_password_reset_email(user, code.raw_code):
                 request.session[PENDING_RESET_SESSION_KEY] = user.pk
             else:
                 # The code never left the server. Drop it so a later request
@@ -575,8 +633,15 @@ def _totp_register_failure(request) -> None:
         request.session["totp_fails"] = 0
 
 
+@rate_limit(key_prefix="verify_totp", limit=30, window_seconds=900)
 def verify_totp_login(request):
-    from .totp import consume_recovery_code, verify_totp
+    from .totp import (
+        clear_user_failures,
+        consume_recovery_code,
+        register_user_failure,
+        user_locked,
+        verify_user_totp,
+    )
 
     pending_user_id = request.session.get(PENDING_LOGIN_SESSION_KEY)
     if request.session.get("pending_auth") != "totp" or not pending_user_id:
@@ -589,21 +654,20 @@ def verify_totp_login(request):
         return redirect("accounts:login")
 
     if request.method == "POST":
-        if _totp_locked(request):
-            messages.error(request, "Too many attempts. Wait five minutes and try again.")
+        if _totp_locked(request) or user_locked(user):
+            messages.error(request, "Too many attempts. Wait a few minutes and try again.")
         else:
             code = request.POST.get("code", "")
-            ok = verify_totp(user.totp_secret, code) or consume_recovery_code(user, code)
+            ok = verify_user_totp(user, code) or consume_recovery_code(user, code)
             if ok:
                 request.session.pop(PENDING_LOGIN_SESSION_KEY, None)
                 request.session.pop("pending_auth", None)
                 request.session.pop("totp_fails", None)
                 request.session.pop("totp_lock_until", None)
-                login(request, user, backend="accounts.backends.EmailAuthBackend")
-                user.record_daily_activity()
-                messages.success(request, f"Welcome back, {user.email}!")
-                return redirect(next_step_url_name(user))
+                clear_user_failures(user)
+                return _finish_login(request, user)
             _totp_register_failure(request)
+            register_user_failure(user)
             messages.error(request, "Incorrect authenticator or recovery code.")
     return render(request, "accounts/verify_totp.html", {"email": user.email})
 
@@ -627,22 +691,35 @@ def email_2fa_toggle(request):
     return redirect("accounts:settings")
 
 
+def _pending_totp_secret(request) -> str:
+    from .crypto import SecretDecryptionError, decrypt_secret
+
+    stored = request.session.get(PENDING_TOTP_SESSION_KEY) or ""
+    try:
+        return decrypt_secret(stored)
+    except SecretDecryptionError:
+        request.session.pop(PENDING_TOTP_SESSION_KEY, None)
+        return ""
+
+
 @login_required(login_url="/accounts/login/")
 def totp_start(request):
     import base64
     import io
     import qrcode
+    from .crypto import encrypt_secret
     from .totp import new_secret, provisioning_uri
 
     if request.user.totp_enabled:
         messages.info(request, "Two-factor authentication is already enabled.")
         return redirect("accounts:settings")
-    secret = request.session.get("pending_totp_secret")
+    secret = _pending_totp_secret(request)
     if request.method == "POST" or not secret:
         if request.method != "POST":
             return redirect("accounts:settings")
         secret = new_secret()
-        request.session["pending_totp_secret"] = secret
+        # Sessions live in the database, so the enrollment secret is encrypted there too.
+        request.session[PENDING_TOTP_SESSION_KEY] = encrypt_secret(secret)
     uri = provisioning_uri(secret, request.user.email)
     image = qrcode.make(uri)
     buffer = io.BytesIO()
@@ -658,7 +735,7 @@ def totp_start(request):
 def totp_confirm(request):
     from .totp import issue_recovery_codes, verify_totp
 
-    secret = request.session.get("pending_totp_secret")
+    secret = _pending_totp_secret(request)
     if not secret:
         messages.error(request, "Start two-factor setup again.")
         return redirect("accounts:settings")
@@ -672,18 +749,21 @@ def totp_confirm(request):
         messages.error(request, "That code did not match. Two-factor authentication is still off.")
         return redirect("accounts:settings")
     user = request.user
-    user.totp_secret = secret
+    user.set_totp_secret(secret)
     user.totp_enabled = True
-    user.save(update_fields=["totp_secret", "totp_enabled"])
+    # Sessions opened before 2FA existed are signed out. This one stays.
+    user.rotate_security_stamp()
+    user.save(update_fields=["totp_secret", "totp_enabled", "totp_last_used_step", "security_stamp"])
+    update_session_auth_hash(request, user)
     codes = issue_recovery_codes(user)
-    request.session.pop("pending_totp_secret", None)
+    request.session.pop(PENDING_TOTP_SESSION_KEY, None)
     request.session.pop("totp_fails", None)
     return render(request, "accounts/totp_recovery.html", {"codes": codes})
 
 
 @login_required(login_url="/accounts/login/")
 def totp_disable(request):
-    from .totp import verify_totp
+    from .totp import verify_user_totp
 
     if request.method != "POST":
         return redirect("accounts:settings")
@@ -691,13 +771,15 @@ def totp_disable(request):
     password = request.POST.get("password", "")
     code = request.POST.get("code", "")
     password_ok = user.has_usable_password() and user.check_password(password)
-    code_ok = verify_totp(user.totp_secret, code)
+    code_ok = (not password_ok) and verify_user_totp(user, code)
     if not password_ok and not code_ok:
         messages.error(request, "Enter your password or a current authenticator code to turn off 2FA.")
         return redirect("accounts:settings")
     user.totp_enabled = False
-    user.totp_secret = ""
-    user.save(update_fields=["totp_enabled", "totp_secret"])
+    user.set_totp_secret("")
+    user.rotate_security_stamp()
+    user.save(update_fields=["totp_enabled", "totp_secret", "totp_last_used_step", "security_stamp"])
+    update_session_auth_hash(request, user)
     user.recovery_codes.all().delete()
     messages.success(request, "Two-factor authentication is now off.")
     return redirect("accounts:settings")
@@ -717,3 +799,83 @@ def profile_photo(request, pk):
     if response is None:
         raise Http404("Profile photo not found.")
     return response
+
+
+# ============================================================
+# PERSONAL DATA: EXPORT AND ACCOUNT DELETION
+# ============================================================
+
+DELETE_CONFIRM_PHRASE = "DELETE"
+# Accounts with no password prove presence by having signed in recently.
+PASSWORDLESS_REAUTH_MINUTES = 15
+
+
+@login_required(login_url="/accounts/login/")
+@rate_limit(key_prefix="data_export", limit=10, window_seconds=3600)
+def data_export(request):
+    """Download the signed-in user's own data. Built in memory; nothing is stored."""
+    from django.http import HttpResponse, HttpResponseNotAllowed
+    from django.utils import timezone
+
+    from .privacy import export_json_bytes, export_zip_bytes
+
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+    stamp = timezone.now().strftime("%Y%m%d")
+    if request.POST.get("format") == "csv":
+        response = HttpResponse(export_zip_bytes(request.user), content_type="application/zip")
+        response["Content-Disposition"] = f'attachment; filename="cyberquest-data-{stamp}.zip"'
+    else:
+        response = HttpResponse(export_json_bytes(request.user), content_type="application/json; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="cyberquest-data-{stamp}.json"'
+    response["Cache-Control"] = "no-store, private"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+def _deletion_errors(request, user) -> list[str]:
+    from django.utils import timezone
+
+    from .totp import consume_recovery_code, verify_user_totp
+
+    errors = []
+    if (request.POST.get("confirm") or "").strip() != DELETE_CONFIRM_PHRASE:
+        errors.append(f'Type {DELETE_CONFIRM_PHRASE} in capital letters to confirm.')
+    if user.has_usable_password():
+        if not user.check_password(request.POST.get("password", "")):
+            errors.append("Your password is incorrect.")
+    else:
+        recent = user.last_login and (
+            timezone.now() - user.last_login
+        ).total_seconds() <= PASSWORDLESS_REAUTH_MINUTES * 60
+        if not recent:
+            errors.append("Sign out and sign in again with Google, then delete the account within 15 minutes.")
+    if user.totp_enabled and not errors:
+        code = request.POST.get("code", "")
+        if not (verify_user_totp(user, code) or consume_recovery_code(user, code)):
+            errors.append("Enter a current authenticator code or an unused recovery code.")
+    return errors
+
+
+@login_required(login_url="/accounts/login/")
+@rate_limit(key_prefix="delete_account", limit=10, window_seconds=3600)
+def delete_account_view(request):
+    from .privacy import delete_account
+
+    user = request.user
+    blocked = user.is_superuser or user.is_staff
+    errors = []
+    if request.method == "POST" and not blocked:
+        errors = _deletion_errors(request, user)
+        if not errors:
+            delete_account(user)
+            logout(request)
+            messages.success(request, "Your CyberQuest account and its data have been deleted.")
+            return redirect("pages:home")
+    return render(request, "accounts/delete_account.html", {
+        "errors": errors,
+        "blocked": blocked,
+        "has_password": user.has_usable_password(),
+        "totp_enabled": user.totp_enabled,
+        "confirm_phrase": DELETE_CONFIRM_PHRASE,
+    }, status=400 if errors else 200)

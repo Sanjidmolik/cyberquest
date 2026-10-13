@@ -7,6 +7,8 @@ from .utils import get_dashboard_context, build_radar_points
 
 @login_required(login_url="/accounts/login/")
 def dashboard_home(request):
+    from games.attempts import finalize_expired_attempts
+    finalize_expired_attempts(user=request.user)
     context = get_dashboard_context(request.user)
     radar_skills = [s for s in context["skill_matrix"] if not s.get("coming_soon")]
     percentages = [s["percent"] for s in radar_skills]

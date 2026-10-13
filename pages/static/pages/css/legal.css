@@ -1,0 +1,21 @@
+/* Privacy Policy, Terms and notices. Builds on shared/css/theme.css tokens. */
+.cq-legal { max-width: 860px; padding-block: 1.5rem 3rem; }
+.cq-legal .cq-section-title { margin-top: 2rem; scroll-margin-top: 5rem; }
+.cq-legal-meta { color: var(--muted); font-size: 0.9rem; margin: 0 0 1.25rem; }
+.cq-legal-toc {
+  display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem;
+  padding: 0.85rem 1rem; margin: 1rem 0 0.5rem;
+  border: 1px solid var(--line, rgba(181, 125, 236, 0.25)); border-radius: 12px;
+  font-size: 0.9rem;
+}
+.cq-legal-toc a, .cq-legal a { color: var(--lilac); text-underline-offset: 2px; }
+.cq-legal-list { margin: 0 0 1rem; padding-left: 1.2rem; line-height: 1.6; }
+.cq-legal-list li { margin-bottom: 0.45rem; }
+.cq-legal-table-wrap { overflow-x: auto; margin: 0.5rem 0 1rem; }
+.cq-legal-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 520px; }
+.cq-legal-table th, .cq-legal-table td {
+  text-align: left; vertical-align: top; padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--line, rgba(181, 125, 236, 0.2));
+}
+.cq-legal-table th { font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.cq-legal code { font-size: 0.88em; }

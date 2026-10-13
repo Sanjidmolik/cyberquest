@@ -14,9 +14,9 @@ from certificates.services.generator import (
     generate_certificate_pdf,
     page_metrics,
     pdf_bytes_to_png,
+    template_design_path,
 )
 from certificates.services.qr import build_verification_url
-from cyberquest.media_access import stored_file_path
 
 from .ops_access import superuser_required
 from .ops_views import _shell
@@ -24,11 +24,6 @@ from .ops_views import _shell
 SAMPLE_NAME = "Sample Learner"
 SAMPLE_SCORE = 85
 SAMPLE_ID = "SAMPLE-ONLY"
-
-
-def _file_path(template):
-    stored = stored_file_path(template.pdf_file)
-    return str(stored) if stored else None
 
 
 @superuser_required
@@ -84,17 +79,17 @@ def template_edit(request, pk):
 @require_POST
 def template_activate(request, pk):
     template = get_object_or_404(CertificateTemplate, pk=pk)
-    path = _file_path(template)
-    if path is None:
-        messages.error(request, "This template file is missing.")
-        return redirect("ops:certificate_template_edit", pk=pk)
-    config = editor_field_config(path, template.template_kind, template.field_config or {})
-    problems = []
-    try:
-        from certificates.layout import activation_errors
-        problems = activation_errors(path, template.template_kind, config)
-    except Exception as exc:
-        problems = [str(exc)]
+    with template_design_path(template) as path:
+        if path is None:
+            messages.error(request, "This template file is missing.")
+            return redirect("ops:certificate_template_edit", pk=pk)
+        config = editor_field_config(path, template.template_kind, template.field_config or {})
+        problems = []
+        try:
+            from certificates.layout import activation_errors
+            problems = activation_errors(path, template.template_kind, config)
+        except Exception as exc:
+            problems = [str(exc)]
     if problems:
         for problem in problems:
             messages.error(request, problem)
@@ -129,17 +124,16 @@ def template_delete(request, pk):
 @require_http_methods(["GET", "HEAD"])
 def template_artwork(request, pk):
     template = get_object_or_404(CertificateTemplate, pk=pk)
-    path = _file_path(template)
-    if path is None:
-        return HttpResponse(status=404)
-    if template.template_kind == "image":
+    with template_design_path(template) as path:
+        if path is None:
+            return HttpResponse(status=404)
         with open(path, "rb") as handle:
             payload = handle.read()
-        content_type = "image/png" if path.lower().endswith(".png") else "image/jpeg"
+    if template.template_kind == "image":
+        stored_name = (template.pdf_file.name or "").lower()
+        content_type = "image/png" if stored_name.endswith(".png") else "image/jpeg"
         return HttpResponse(payload, content_type=content_type)
-    with open(path, "rb") as handle:
-        png = pdf_bytes_to_png(handle.read(), zoom=2)
-    return HttpResponse(png, content_type="image/png")
+    return HttpResponse(pdf_bytes_to_png(payload, zoom=2), content_type="image/png")
 
 
 @superuser_required
@@ -165,15 +159,15 @@ def template_sample_preview(request, pk):
 
 
 def _editor_context(template):
-    path = _file_path(template)
-    if path is None:
-        return None
-    try:
-        report = placeholder_report(path, template.template_kind)
-        width, height = page_metrics(path, template.template_kind)
-    except Exception:
-        return None
-    config = editor_field_config(path, template.template_kind, template.field_config or {})
+    with template_design_path(template) as path:
+        if path is None:
+            return None
+        try:
+            report = placeholder_report(path, template.template_kind)
+            width, height = page_metrics(path, template.template_kind)
+        except Exception:
+            return None
+        config = editor_field_config(path, template.template_kind, template.field_config or {})
     return {
         "config": config,
         "page_width": width,

@@ -1,57 +1,107 @@
 {% extends "shared/base.html" %}
 {% load static %}
 
-{% block title %}{{ game.title }} — CyberQuest{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'games/css/games.css' %}">{% endblock %}
+{% block title %}{{ theme.title }} — CyberQuest{% endblock %}
+{% block body_class %} cq-mission-page{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'games/css/games.css' %}">
+<link rel="stylesheet" href="{% static 'games/mission-timer/css/mission-timer.css' %}?v=art2">
+{% endblock %}
 
 {% block content %}
-<div class="cq-container" style="max-width:750px;">
-  <div class="cq-page-card">
-    <h1 class="cq-heading cq-game-title">{{ game.emoji }} {{ game.title }}</h1>
-    <p class="cq-sub">{{ game.intro }}</p>
-    {% if set_number %}
-    <p style="margin:0 0 1.5rem;">
-      <span class="cq-set-pill">Question Set {{ set_number }}</span>
-      {% if game.set_type == "SIMULATION" %}
-      <span class="cq-set-pill cq-set-pill-warn">Simulation</span>
-      {% elif game.set_type == "NORMAL" %}
-      <span class="cq-set-pill cq-set-pill-info">Knowledge</span>
-      {% endif %}
-      {% if game.set_title %}<span class="text-muted" style="margin-left:0.5rem;">{{ game.set_title }}</span>{% endif %}
-    </p>
-    {% endif %}
+<div class="cq-mission" data-theme="{{ theme.slug }}" data-phase="{{ phase }}">
+  <div class="cq-board">
+    <section class="cq-stage" aria-label="{{ theme.title }}">
+      <div class="cq-stage-copy">
+        <p class="cq-mission-kicker">{{ theme.number }}</p>
+        <h1>{{ theme.title }}</h1>
+        <div class="cq-bubble cq-speech">
+          <p>{{ game.intro }}</p>
+        </div>
+      </div>
+      {% include "games/components/mission_art.html" %}
+      <div class="cq-stage-clock">
+        {% include "games/components/mission_timer.html" with mirror=True %}
+      </div>
+      <aside class="cq-stage-tip">
+        <div class="cq-bubble cq-bubble-tip">
+          <p class="cq-tip-label">Tip</p>
+          <p>{{ theme.tip }}</p>
+        </div>
+        {% if phase == "intro" %}
+        <p class="cq-mission-meta">{{ question_count }} questions · {{ limit_seconds }} seconds. The clock starts when you begin.</p>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="start">
+          <button type="submit" class="cq-ink-btn">Begin mission</button>
+        </form>
+        {% else %}
+        <p class="cq-mission-meta">Answer before the clock stops. Unanswered questions are marked incorrect.</p>
+        {% if set_number %}<p class="cq-mission-meta">Question Set {{ set_number }}</p>{% endif %}
+        {% endif %}
+      </aside>
+    </section>
 
-    <form method="post">
+    <div class="cq-timer-dock">
+      {% include "games/components/mission_timer.html" %}
+    </div>
+
+    {% if phase == "play" %}
+    <form method="post" class="cq-mission-quiz" id="mission-quiz" data-question-count="{{ questions|length }}">
       {% csrf_token %}
+      <input type="hidden" name="action" value="submit" data-action-field>
+      <div class="cq-progress-row">
+        <p data-progress>Question 1 of {{ questions|length }}</p>
+        <div class="cq-progress-track" aria-hidden="true"><span data-progress-fill></span></div>
+      </div>
       {% for q in questions %}
-      <div class="cq-quiz-card mb-4">
+      <fieldset class="cq-question{% if forloop.first %} is-active{% endif %}" data-question {% if not forloop.first %}hidden{% endif %}>
+        <legend class="cq-sr-only">Question {{ forloop.counter }}</legend>
         {% if q.scenario %}
-        <div class="cq-scenario mb-3">
+        <div class="cq-scenario">
           {% if q.scenario.title %}<strong>{{ q.scenario.title }}</strong>{% endif %}
-          {% if q.scenario.context %}<p class="mb-2 mt-1">{{ q.scenario.context|linebreaksbr }}</p>{% endif %}
-          {% if q.scenario.sender %}<div><small class="text-muted">From:</small> {{ q.scenario.sender }}</div>{% endif %}
-          {% if q.scenario.subject %}<div><small class="text-muted">Subject:</small> {{ q.scenario.subject }}</div>{% endif %}
-          {% if q.scenario.body %}<div class="mt-2">{{ q.scenario.body|linebreaksbr }}</div>{% endif %}
-          {% if q.scenario.url %}<div class="mt-1"><small class="text-muted">URL:</small> <code>{{ q.scenario.url }}</code></div>{% endif %}
-          {% if q.scenario.log_entry %}<pre class="mt-2 mb-0 small">{{ q.scenario.log_entry }}</pre>{% endif %}
-          {% if q.scenario.alert %}<div class="mt-1"><small class="text-muted">Alert:</small> {{ q.scenario.alert }}</div>{% endif %}
-          {% if q.scenario.network_event %}<div class="mt-1">{{ q.scenario.network_event }}</div>{% endif %}
-          {% if q.scenario.ciphertext %}<pre class="mt-2 mb-0 small">{{ q.scenario.ciphertext }}</pre>{% endif %}
-          {% if q.scenario.public_information_scenario %}<div class="mt-1">{{ q.scenario.public_information_scenario }}</div>{% endif %}
-          {% if q.scenario.password_scenario %}<div class="mt-1">{{ q.scenario.password_scenario }}</div>{% endif %}
+          {% if q.scenario.context %}<p>{{ q.scenario.context|linebreaksbr }}</p>{% endif %}
+          {% if q.scenario.sender %}<p>From: {{ q.scenario.sender }}</p>{% endif %}
+          {% if q.scenario.subject %}<p>Subject: {{ q.scenario.subject }}</p>{% endif %}
+          {% if q.scenario.body %}<p>{{ q.scenario.body|linebreaksbr }}</p>{% endif %}
+          {% if q.scenario.url %}<p>URL: <code>{{ q.scenario.url }}</code></p>{% endif %}
+          {% if q.scenario.log_entry %}<pre>{{ q.scenario.log_entry }}</pre>{% endif %}
+          {% if q.scenario.alert %}<p>Alert: {{ q.scenario.alert }}</p>{% endif %}
+          {% if q.scenario.network_event %}<p>{{ q.scenario.network_event }}</p>{% endif %}
+          {% if q.scenario.ciphertext %}<pre>{{ q.scenario.ciphertext }}</pre>{% endif %}
+          {% if q.scenario.public_information_scenario %}<p>{{ q.scenario.public_information_scenario }}</p>{% endif %}
+          {% if q.scenario.password_scenario %}<p>{{ q.scenario.password_scenario }}</p>{% endif %}
         </div>
         {% endif %}
-        <p class="cq-quiz-prompt">{{ forloop.counter }}. {{ q.prompt|linebreaksbr }}</p>
-        {% for option in q.options %}
-        <label class="cq-quiz-option">
-          <input type="radio" name="question_{{ q.id }}" value="{{ forloop.counter0 }}" required>
-          <span>{{ option }}</span>
-        </label>
-        {% endfor %}
-      </div>
+        <p class="cq-prompt" id="prompt-{{ q.id }}" tabindex="-1">{{ q.prompt|linebreaksbr }}</p>
+        <div class="cq-options" role="radiogroup" aria-labelledby="prompt-{{ q.id }}">
+          {% for option in q.options %}
+          <label class="cq-option">
+            <input type="radio" name="question_{{ q.id }}" value="{{ forloop.counter0 }}">
+            <span class="cq-letter" aria-hidden="true"></span>
+            <span class="cq-option-text">{{ option }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
       {% endfor %}
-      <button type="submit" class="cq-btn w-100 mt-3">Submit Answers</button>
+      <div class="cq-quiz-nav">
+        <button type="button" class="cq-ink-btn cq-ink-btn-ghost" data-prev disabled>Previous</button>
+        <button type="button" class="cq-ink-btn" data-next>Next</button>
+        <button type="submit" class="cq-ink-btn" data-submit hidden>Submit answers</button>
+      </div>
     </form>
+    {{ saved_answers|json_script:"saved-answers" }}
+    {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if phase == "play" %}
+<script src="{% static 'games/mission-timer/js/analog-clock.js' %}"></script>
+<script src="{% static 'games/mission-timer/js/comic-effects.js' %}"></script>
+<script src="{% static 'games/mission-timer/js/timer-controller.js' %}"></script>
+<script src="{% static 'games/mission-timer/js/mission-timer.js' %}"></script>
+{% endif %}
 {% endblock %}

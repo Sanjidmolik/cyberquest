@@ -1,0 +1,153 @@
+{% extends "dashboard/ops/base.html" %}
+{% load static %}
+{% block ops_head %}
+<link rel="stylesheet" href="{% static 'dashboard/css/mission-analytics.css' %}">
+{% endblock %}
+{% block ops_content %}
+<p class="ops-note">Times and scores come from finished mission attempts. The clock deadline is stored on the server. Attempts saved before timing existed stay in the totals and are left out of speed averages and the qualifying leaderboard. Fast completion is not treated as overall achievement: the default table only includes completed attempts at or above {{ report.summary.threshold }}%.</p>
+
+<form class="ops-filters" method="get">
+  <label>Mission
+    <select name="mission">
+      <option value="">All playable missions</option>
+      {% for mission in report.missions %}
+      <option value="{{ mission.key }}"{% if report.filters.mission == mission.key %} selected{% endif %}>{{ mission.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>From <input type="date" name="start" value="{{ report.filters.start }}"></label>
+  <label>To <input type="date" name="end" value="{{ report.filters.end }}"></label>
+  <label>Show
+    <select name="view">
+      <option value="qualifying"{% if report.filters.view == "qualifying" %} selected{% endif %}>Qualifying attempts</option>
+      <option value="best"{% if report.filters.view == "best" %} selected{% endif %}>Best qualifying attempt per learner</option>
+      <option value="all"{% if report.filters.view == "all" %} selected{% endif %}>All finished attempts</option>
+    </select>
+  </label>
+  <label>Sort
+    <select name="sort">
+      <option value="duration"{% if report.filters.sort == "duration" %} selected{% endif %}>Duration</option>
+      <option value="score"{% if report.filters.sort == "score" %} selected{% endif %}>Score</option>
+      <option value="date"{% if report.filters.sort == "date" %} selected{% endif %}>Date</option>
+    </select>
+  </label>
+  <label>Learner <input type="search" name="q" value="{{ report.filters.q }}" placeholder="Name or email"></label>
+  <button type="submit">Apply</button>
+</form>
+
+<section class="ops-kpis" aria-label="Mission timing summary">
+  <article class="ops-kpi"><strong>{{ report.summary.completed }}</strong><span>Completed attempts</span></article>
+  <article class="ops-kpi"><strong>{% if report.summary.average_time is not None %}{{ report.summary.average_time }}s{% else %}—{% endif %}</strong><span>Average completion time</span></article>
+  <article class="ops-kpi"><strong>{% if report.summary.median_time is not None %}{{ report.summary.median_time }}s{% else %}—{% endif %}</strong><span>Median completion time</span></article>
+  <article class="ops-kpi"><strong>{% if report.summary.average_score is not None %}{{ report.summary.average_score }}%{% else %}—{% endif %}</strong><span>Average score</span></article>
+  <article class="ops-kpi"><strong>{% if report.summary.completion_rate is not None %}{{ report.summary.completion_rate }}%{% else %}—{% endif %}</strong><span>Completion rate</span></article>
+  <article class="ops-kpi"><strong>{% if report.summary.timeout_rate is not None %}{{ report.summary.timeout_rate }}%{% else %}—{% endif %}</strong><span>Timeout rate</span></article>
+  <article class="ops-kpi"><strong>{{ report.summary.learners }}</strong><span>Unique learners</span></article>
+</section>
+<p class="ops-note">{{ report.summary.timed_records }} completed attempts have a measured duration. {{ report.summary.historical_without_time }} completed attempts have no stored duration. {{ report.summary.timed_out }} attempts timed out.</p>
+
+<section class="ops-panel">
+  <h2>Qualifying pace and score <span>· {{ report.mission_label }} · {{ report.summary.threshold }}% or better</span></h2>
+  {% if report.fastest %}
+  <div class="ma-callouts">
+    <article>
+      <p>{{ report.fastest.label }}</p>
+      <strong>{{ report.fastest.learner }}</strong>
+      <span>{{ report.fastest.mission }} · {{ report.fastest.seconds }}s · {{ report.fastest.percent }}% · {{ report.fastest.correct }}/{{ report.fastest.total }}</span>
+    </article>
+    <article>
+      <p>{{ report.highest.label }}</p>
+      <strong>{{ report.highest.learner }}</strong>
+      <span>{{ report.highest.mission }} · {{ report.highest.seconds }}s · {{ report.highest.percent }}% · {{ report.highest.correct }}/{{ report.highest.total }}</span>
+    </article>
+  </div>
+  {% else %}
+  <p class="ops-note">No qualifying timed attempts in this filter.</p>
+  {% endif %}
+</section>
+
+<section class="ops-panel">
+  <h2>Leaderboard</h2>
+  <p class="ops-note">Ranks follow the selected sort. Equal durations put the higher score first, then the earlier finish. Best-per-learner keeps one qualifying attempt: higher score, then shorter duration.</p>
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th>Rank</th><th>Learner</th><th>Mission</th><th>Duration</th><th>Score</th><th>Correct</th><th>Date</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in report.leaderboard %}
+        <tr>
+          <td>{{ row.rank }}</td>
+          <td>{{ row.learner }}</td>
+          <td>{{ row.mission }}</td>
+          <td>{% if row.seconds is not None %}{{ row.seconds }}s{% else %}—{% endif %}</td>
+          <td>{{ row.percent }}%</td>
+          <td>{{ row.correct }}/{{ row.total }}</td>
+          <td>{{ row.when|date:"Y-m-d H:i" }}</td>
+          <td>{{ row.status }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8">No attempts match this filter.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if report.page.paginator.num_pages > 1 %}
+  <p class="ma-pager">
+    {% if report.page.has_previous %}
+    <a href="?mission={{ report.filters.mission }}&start={{ report.filters.start }}&end={{ report.filters.end }}&view={{ report.filters.view }}&sort={{ report.filters.sort }}&q={{ report.filters.q|urlencode }}&page={{ report.page.previous_page_number }}">Previous</a>
+    {% endif %}
+    <span>Page {{ report.page.number }} of {{ report.page.paginator.num_pages }}</span>
+    {% if report.page.has_next %}
+    <a href="?mission={{ report.filters.mission }}&start={{ report.filters.start }}&end={{ report.filters.end }}&view={{ report.filters.view }}&sort={{ report.filters.sort }}&q={{ report.filters.q|urlencode }}&page={{ report.page.next_page_number }}">Next</a>
+    {% endif %}
+  </p>
+  {% endif %}
+</section>
+
+<section class="ops-panel">
+  <h2>Charts <span>· {{ report.mission_label }}</span></h2>
+  <div class="ma-charts">
+    <figure>
+      <figcaption>Average completion time by mission</figcaption>
+      <div id="chart-time" class="ma-chart" role="img" aria-label="Average completion time by mission"></div>
+    </figure>
+    <figure>
+      <figcaption>Score versus completion time. The horizontal line is {{ report.summary.threshold }}%. The vertical line is {{ report.summary.fast_mark }} seconds.</figcaption>
+      <div id="chart-scatter" class="ma-chart" role="img" aria-label="Score versus completion time"></div>
+    </figure>
+    <figure>
+      <figcaption>Completed attempts and timeouts by mission</figcaption>
+      <div id="chart-outcomes" class="ma-chart" role="img" aria-label="Completed versus timed out attempts"></div>
+    </figure>
+    <figure>
+      <figcaption>Completed attempts over time</figcaption>
+      <div id="chart-activity" class="ma-chart" role="img" aria-label="Completed attempts over time"></div>
+    </figure>
+    <figure>
+      <figcaption>Fastest qualifying learners · {{ report.mission_label }} · {{ report.summary.threshold }}%</figcaption>
+      <div id="chart-leaders" class="ma-chart" role="img" aria-label="Fastest qualifying learners"></div>
+    </figure>
+  </div>
+  <table class="ops-table ma-support">
+    <caption>Completion time and outcomes by mission</caption>
+    <thead><tr><th>Mission</th><th>Average seconds</th><th>Completed</th><th>Timed out</th></tr></thead>
+    <tbody>
+      {% for row in report.charts.by_mission %}
+      <tr>
+        <td>{{ row.name }}</td>
+        <td>{% if row.avg_time is not None %}{{ row.avg_time }}{% else %}—{% endif %}</td>
+        <td>{{ row.completed }}</td>
+        <td>{{ row.timed_out }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{{ report.charts|json_script:"mission-chart-data" }}
+{% endblock %}
+{% block ops_scripts %}
+<script src="{% static 'dashboard/js/mission-analytics.js' %}"></script>
+{% endblock %}

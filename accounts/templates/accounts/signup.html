@@ -79,6 +79,8 @@
       </div>
       {% if form.ethical_agreement.errors %}<p class="cq-msg cq-msg-error">{{ form.ethical_agreement.errors.0 }}</p>{% endif %}
 
+      <p class="cq-body cq-legal-consent" style="font-size:0.85rem;margin:0.25rem 0 0.9rem;">By creating an account you agree to the <a href="{% url 'pages:terms' %}" target="_blank" rel="noopener">Terms of Service</a> and confirm you have read the <a href="{% url 'pages:privacy' %}" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+
       <button type="submit" class="cq-btn" style="width:100%;">Create Account</button>
     </form>
 

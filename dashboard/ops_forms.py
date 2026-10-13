@@ -3,11 +3,12 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from courses.models import Course
+from courses.models import EBOOK_MAX_BYTES, Course
 from games.models import Question
 
 _PDF_TYPES = {"application/pdf", "application/x-pdf"}
-_MAX_PDF_BYTES = 20 * 1024 * 1024
+# Phase 1 — Step 7: same 25 MB limit as the model validator.
+_MAX_PDF_BYTES = EBOOK_MAX_BYTES
 
 
 class CourseManageForm(forms.ModelForm):
@@ -38,7 +39,7 @@ class CourseManageForm(forms.ModelForm):
             "short_description": "One line shown on the student course list.",
             "thumbnail": "Optional image on course cards. JPG, PNG, WEBP, or GIF, up to 2 MB.",
             "content": "Used when no PDF is uploaded. If both exist, students see the PDF.",
-            "pdf_file": "Optional PDF. Students page through the file in the reader.",
+            "pdf_file": "Optional PDF, up to 25 MB. Students page through the file in the reader.",
             "order": "Lower numbers appear first for students.",
             "is_published": "Published courses are visible to students. A draft stays hidden.",
         }
@@ -76,7 +77,7 @@ class CourseManageForm(forms.ModelForm):
             raise ValidationError("Upload a PDF file.")
         size = getattr(uploaded, "size", None)
         if size and size > _MAX_PDF_BYTES:
-            raise ValidationError("PDF must be 20 MB or smaller.")
+            raise ValidationError("PDF must be 25 MB or smaller.")
         header = b""
         if hasattr(uploaded, "read"):
             position = uploaded.tell() if hasattr(uploaded, "tell") else 0

@@ -154,6 +154,25 @@
     </form>
     {% endif %}
   </div>
+
+  <div class="cq-page-card" id="your-data" style="margin-top:1rem;">
+    <h2 class="cq-heading" style="font-size:1.5rem;">Your data</h2>
+    <p class="cq-body">Download a copy of your profile, mission attempts, practice, progress, badges, notifications, and certificate details. Passwords and two-factor secrets are never included.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin-bottom:0.9rem;">
+      <form method="post" action="{% url 'accounts:data_export' %}">
+        {% csrf_token %}
+        <input type="hidden" name="format" value="json">
+        <button type="submit" class="cq-btn cq-btn-ghost cq-btn-sm">Download JSON</button>
+      </form>
+      <form method="post" action="{% url 'accounts:data_export' %}">
+        {% csrf_token %}
+        <input type="hidden" name="format" value="csv">
+        <button type="submit" class="cq-btn cq-btn-ghost cq-btn-sm">Download CSV (ZIP)</button>
+      </form>
+    </div>
+    <p class="cq-body" style="margin-bottom:0.6rem;">Read how we handle this data in the <a href="{% url 'pages:privacy' %}" style="color:var(--lilac);font-weight:700;text-decoration:underline;">Privacy Policy</a> and the <a href="{% url 'pages:terms' %}" style="color:var(--lilac);font-weight:700;text-decoration:underline;">Terms of Service</a>.</p>
+    <a href="{% url 'accounts:delete_account' %}" class="cq-btn cq-btn-ghost cq-btn-sm" style="color:var(--danger);border-color:rgba(251,113,133,.45);">Delete my account</a>
+  </div>
 </div>
 {% endblock %}
 

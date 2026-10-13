@@ -720,6 +720,33 @@ def analytics(request):
 
 
 @superuser_required
+@require_http_methods(["GET", "HEAD"])
+def mission_attempts(request):
+    from .mission_attempts import attempts_report
+
+    params = request.GET.copy()
+    params.pop("page", None)
+    ctx = _shell(request, "mission_attempts", "Mission attempts")
+    ctx.update({
+        "report": attempts_report(request.GET, page_number=request.GET.get("page") or 1),
+        "querystring": params.urlencode(),
+        # The page is superuser-only already; emails are gated explicitly anyway.
+        "can_view_email": request.user.is_superuser,
+    })
+    return render(request, "dashboard/ops/mission_attempts.html", ctx)
+
+
+@superuser_required
+@require_http_methods(["GET", "HEAD"])
+def mission_analytics(request):
+    from .mission_analytics import mission_analytics_report
+
+    ctx = _shell(request, "mission_analytics", "Mission timing")
+    ctx["report"] = mission_analytics_report(request.GET)
+    return render(request, "dashboard/ops/mission_analytics.html", ctx)
+
+
+@superuser_required
 @require_http_methods(["GET", "HEAD", "POST"])
 def create_administrator(request):
     errors = {}

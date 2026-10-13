@@ -109,7 +109,7 @@ class EligibilityTests(TestCase):
         cert = issue_certificate_for_user(admin)
         self.assertTrue(cert.pdf_file)
         self.assertEqual(cert.score, 100)
-        self.assertRegex(cert.certificate_id, r"^CQ-\d{4}-[0-9A-F]{8}$")
+        self.assertRegex(cert.certificate_id, r"^CQ-\d{4}-[0-9A-F]{12}$")
 
     def test_staff_force_regenerates_with_new_template(self):
         from io import BytesIO
@@ -140,7 +140,7 @@ class CertificateIssuanceTests(TestCase):
 
     def test_certificate_id_unique_format(self):
         cert = issue_certificate_for_user(self.user)
-        self.assertRegex(cert.certificate_id, r"^CQ-\d{4}-[0-9A-F]{8}$")
+        self.assertRegex(cert.certificate_id, r"^CQ-\d{4}-[0-9A-F]{12}$")
         self.assertEqual(IssuedCertificate.objects.filter(certificate_id=cert.certificate_id).count(), 1)
 
     def test_generation_creates_pdf(self):

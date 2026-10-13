@@ -50,6 +50,8 @@ node_modules/
 # Django collected static files
 staticfiles/
 
+.verify/
+
 # User-uploaded media. Named course and certificate source files stay trackable.
 # Course-card uploads land here. The fallback image stays under courses/static.
 media/issued_certificates/

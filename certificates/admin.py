@@ -11,8 +11,10 @@ class ProtectedFileWidget(AdminFileWidget):
 
     template_name = "certificates/protected_file_input.html"
 
-    def __init__(self, url_name, attrs=None):
+    def __init__(self, url_name, attrs=None, arg_attr="pk"):
         self.url_name = url_name
+        # Model attribute used as the route argument (courses use their code).
+        self.arg_attr = arg_attr
         super().__init__(attrs)
 
     def get_context(self, name, value, attrs):
@@ -20,7 +22,7 @@ class ProtectedFileWidget(AdminFileWidget):
         instance = getattr(value, "instance", None)
         download_url = ""
         if instance is not None and getattr(instance, "pk", None):
-            download_url = reverse(self.url_name, args=[instance.pk])
+            download_url = reverse(self.url_name, args=[getattr(instance, self.arg_attr)])
         context["widget"]["download_url"] = download_url
         return context
 

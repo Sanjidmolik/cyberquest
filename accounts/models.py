@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.utils.crypto import salted_hmac
 
 
 class CustomUserManager(BaseUserManager):
@@ -53,7 +54,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     longest_streak = models.PositiveIntegerField(default=0)
     last_active_date = models.DateField(blank=True, null=True)
     totp_enabled = models.BooleanField(default=False)
-    totp_secret = models.CharField(max_length=64, blank=True, default="")
+    # Fernet ciphertext ("enc:v1:..."). Read and write through get/set_totp_secret.
+    totp_secret = models.CharField(max_length=255, blank=True, default="")
+    # Last accepted TOTP time step. A code for this step or earlier is a replay.
+    totp_last_used_step = models.BigIntegerField(blank=True, null=True)
+    # Mixed into the session hash. Changing it signs out every other session.
+    security_stamp = models.CharField(max_length=64, blank=True, default="")
     email_2fa_enabled = models.BooleanField(
         default=False,
         help_text="When on, password login emails a 6-digit code. Off unless the user turns it on.",
@@ -99,6 +105,29 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def display_name(self):
         return self.username or self.full_name or self.email.split("@")[0]
 
+    def get_totp_secret(self) -> str:
+        from .crypto import decrypt_secret
+        return decrypt_secret(self.totp_secret)
+
+    def set_totp_secret(self, raw: str) -> None:
+        from .crypto import encrypt_secret
+        self.totp_secret = encrypt_secret(raw) if raw else ""
+        self.totp_last_used_step = None
+
+    def rotate_security_stamp(self) -> None:
+        """Invalidate other sessions. Call update_session_auth_hash for the current one."""
+        import secrets
+        self.security_stamp = secrets.token_hex(16)
+
+    def _get_session_auth_hash(self, secret=None):
+        # An empty stamp gives Django's default hash, so existing sessions survive
+        # the upgrade. A new stamp changes the hash and ends other sessions.
+        key_salt = "django.contrib.auth.models.AbstractBaseUser.get_session_auth_hash"
+        value = self.password
+        if self.security_stamp:
+            value = f"{self.password}:{self.security_stamp}"
+        return salted_hmac(key_salt, value, secret=secret, algorithm="sha256").hexdigest()
+
 
 class VerificationCode(models.Model):
     PURPOSE_CHOICES = [
@@ -107,11 +136,15 @@ class VerificationCode(models.Model):
         ("email_signup", "Signup Email Verification"),
     ]
     user = models.ForeignKey("accounts.CustomUser", on_delete=models.CASCADE, related_name="verification_codes")
-    code = models.CharField(max_length=6)
+    # HMAC-SHA256 of the code, keyed by SECRET_KEY. The raw code is never stored.
+    code_hash = models.CharField(max_length=64, blank=True, default="")
     purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     is_used = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "purpose", "created_at"], name="accounts_vc_lookup_idx")]
 
     def is_valid(self):
         from django.utils import timezone

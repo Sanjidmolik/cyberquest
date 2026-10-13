@@ -11,16 +11,27 @@ Otherwise it falls back to whole QuestionSet selection / legacy QUIZ_GAMES.
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.http import Http404
+from django.http import Http404, JsonResponse
+from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 
 from .models import GameAttempt, SET_COURSE_KEYS
+from . import attempts as attempt_service
 from .registry import game_by_key
 from .quiz_data import QUIZ_GAMES
 from .question_sets import pick_set_for_user, ensure_set_slots
 from courses.progress import has_completed_all_courses
-from achievements.checks import check_and_award_badges
 
 XP_PER_CORRECT_ANSWER = 20
+
+
+def _apply_xp_and_level_up(user, xp_awarded):
+    old_level = user.level
+    user.xp += xp_awarded
+    user.level = (user.xp // 100) + 1
+    user.save(update_fields=["xp", "level"])
+    return user.level > old_level
+
 
 SESSION_QSET = "active_qset_{}"
 SESSION_QIDS = "active_attempt_qids_{}"
@@ -31,14 +42,6 @@ def _require_course_completed(request):
         messages.error(request, "Please complete the course introduction first.")
         return redirect("courses:intro")
     return None
-
-
-def _apply_xp_and_level_up(user, xp_awarded):
-    old_level = user.level
-    user.xp += xp_awarded
-    user.level = (user.xp // 100) + 1
-    user.save(update_fields=["xp", "level"])
-    return user.level > old_level
 
 
 def _legacy_game_bundle(game_key):
@@ -179,7 +182,93 @@ def _set_game_bundle(user, game_key):
     }
 
 
+def _bundle_for_start(request, game_key, uses_sets):
+    if uses_sets:
+        bundle = _balanced_game_bundle(request, game_key)
+        if bundle and bundle.get("_shortage"):
+            return None
+        if bundle is None:
+            bundle = _set_game_bundle(request.user, game_key)
+    else:
+        bundle = _legacy_game_bundle(game_key)
+    return bundle
+
+
+def _pin_bundle_session(request, game_key, bundle):
+    if not bundle:
+        return
+    if bundle.get("selection_mode") == "balanced" and bundle.get("selected_question_ids"):
+        request.session[SESSION_QIDS.format(game_key)] = bundle["selected_question_ids"]
+        request.session.pop(SESSION_QSET.format(game_key), None)
+    elif bundle.get("question_set") is not None:
+        request.session[SESSION_QSET.format(game_key)] = bundle["question_set"].pk
+        request.session.pop(SESSION_QIDS.format(game_key), None)
+
+
+def _clear_bundle_session(request, game_key):
+    request.session.pop(SESSION_QSET.format(game_key), None)
+    request.session.pop(SESSION_QIDS.format(game_key), None)
+
+
+def _announce_finish(request, attempt):
+    if attempt.xp_awarded:
+        messages.success(request, f"+{attempt.xp_awarded} XP earned!")
+    if getattr(attempt, "_leveled_up", False):
+        messages.success(request, f"Level up! You're now Level {request.user.level}.")
+    for badge in getattr(attempt, "_new_badges", []) or []:
+        messages.success(request, f"🏆 New badge unlocked: {badge.icon_emoji} {badge.name}!")
+
+
+def _nocache(response):
+    """Play and result pages must not be reused with a stale countdown."""
+    response["Cache-Control"] = "no-store, max-age=0"
+    response["Pragma"] = "no-cache"
+    return response
+
+
+def _render_result(request, attempt):
+    _announce_finish(request, attempt)
+    _clear_bundle_session(request, attempt.game_key)
+    payload = attempt_service.result_payload(attempt)
+    if getattr(attempt, "_prior_finish", None) is not None:
+        payload["already_completed"] = bool(attempt._prior_finish)
+    return _nocache(render(request, "games/quiz_result.html", payload))
+
+
+def _play_context(request, game_key, attempt):
+    questions = attempt_service.questions_for_attempt(attempt)
+    meta = QUIZ_GAMES.get(game_key) or {}
+    bundle = {
+        "title": meta.get("title", game_key),
+        "emoji": meta.get("emoji", "🎮"),
+        "intro": meta.get("intro", ""),
+        "questions": questions,
+        "set_number": attempt.set_number,
+        "set_type": attempt.selection_mode,
+        "set_title": "",
+    }
+    remaining_ms = 0
+    if attempt.deadline_at:
+        remaining_ms = max(0, int((attempt.deadline_at - timezone.now()).total_seconds() * 1000))
+    return {
+        "phase": "play",
+        "game": bundle,
+        "game_key": game_key,
+        "questions": questions,
+        "set_number": attempt.set_number,
+        "theme": attempt_service.theme_for(game_key),
+        "attempt": attempt,
+        "deadline_iso": attempt.deadline_at.isoformat() if attempt.deadline_at else "",
+        "server_now_iso": timezone.now().isoformat(),
+        "remaining_ms": remaining_ms,
+        "remaining_label": attempt_service.clock_label(remaining_ms),
+        "limit_seconds": attempt_service.mission_seconds(),
+        "saved_answers": attempt.answers or {},
+    }
+
+
 @login_required(login_url="/accounts/login/")
+@require_http_methods(["GET", "HEAD", "POST"])
 def quiz_game(request, game_key):
     meta = game_by_key(game_key)
     if meta and meta.get("coming_soon"):
@@ -190,164 +279,110 @@ def quiz_game(request, game_key):
     if blocked:
         return blocked
 
-    uses_sets = game_key in SET_COURSE_KEYS
-
-    if request.method == "POST":
-        return _grade_submission(request, game_key, uses_sets)
-
-    if uses_sets:
-        bundle = _balanced_game_bundle(request, game_key)
-        if bundle and bundle.get("_shortage"):
-            return redirect("dashboard:home")
-        if bundle is None:
-            bundle = _set_game_bundle(request.user, game_key)
-    else:
-        bundle = _legacy_game_bundle(game_key)
-
-    if bundle is None:
+    if game_key not in attempt_service.timed_game_keys():
         raise Http404("No such game.")
 
-    # Persist selection for refresh stability
-    if bundle.get("selection_mode") == "balanced" and bundle.get("selected_question_ids"):
-        request.session[SESSION_QIDS.format(game_key)] = bundle["selected_question_ids"]
-        request.session.pop(SESSION_QSET.format(game_key), None)
-    elif bundle.get("question_set") is not None:
-        request.session[SESSION_QSET.format(game_key)] = bundle["question_set"].pk
-        request.session.pop(SESSION_QIDS.format(game_key), None)
+    uses_sets = game_key in SET_COURSE_KEYS
 
-    return render(request, "games/quiz_game.html", {
-        "game": bundle,
-        "game_key": game_key,
-        "questions": bundle["questions"],
-        "set_number": bundle["set_number"],
-    })
+    if request.method == "GET" and request.GET.get("sync") == "1":
+        attempt = attempt_service.active_attempt(request.user, game_key)
+        if attempt is None or not attempt.deadline_at:
+            return JsonResponse({"running": False, "remaining_ms": 0})
+        remaining_ms = max(0, int((attempt.deadline_at - timezone.now()).total_seconds() * 1000))
+        return _nocache(JsonResponse({
+            "running": remaining_ms > 0,
+            "remaining_ms": remaining_ms,
+            "deadline": attempt.deadline_at.isoformat(),
+            "server_now": timezone.now().isoformat(),
+        }))
 
+    if request.method == "POST":
+        return _handle_quiz_post(request, game_key, uses_sets)
 
-def _grade_submission(request, game_key, uses_sets):
-    from .models import QuestionSet
-    from question_bank.services.selection import load_questions_by_ids
-
-    questions = []
-    qset = None
-    set_number = None
-    set_version = None
-    selected_ids: list[int] = []
-
-    if uses_sets:
-        qids = request.session.get(SESSION_QIDS.format(game_key)) or []
-        if qids:
-            loaded = load_questions_by_ids(qids)
-            if len(loaded) == len(qids):
-                questions = [q.to_quiz_dict() for q in loaded]
-                selected_ids = list(qids)
-            else:
-                messages.error(
-                    request,
-                    "Your attempt questions are no longer available. Please start again.",
+    attempt = attempt_service.active_attempt(request.user, game_key)
+    if attempt is not None:
+        if attempt.deadline_at and attempt.deadline_at <= timezone.now():
+            try:
+                finished = attempt_service.finish_attempt(
+                    attempt, attempt.answers or {}, attempt_service.METHOD_EXPIRY,
                 )
-                request.session.pop(SESSION_QIDS.format(game_key), None)
+            except attempt_service.AttemptQuestionsMissing:
+                messages.error(request, "This attempt's questions are no longer available.")
                 return redirect("dashboard:home")
-        else:
-            set_id = request.session.get(SESSION_QSET.format(game_key))
-            if set_id:
-                qset = QuestionSet.objects.filter(pk=set_id, course=game_key).first()
-            if qset and qset.is_usable:
-                questions = [q.to_quiz_dict() for q in qset.ordered_questions()]
-                set_number = qset.set_number
-                set_version = qset.version
-                selected_ids = [q["id"] for q in questions]
-            else:
-                bundle = _balanced_game_bundle(request, game_key)
-                if bundle and bundle.get("_shortage"):
-                    return redirect("dashboard:home")
-                if not bundle:
-                    bundle = _set_game_bundle(request.user, game_key)
-                if not bundle or not bundle["questions"]:
-                    messages.error(
-                        request,
-                        "No ready question set is available for this course yet.",
-                    )
-                    return redirect("dashboard:home")
-                questions = bundle["questions"]
-                qset = bundle["question_set"]
-                set_number = bundle["set_number"]
-                set_version = bundle["set_version"]
-                selected_ids = bundle.get("selected_question_ids") or []
-    else:
-        legacy = _legacy_game_bundle(game_key)
-        if not legacy:
-            raise Http404("No such game.")
-        questions = legacy["questions"]
+            return _render_result(request, finished)
+        questions = attempt_service.questions_for_attempt(attempt)
+        if not questions:
+            messages.error(request, "Your attempt questions are no longer available. Please start again.")
+            return redirect("dashboard:home")
+        return _nocache(render(request, "games/quiz_game.html", _play_context(request, game_key, attempt)))
 
-    score = 0
-    results = []
-    for question in questions:
-        submitted = request.POST.get(f"question_{question['id']}")
+    quiz_meta = QUIZ_GAMES.get(game_key) or {
+        "title": meta["name"] if meta else game_key,
+        "emoji": meta["emoji"] if meta else "🎮",
+        "intro": meta["description"] if meta else "",
+    }
+    from .game_config import get_game_question_config
+    return _nocache(render(request, "games/quiz_game.html", {
+        "phase": "intro",
+        "game": quiz_meta,
+        "game_key": game_key,
+        "questions": [],
+        "set_number": None,
+        "theme": attempt_service.theme_for(game_key),
+        "limit_seconds": attempt_service.mission_seconds(),
+        "remaining_label": attempt_service.clock_label(attempt_service.mission_seconds() * 1000),
+        "question_count": get_game_question_config(game_key)["attempt_size"],
+    }))
+
+
+def _handle_quiz_post(request, game_key, uses_sets):
+    action = (request.POST.get("action") or "submit").strip()
+    attempt = attempt_service.active_attempt(request.user, game_key)
+
+    if action == "start":
+        if attempt is not None and attempt.deadline_at and attempt.deadline_at > timezone.now():
+            return redirect(request.path)
+        bundle = _bundle_for_start(request, game_key, uses_sets)
+        if bundle is None or not bundle.get("questions"):
+            messages.error(request, "No ready question set is available for this mission yet.")
+            return redirect("dashboard:home")
+        _pin_bundle_session(request, game_key, bundle)
         try:
-            submitted_index = int(submitted)
-        except (TypeError, ValueError):
-            submitted_index = -1
+            started, outcome = attempt_service.start_attempt(request.user, game_key, bundle)
+        except attempt_service.AttemptQuestionsMissing:
+            messages.error(request, "This mission could not be started.")
+            return redirect("dashboard:home")
+        if outcome == "result":
+            return _render_result(request, started)
+        return redirect(request.path)
 
-        correct = submitted_index == question["correct_index"]
-        if correct:
-            score += 1
+    if attempt is None:
+        messages.error(request, "Start the mission before submitting answers.")
+        return redirect(request.path)
 
-        selected_answer = (
-            question["options"][submitted_index]
-            if 0 <= submitted_index < len(question["options"])
-            else "— no answer —"
-        )
-        correct_answer = question["options"][question["correct_index"]]
-        results.append({
-            "prompt": question["prompt"],
-            "correct": correct,
-            "selected_answer": selected_answer,
-            "correct_answer": correct_answer,
-            "explanation": question.get("explanation", ""),
-            "correct_feedback": question.get("correct_feedback", "Correct!"),
-            "wrong_feedback": question.get("wrong_feedback", "Incorrect."),
-        })
+    questions = attempt_service.questions_for_attempt(attempt)
+    if not questions:
+        messages.error(request, "Your attempt questions are no longer available. Please start again.")
+        _clear_bundle_session(request, game_key)
+        return redirect("dashboard:home")
 
-    total = len(questions)
-    already_completed = GameAttempt.objects.filter(user=request.user, game_key=game_key).exists()
+    posted = attempt_service.answers_from_post(questions, request.POST)
+    if action == "save":
+        updated = attempt_service.remember_answers(attempt, posted)
+        if updated.status != GameAttempt.STATUS_IN_PROGRESS:
+            return JsonResponse({"ok": False, "expired": True})
+        remaining_ms = 0
+        if updated.deadline_at:
+            remaining_ms = max(0, int((updated.deadline_at - timezone.now()).total_seconds() * 1000))
+        return JsonResponse({"ok": True, "remaining_ms": remaining_ms})
 
-    xp_awarded = 0
-    leveled_up = False
-    if not already_completed:
-        xp_awarded = score * XP_PER_CORRECT_ANSWER
-        leveled_up = _apply_xp_and_level_up(request.user, xp_awarded)
-
-    GameAttempt.objects.create(
-        user=request.user,
-        game_key=game_key,
-        score=score,
-        total_questions=total,
-        xp_awarded=xp_awarded,
-        question_set=qset,
-        set_number=set_number,
-        set_version=set_version,
-        selected_question_ids=selected_ids,
-    )
-
-    request.session.pop(SESSION_QSET.format(game_key), None)
-    request.session.pop(SESSION_QIDS.format(game_key), None)
-
-    if xp_awarded:
-        messages.success(request, f"+{xp_awarded} XP earned!")
-    if leveled_up:
-        messages.success(request, f"Level up! You're now Level {request.user.level}.")
-
-    for badge in check_and_award_badges(request.user):
-        messages.success(request, f"🏆 New badge unlocked: {badge.icon_emoji} {badge.name}!")
-
-    meta = QUIZ_GAMES.get(game_key) or {"title": game_key, "emoji": "🎮"}
-    return render(request, "games/quiz_result.html", {
-        "game": meta,
-        "score": score,
-        "total": total,
-        "percent": round(score / total * 100) if total else 0,
-        "results": results,
-        "xp_awarded": xp_awarded,
-        "already_completed": already_completed,
-        "set_number": set_number,
-    })
+    method = attempt_service.METHOD_TIMEOUT if action == "timeout" else attempt_service.METHOD_MANUAL
+    try:
+        finished = attempt_service.finish_attempt(attempt, posted, method)
+    except attempt_service.AttemptQuestionsMissing:
+        messages.error(request, "Your attempt questions are no longer available.")
+        return redirect("dashboard:home")
+    if finished.status == GameAttempt.STATUS_IN_PROGRESS:
+        messages.error(request, "This attempt could not be submitted.")
+        return redirect(request.path)
+    return _render_result(request, finished)

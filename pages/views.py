@@ -20,6 +20,43 @@ def about_view(request):
     return render(request, "pages/about.html")
 
 
+POLICY_UPDATED = "13 October 2026"
+
+
+def _legal_context():
+    from django.conf import settings
+
+    source_url = settings.SOURCE_CODE_URL
+    revision = settings.SOURCE_CODE_REVISION
+    revision_url = f"{source_url}/tree/{revision}" if source_url and revision else ""
+    return {
+        "operator_name": settings.LEGAL_OPERATOR_NAME,
+        "contact_email": settings.LEGAL_CONTACT_EMAIL,
+        "source_url": source_url,
+        "source_revision": revision[:12],
+        "source_revision_url": revision_url,
+        "policy_updated": POLICY_UPDATED,
+        "session_days": settings.SESSION_COOKIE_AGE // 86400,
+    }
+
+
+def privacy_view(request):
+    from accounts.codes import CODE_VALID_MINUTES
+    from accounts.retention import RETENTION
+
+    ctx = _legal_context()
+    ctx.update({"code_minutes": CODE_VALID_MINUTES, "retention": RETENTION})
+    return render(request, "pages/privacy.html", ctx)
+
+
+def terms_view(request):
+    return render(request, "pages/terms.html", _legal_context())
+
+
+def notices_view(request):
+    return render(request, "pages/notices.html", _legal_context())
+
+
 @rate_limit(key_prefix="contact", limit=8, window_seconds=3600)
 def contact_view(request):
     if request.method == "POST":

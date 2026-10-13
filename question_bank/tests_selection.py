@@ -225,6 +225,8 @@ class BalancedGameplayTests(TestCase):
 
     def test_refresh_keeps_same_question_ids(self):
         with patch("games.views.has_completed_all_courses", return_value=True):
+            started = self.client.post(reverse("games:phishing_simulator"), {"action": "start"})
+            self.assertEqual(started.status_code, 302)
             r1 = self.client.get(reverse("games:phishing_simulator"))
             self.assertEqual(r1.status_code, 200)
             ids1 = [q["id"] for q in r1.context["questions"]]
@@ -234,6 +236,7 @@ class BalancedGameplayTests(TestCase):
 
     def test_scoring_unchanged(self):
         with patch("games.views.has_completed_all_courses", return_value=True):
+            self.client.post(reverse("games:phishing_simulator"), {"action": "start"})
             res = self.client.get(reverse("games:phishing_simulator"))
             questions = res.context["questions"]
             post = {f"question_{q['id']}": str(q["correct_index"]) for q in questions}

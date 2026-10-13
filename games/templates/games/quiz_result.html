@@ -1,43 +1,115 @@
 {% extends "shared/base.html" %}
 {% load static %}
 
-{% block title %}Results — CyberQuest{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'games/css/games.css' %}">{% endblock %}
+{% block title %}{{ theme.title }} results — CyberQuest{% endblock %}
+{% block body_class %} cq-mission-page{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'games/mission-timer/css/mission-timer.css' %}?v=results1">
+<link rel="stylesheet" href="{% static 'games/mission-timer/css/mission-results.css' %}?v=results1">
+{% endblock %}
 
 {% block content %}
-<div class="cq-container" style="max-width:750px;">
-  <div class="cq-page-card">
-    <h1 class="cq-heading cq-game-title">{{ game.emoji }} {{ game.title }} — Results</h1>
-    {% if set_number %}
-    <p class="cq-sub">Question Set {{ set_number }}</p>
+<div class="cq-result" data-theme="{{ theme.slug }}" data-outcome="{{ outcome }}">
+  <article class="cq-result-sheet">
+    <header class="cq-result-head">
+      <p class="cq-result-kicker">{{ theme.number }} · Challenge results</p>
+      <h1>{{ theme.title }}</h1>
+      {% if set_number %}<p class="cq-result-set">Question set {{ set_number }}</p>{% endif %}
+    </header>
+
+    <div class="cq-result-hero">
+      <figure class="cq-result-art">
+        <img src="{% static 'games/mission-timer/assets/art/' %}{{ theme.slug }}.jpg" alt="{{ theme.art_alt }}" width="1200" height="900">
+      </figure>
+      <div class="cq-result-speech">
+        <p class="cq-result-bubble-title">{{ speech_headline }}</p>
+        <p>{{ speech_detail }}</p>
+      </div>
+      <div class="cq-result-scorebox" aria-label="Score {{ score }} out of {{ total }}, {{ percent }} percent accuracy">
+        <p class="cq-result-score">{{ score }} / {{ total }}</p>
+        <p class="cq-result-percent">{{ percent }}% accuracy</p>
+      </div>
+    </div>
+
+    <ul class="cq-result-stats">
+      <li>
+        <span class="cq-stat-value">{{ score }}</span>
+        <span class="cq-stat-label">Correct</span>
+      </li>
+      <li>
+        <span class="cq-stat-value">{{ incorrect_count }}</span>
+        <span class="cq-stat-label">Incorrect</span>
+      </li>
+      <li>
+        <span class="cq-stat-value">{{ timing.elapsed_label }}</span>
+        <span class="cq-stat-label">Time taken</span>
+      </li>
+      <li>
+        {% if xp_awarded %}
+        <span class="cq-stat-value">+{{ xp_awarded }}</span>
+        <span class="cq-stat-label">XP earned</span>
+        {% elif already_completed %}
+        <span class="cq-stat-value">0</span>
+        <span class="cq-stat-label">No new XP</span>
+        {% else %}
+        <span class="cq-stat-value">0</span>
+        <span class="cq-stat-label">XP earned</span>
+        {% endif %}
+      </li>
+    </ul>
+
+    {% if unanswered_count %}
+    <p class="cq-result-note">{{ unanswered_count }} question{{ unanswered_count|pluralize }} had no answer and {{ unanswered_count|pluralize:"is,are" }} counted as incorrect.</p>
     {% endif %}
 
-    <div class="cq-score-banner mb-4">
-      <span class="cq-score-big">{{ score }} / {{ total }}</span>
-      <span class="cq-score-label">correct ({{ percent }}%)</span>
-      {% if xp_awarded %}
-        <span class="cq-xp-pill">+{{ xp_awarded }} XP</span>
-      {% elif already_completed %}
-        <span class="cq-xp-pill cq-xp-pill-muted">Already completed — no XP awarded</span>
-      {% endif %}
-    </div>
+    {% if results %}
+    <section class="cq-result-review" id="answer-review" aria-labelledby="answer-review-title">
+      <div class="cq-review-bar">
+        <h2 id="answer-review-title">Answer Review</h2>
+        <button type="button" class="cq-review-toggle" data-review-toggle aria-expanded="true" aria-controls="answer-review-list">
+          View all answers ({{ results|length }})
+        </button>
+      </div>
+      <div id="answer-review-list">
+        {% for r in results %}
+        <article class="cq-review-card is-{{ r.status }}" {% if forloop.counter > 3 %}data-review-extra{% endif %}>
+          <p class="cq-review-q" tabindex="-1">
+            <span class="cq-review-num">{{ forloop.counter|stringformat:"02d" }}</span>
+            {{ r.prompt|linebreaksbr }}
+          </p>
+          {% if r.status == "correct" %}
+          <p class="cq-review-status">Correct. {{ r.correct_feedback }}</p>
+          {% elif r.status == "unanswered" %}
+          <p class="cq-review-status">Unanswered. {{ r.wrong_feedback }}</p>
+          {% else %}
+          <p class="cq-review-status">Incorrect. {{ r.wrong_feedback }}</p>
+          {% endif %}
+          <p class="cq-review-line">Your answer: {{ r.selected_answer }}</p>
+          {% if r.status != "correct" %}
+          <p class="cq-review-line">Correct answer: {{ r.correct_answer }}</p>
+          {% endif %}
+          {% if r.explanation %}
+          <p class="cq-review-explain">{{ r.explanation }}</p>
+          {% endif %}
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% else %}
+    <p class="cq-result-note">The questions from this attempt are no longer available. The score above is the recorded result.</p>
+    {% endif %}
 
-    {% for r in results %}
-    <div class="cq-result-card mb-3 {% if r.correct %}cq-result-correct{% else %}cq-result-wrong{% endif %}">
-      <p class="mb-1"><strong>{{ r.prompt|linebreaksbr }}</strong></p>
-      {% if r.correct %}
-        <p class="small mb-1">✅ {{ r.correct_feedback }}</p>
-        <p class="small mb-0 text-muted">{{ r.explanation }}</p>
-      {% else %}
-        <p class="small mb-1">❌ {{ r.wrong_feedback }}</p>
-        <p class="small mb-1">Your answer: <em>{{ r.selected_answer }}</em></p>
-        <p class="small mb-1">Correct answer: <strong>{{ r.correct_answer }}</strong></p>
-        <p class="small mb-0 text-muted">{{ r.explanation }}</p>
+    <div class="cq-result-actions">
+      <a class="cq-result-btn cq-result-btn-primary" href="{{ missions_url }}">Return to Missions</a>
+      {% if retry_url %}
+      <a class="cq-result-btn" href="{{ retry_url }}">Try Again</a>
       {% endif %}
+      <a class="cq-result-learn" href="{{ learn_url }}">Continue learning</a>
     </div>
-    {% endfor %}
-
-    <a href="{% url 'dashboard:home' %}" class="cq-btn mt-3">Back to Dashboard</a>
-  </div>
+  </article>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'games/mission-timer/js/mission-results.js' %}"></script>
 {% endblock %}

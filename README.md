@@ -62,6 +62,7 @@ Useful keys in `.env`:
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google sign-in |
 | `GEMINI_API_KEY` | AI question bank (optional) |
 | `PUBLIC_BASE_URL` | Public site origin for certificate QR links (e.g. `https://your-app.onrender.com`) |
+| `FIELD_ENCRYPTION_KEYS` | Fernet key for encrypting authenticator secrets (required in production) |
 
 ### 4. Migrate and run
 
@@ -90,10 +91,15 @@ Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
 
 ## Deployment notes
 
-- `build.sh` installs Python deps, runs `npm install`, `collectstatic`, and `migrate` (used on Render).
+- See **[DEPLOYMENT.md](DEPLOYMENT.md)** for Render configuration, the upgrade order, backups, and rollback.
+- `build.sh` installs Python deps, runs `npm install`, `collectstatic`, `check --deploy`, and `migrate` (used on Render).
 - Set the same environment variables on the host; do not upload `.env`.
-- Production should use a strong `SECRET_KEY`, `DEBUG=False`, and a managed database URL.
+- Production needs a strong `SECRET_KEY`, `FIELD_ENCRYPTION_KEYS`, `DEBUG=False`, a managed database URL, and `MEDIA_ROOT` on a persistent disk.
+- `python manage.py purge_expired_data` applies the retention periods in the Privacy Policy; schedule it daily.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+CyberQuest's own code is licensed under the [MIT License](LICENSE). It uses PyMuPDF, which is
+licensed under the AGPL-3.0 (or an Artifex commercial licence); see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for what that means for deployments and for
+all other third-party licences.

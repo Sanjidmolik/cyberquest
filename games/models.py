@@ -22,7 +22,21 @@ AUTO_SETS_PER_COURSE = 7
 SETS_PER_COURSE = 10
 
 
+class GameAttemptQuerySet(models.QuerySet):
+    def finished(self):
+        """Scored attempts. In-progress rows are not completions."""
+        return self.filter(status__in=["completed", "timed_out"])
+
+
 class GameAttempt(models.Model):
+    STATUS_IN_PROGRESS = "in_progress"
+    STATUS_COMPLETED = "completed"
+    STATUS_TIMED_OUT = "timed_out"
+    STATUS_CHOICES = [
+        (STATUS_IN_PROGRESS, "In progress"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_TIMED_OUT, "Timed out"),
+    ]
     GAME_CHOICES = [
         ("phishing_simulator", "Phishing Simulator"),
         ("password_cracker", "Password Cracker Challenge"),
@@ -37,7 +51,22 @@ class GameAttempt(models.Model):
     score = models.PositiveIntegerField()
     total_questions = models.PositiveIntegerField()
     xp_awarded = models.PositiveIntegerField(default=0)
-    completed_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    completed_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_COMPLETED,
+        db_index=True,
+    )
+    started_at = models.DateTimeField(null=True, blank=True)
+    deadline_at = models.DateTimeField(null=True, blank=True)
+    elapsed_seconds = models.PositiveIntegerField(null=True, blank=True)
+    time_remaining_seconds = models.PositiveIntegerField(null=True, blank=True)
+    submission_method = models.CharField(max_length=20, blank=True, default="")
+    selection_mode = models.CharField(max_length=20, blank=True, default="")
+    answers = models.JSONField(default=dict, blank=True)
+
+    objects = GameAttemptQuerySet.as_manager()
 
     # Question-set tracking (nullable for legacy / non-set games)
     question_set = models.ForeignKey(
@@ -56,14 +85,39 @@ class GameAttempt(models.Model):
         help_text="Ordered question PKs when the attempt used balanced difficulty×type selection.",
     )
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "game_key"],
+                condition=Q(status="in_progress"),
+                name="games_one_in_progress_attempt",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["status", "deadline_at"], name="games_attempt_deadline_idx"),
+        ]
+
     def __str__(self):
         return f"{self.user.email} - {self.game_key} - {self.score}/{self.total_questions}"
+
+    def save(self, *args, **kwargs):
+        if self.status in (self.STATUS_COMPLETED, self.STATUS_TIMED_OUT) and self.completed_at is None:
+            from django.utils import timezone
+            self.completed_at = timezone.now()
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = set(update_fields) | {"completed_at"}
+        super().save(*args, **kwargs)
 
     @property
     def percent(self):
         if not self.total_questions:
             return 0
         return round(self.score / self.total_questions * 100)
+
+    @property
+    def is_finished(self):
+        return self.status in (self.STATUS_COMPLETED, self.STATUS_TIMED_OUT)
 
 
 class Question(models.Model):

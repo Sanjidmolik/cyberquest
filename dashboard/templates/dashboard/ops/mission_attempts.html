@@ -1,0 +1,116 @@
+{% extends "dashboard/ops/base.html" %}
+{% load static %}
+{% block ops_head %}
+<link rel="stylesheet" href="{% static 'dashboard/css/mission-attempts.css' %}">
+{% endblock %}
+{% block ops_content %}
+{% with f=report.filters s=report.summary %}
+<p class="ops-note">Every mission attempt recorded by the server. Abandoned means the learner never submitted and the timer ran out. Attempts made before timing was recorded show no start time or duration.</p>
+
+<section class="ops-kpis ma-kpis" aria-label="Attempts matching the filters">
+  <article class="ops-kpi"><span>Matching attempts</span><strong>{{ s.total }}</strong></article>
+  <article class="ops-kpi"><span>Completed</span><strong>{{ s.completed }}</strong></article>
+  <article class="ops-kpi"><span>Timed out</span><strong>{{ s.timed_out }}</strong></article>
+  <article class="ops-kpi"><span>Abandoned</span><strong>{{ s.abandoned }}</strong></article>
+  <article class="ops-kpi"><span>Active now</span><strong>{{ s.active }}</strong></article>
+</section>
+
+<form class="ops-filters ma-filters" method="get" aria-label="Filter attempts">
+  <label class="ma-wide">Learner or attempt ID
+    <input type="search" name="q" value="{{ f.q }}" placeholder="Name, username, email, or #ID">
+  </label>
+  <label>Mission
+    <select name="mission">
+      <option value="">All missions</option>
+      {% for key, label in report.missions %}<option value="{{ key }}"{% if f.mission == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Outcome
+    <select name="outcome">
+      <option value="">Any outcome</option>
+      {% for key, label in report.outcomes %}<option value="{{ key }}"{% if f.outcome == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>From
+    <input type="date" name="start" value="{{ f.start|date:'Y-m-d' }}">
+  </label>
+  <label>To
+    <input type="date" name="end" value="{{ f.end|date:'Y-m-d' }}">
+  </label>
+  <label>Accuracy %
+    <span class="ma-range">
+      <input type="number" name="min_accuracy" min="0" max="100" value="{{ f.min_accuracy|default_if_none:'' }}" placeholder="min" aria-label="Minimum accuracy percent">
+      <input type="number" name="max_accuracy" min="0" max="100" value="{{ f.max_accuracy|default_if_none:'' }}" placeholder="max" aria-label="Maximum accuracy percent">
+    </span>
+  </label>
+  <label>Duration (s)
+    <span class="ma-range">
+      <input type="number" name="min_seconds" min="0" value="{{ f.min_seconds|default_if_none:'' }}" placeholder="min" aria-label="Minimum duration in seconds">
+      <input type="number" name="max_seconds" min="0" value="{{ f.max_seconds|default_if_none:'' }}" placeholder="max" aria-label="Maximum duration in seconds">
+    </span>
+  </label>
+  <label>Sort
+    <select name="sort">
+      {% for key, label in report.sorts %}<option value="{{ key }}"{% if f.sort == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="ma-check"><input type="checkbox" name="include_staff" value="1"{% if f.include_staff %} checked{% endif %}> Include staff accounts</label>
+  <div class="ma-actions">
+    <button type="submit">Apply</button>
+    <a href="{% url 'ops:mission_attempts' %}">Reset</a>
+  </div>
+</form>
+
+<div class="ops-table-wrap">
+<table class="ops-table ma-table">
+  <caption class="ma-caption">Mission attempts, page {{ report.page.number }} of {{ report.page.paginator.num_pages }}</caption>
+  <thead>
+    <tr>
+      <th scope="col">Attempt</th>
+      <th scope="col">Learner</th>
+      <th scope="col">Mission</th>
+      <th scope="col">Started</th>
+      <th scope="col">Finished</th>
+      <th scope="col">Duration</th>
+      <th scope="col">Score</th>
+      <th scope="col">Accuracy</th>
+      <th scope="col">Correct / wrong</th>
+      <th scope="col">XP</th>
+      <th scope="col">Outcome</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in report.rows %}
+    <tr>
+      <td class="ops-num">#{{ row.id }}</td>
+      <td>
+        <a href="{% url 'ops:student' row.user.pk %}">{{ row.user.full_name|default:row.user.display_name }}</a>
+        {% if row.user.username %}<br><small>@{{ row.user.username }}</small>{% endif %}
+        {% if can_view_email %}<br><small class="ma-email">{{ row.user.email }}</small>{% endif %}
+      </td>
+      <td>{{ row.mission }}</td>
+      <td class="ops-num">{% if row.started_at %}{{ row.started_at|date:"Y-m-d H:i:s" }}{% else %}<span class="ops-note" title="Recorded before the mission timer existed">not recorded</span>{% endif %}</td>
+      <td class="ops-num">{% if row.completed_at %}{{ row.completed_at|date:"Y-m-d H:i:s" }}{% elif row.outcome == "active" %}<span class="ops-note">due {{ row.deadline_at|date:"H:i:s" }}</span>{% else %}—{% endif %}</td>
+      <td class="ops-num">{% if row.elapsed_seconds is not None %}{{ row.elapsed_seconds }}s{% else %}—{% endif %}</td>
+      <td class="ops-num">{% if row.score is not None %}{{ row.score }}/{{ row.total }}{% else %}—{% endif %}</td>
+      <td class="ops-num">{% if row.accuracy is not None %}{{ row.accuracy }}%{% else %}—{% endif %}</td>
+      <td class="ops-num">{% if row.score is not None %}{{ row.score }} / {{ row.incorrect }}{% else %}—{% endif %}</td>
+      <td class="ops-num">{% if row.xp_awarded is not None %}{{ row.xp_awarded }}{% else %}—{% endif %}</td>
+      <td><span class="ops-badge ma-o-{{ row.outcome }}">{{ row.outcome_label }}</span></td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="11">No attempts match these filters.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if report.page.paginator.num_pages > 1 %}
+<nav class="ops-pager" aria-label="Pages">
+  {% if report.page.has_previous %}<a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ report.page.previous_page_number }}">Previous</a>{% endif %}
+  <span>Page {{ report.page.number }} of {{ report.page.paginator.num_pages }}</span>
+  {% if report.page.has_next %}<a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ report.page.next_page_number }}">Next</a>{% endif %}
+</nav>
+{% endif %}
+{% endwith %}
+{% endblock %}

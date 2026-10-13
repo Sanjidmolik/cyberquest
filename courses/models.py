@@ -18,6 +18,24 @@ from django.db import models
 
 THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024
 THUMBNAIL_FORMATS = {"JPEG", "PNG", "WEBP", "GIF"}
+# Phase 1 — Step 7: server-side cap for course e-books (every upload path).
+EBOOK_MAX_BYTES = 25 * 1024 * 1024
+
+
+def validate_course_ebook(upload):
+    """Reject e-books over 25 MB. Runs for the Command Center form and Django admin.
+
+    Model validation sees a FieldFile wrapping the new upload (not yet
+    committed to storage), so both shapes are checked. Files already in
+    storage are left alone.
+    """
+    if not upload:
+        return
+    is_new = isinstance(upload, UploadedFile) or getattr(upload, "_committed", True) is False
+    if not is_new:
+        return
+    if (upload.size or 0) > EBOOK_MAX_BYTES:
+        raise ValidationError("PDF must be 25 MB or smaller.")
 
 
 def validate_course_thumbnail(image):
@@ -63,7 +81,8 @@ class Course(models.Model):
     )
     pdf_file = models.FileField(
         upload_to="course_ebooks/", blank=True, null=True,
-        help_text="Optional: upload a PDF e-book for this course instead of typing plain text. "
+        validators=[validate_course_ebook],
+        help_text="Optional: upload a PDF e-book (up to 25 MB) for this course instead of typing plain text. "
                    "If uploaded, this takes priority over the Content field above, and the "
                    "reader displays the PDF's actual pages with a page-flip effect.",
     )
@@ -89,9 +108,10 @@ class Course(models.Model):
     def safe_thumbnail_url(self):
         from django.urls import reverse
 
-        from cyberquest.media_access import stored_file_path
+        from cyberquest.media_access import file_exists
 
-        if stored_file_path(self.thumbnail) is None:
+        # Cached for remote storage: this runs once per course card.
+        if not file_exists(self.thumbnail, cache_seconds=600):
             return ""
         return reverse("courses:thumbnail", args=[self.code])
 

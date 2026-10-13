@@ -1,0 +1,116 @@
+{% extends "shared/base.html" %}
+{% load static %}
+
+{% block title %}Privacy Policy — CyberQuest{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'pages/css/pages.css' %}">
+<link rel="stylesheet" href="{% static 'pages/css/legal.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="cq-container cq-legal">
+  <article class="cq-page-card">
+    <h1 class="cq-heading">Privacy Policy</h1>
+    <p class="cq-legal-meta">Last updated {{ policy_updated }}</p>
+
+    <p class="cq-body">This policy explains what personal data CyberQuest collects, why, who else receives it, how long it is kept, and what you can do about it. It describes how this application actually behaves.{% if operator_name %} CyberQuest is operated by {{ operator_name }}.{% endif %}</p>
+
+    <nav class="cq-legal-toc" aria-label="On this page">
+      <a href="#collect">What we collect</a>
+      <a href="#use">How we use it</a>
+      <a href="#visible">Who can see it</a>
+      <a href="#processors">Services we rely on</a>
+      <a href="#cookies">Cookies and browser storage</a>
+      <a href="#retention">How long we keep it</a>
+      <a href="#rights">Your choices</a>
+      <a href="#security">Security</a>
+      <a href="#age">Age</a>
+      <a href="#contact">Contact</a>
+    </nav>
+
+    <h2 id="collect" class="cq-section-title">What we collect</h2>
+    <ul class="cq-legal-list">
+      <li><strong>Account details you give us:</strong> email address, username, date of birth, chosen cyber class and skill level, your acceptance of the ethical-use agreement, and optionally your full name and a profile picture.</li>
+      <li><strong>If you sign in with Google:</strong> Google tells us your email address, whether Google verified it, your name, and your Google profile picture. We copy that picture as your starting profile picture; you can remove it in Settings.</li>
+      <li><strong>Sign-in security:</strong> a hash of your password (never the password itself), whether two-factor sign-in is on, an encrypted authenticator secret if you enable one, hashed recovery codes, and hashed one-time email codes.</li>
+      <li><strong>Learning activity:</strong> XP, level, daily streaks and the days you were active, badges, course completions and your last page in each course, practice sessions and the choices you made in them, and every mission attempt: questions served, answers you chose, score, start time, deadline, finish time, time taken, and XP awarded.</li>
+      <li><strong>Certificate:</strong> the name printed on it, your overall score, the issue date, and its certificate ID.</li>
+      <li><strong>Notifications</strong> we show you inside CyberQuest.</li>
+      <li><strong>Contact form:</strong> the name, email address and message you submit.</li>
+      <li><strong>Visit counts:</strong> the homepage counts one visit per browser session per day. Only the daily total is stored, not your IP address.</li>
+    </ul>
+    <p class="cq-body">We do not collect payment details, precise location, or contacts, and we do not use advertising or analytics trackers.</p>
+
+    <h2 id="use" class="cq-section-title">How we use it</h2>
+    <ul class="cq-legal-list">
+      <li>To create your account, verify your email address, sign you in, and protect the account (two-factor codes, rate limits, suspicious-activity limits).</li>
+      <li>To run courses, missions and practice, score your answers, award XP and badges, and show your history.</li>
+      <li>To decide certificate eligibility, generate your certificate, and let anyone holding its ID confirm it is genuine.</li>
+      <li>To send emails you need: verification codes, sign-in codes, password-reset codes, a welcome message, and account-status notices.</li>
+      <li>To let administrators support learners, review mission attempts, and keep the service working. Administrators can see account details, including email addresses, inside the admin Command Center.</li>
+    </ul>
+
+    <h2 id="visible" class="cq-section-title">Who can see your information</h2>
+    <ul class="cq-legal-list">
+      <li><strong>Other signed-in learners</strong> can see your username, level and XP on the leaderboard, and your profile picture. The leaderboard never shows email addresses, names or dates of birth.</li>
+      <li><strong>Anyone with your certificate ID or QR code</strong> can open its verification page, which shows the name on the certificate, the score, the issue date, and that it is valid.</li>
+      <li><strong>CyberQuest administrators</strong> can see account and activity data to run the service.</li>
+      <li>We do not sell personal data or share it for advertising.</li>
+    </ul>
+
+    <h2 id="processors" class="cq-section-title">Services we rely on</h2>
+    <ul class="cq-legal-list">
+      <li><strong>Render</strong> hosts the application, its database, and uploaded files.</li>
+      <li><strong>Brevo</strong> delivers our emails, so it receives your email address and the content of each message (including one-time codes).</li>
+      <li><strong>Google</strong> provides "Sign in with Google" if you choose it. Pages also load fonts from Google Fonts, which means your browser sends your IP address to Google when a page loads.</li>
+      <li><strong>Public script CDNs</strong> (jsDelivr for the homepage animation library, cdnjs for the PDF reader) receive your IP address when those pages load.</li>
+      <li><strong>Google Gemini</strong> is used by administrators to draft quiz questions from course material. Learner data is not sent to it.</li>
+    </ul>
+    <p class="cq-body">These providers may process data in other countries under their own privacy terms.</p>
+
+    <h2 id="cookies" class="cq-section-title">Cookies and browser storage</h2>
+    <ul class="cq-legal-list">
+      <li><code>sessionid</code> keeps you signed in. It lasts up to {{ session_days }} days or until you sign out.</li>
+      <li><code>csrftoken</code> protects forms against cross-site request forgery.</li>
+      <li>Your browser's local storage remembers your day or night theme choice. It never leaves your device.</li>
+    </ul>
+    <p class="cq-body">These are needed for the site to work, so there is no opt-out banner.</p>
+
+    <h2 id="retention" class="cq-section-title">How long we keep it</h2>
+    <div class="cq-legal-table-wrap">
+      <table class="cq-legal-table">
+        <thead><tr><th scope="col">Data</th><th scope="col">Kept</th><th scope="col">Removal</th></tr></thead>
+        <tbody>
+        {% for record, kept, removal in retention %}
+          <tr><td>{{ record }}</td><td>{{ kept }}</td><td>{{ removal }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="rights" class="cq-section-title">Your choices</h2>
+    <ul class="cq-legal-list">
+      <li><strong>See and correct:</strong> edit your profile details and picture in <a href="{% url 'accounts:settings' %}">Settings</a>.</li>
+      <li><strong>Download:</strong> export your data as JSON or as CSV files from <a href="{% url 'accounts:settings' %}#your-data">Settings → Your data</a>. Exports never include password hashes, authenticator secrets, recovery codes, verification codes or session data.</li>
+      <li><strong>Delete:</strong> delete your account from <a href="{% url 'accounts:delete_account' %}">Settings → Delete my account</a>. This removes your profile, picture, activity, attempts, badges, notifications and certificate straight away. Copies can remain in hosting backups until those backups expire, and contact-form messages are kept as described above.</li>
+      <li><strong>Ask us:</strong> for anything else, including objections or questions about this policy, use the contact details below.</li>
+    </ul>
+    <p class="cq-body">Depending on where you live, you may have further rights under local data-protection law, including the right to complain to a data-protection authority.</p>
+
+    <h2 id="security" class="cq-section-title">Security</h2>
+    <p class="cq-body">Traffic is served over HTTPS in production. Passwords are stored as salted hashes, authenticator secrets are encrypted with a key kept outside the database, and one-time codes are stored only as keyed hashes, expire after {{ code_minutes }} minutes, and work once. Sign-in, verification and form endpoints are rate limited. No system is perfectly secure; please use a unique password and turn on two-factor sign-in.</p>
+
+    <h2 id="age" class="cq-section-title">Age</h2>
+    <p class="cq-body">You must be at least 13 years old to create an account; sign-up checks your date of birth. If you are under the age at which you can consent to data processing where you live, ask a parent or guardian before signing up. If you believe a child has signed up without the consent they need, contact us and we will delete the account.</p>
+
+    <h2 id="changes" class="cq-section-title">Changes</h2>
+    <p class="cq-body">If this policy changes, we will update the date at the top of this page. Significant changes may also be announced inside CyberQuest.</p>
+
+    <h2 id="contact" class="cq-section-title">Contact</h2>
+    <p class="cq-body">
+      {% if contact_email %}Email <a href="mailto:{{ contact_email }}">{{ contact_email }}</a> or use the <a href="{% url 'pages:contact' %}">contact page</a>.
+      {% else %}Use the <a href="{% url 'pages:contact' %}">contact page</a>.{% endif %}
+    </p>
+  </article>
+</div>
+{% endblock %}

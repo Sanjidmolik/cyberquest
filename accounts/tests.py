@@ -272,10 +272,10 @@ class VerificationCodeSecurityTests(TestCase):
         from accounts.codes import check_code, generate_code
 
         record = generate_code(self.user, purpose="login_2fa")
-        self.assertEqual(len(record.code), 6)
-        self.assertTrue(record.code.isdigit())
-        self.assertTrue(check_code(self.user, purpose="login_2fa", submitted_code=record.code))
-        self.assertFalse(check_code(self.user, purpose="login_2fa", submitted_code=record.code))
+        self.assertEqual(len(record.raw_code), 6)
+        self.assertTrue(record.raw_code.isdigit())
+        self.assertTrue(check_code(self.user, purpose="login_2fa", submitted_code=record.raw_code))
+        self.assertFalse(check_code(self.user, purpose="login_2fa", submitted_code=record.raw_code))
 
     def test_code_burns_after_too_many_failures(self):
         from accounts.codes import MAX_ATTEMPTS, check_code, generate_code
@@ -288,7 +288,7 @@ class VerificationCodeSecurityTests(TestCase):
         record.refresh_from_db()
         self.assertTrue(record.is_used)
         self.assertFalse(
-            check_code(self.user, purpose="password_reset", submitted_code=record.code)
+            check_code(self.user, purpose="password_reset", submitted_code=record.raw_code)
         )
 
 
@@ -458,9 +458,10 @@ class SignupVerificationTests(TestCase):
         self.assertNotIn("_auth_user_id", self.client.session)
 
         record = user.verification_codes.get()
+        first_code = _latest_code()
         record.expires_at = timezone.now() - timedelta(minutes=1)
         record.save(update_fields=["expires_at"])
-        expired = self.client.post(reverse("accounts:verify_email"), {"code": record.code})
+        expired = self.client.post(reverse("accounts:verify_email"), {"code": first_code})
         self.assertEqual(expired.status_code, 200)
         user.refresh_from_db()
         self.assertFalse(user.email_verified)
@@ -469,7 +470,7 @@ class SignupVerificationTests(TestCase):
         resent = self.client.post(reverse("accounts:verify_email"), {"resend": "1"})
         self.assertEqual(resent.status_code, 200)
         self.assertEqual(len(mail.outbox), 2)
-        old_code = record.code
+        old_code = first_code
         new_code = _latest_code()
         self.assertNotEqual(old_code, new_code)
         reused = self.client.post(reverse("accounts:verify_email"), {"code": old_code})
@@ -591,7 +592,7 @@ class SignupVerificationTests(TestCase):
         session["pending_reset_user_id"] = user.pk
         session.save()
         rejected = self.client.post(reverse("accounts:reset_password"), {
-            "code": record.code,
+            "code": record.raw_code,
             "new_password": "securepass1",
             "confirm_password": "securepass1",
         })
@@ -602,7 +603,7 @@ class SignupVerificationTests(TestCase):
         record.refresh_from_db()
         self.assertFalse(record.is_used)
         accepted = self.client.post(reverse("accounts:reset_password"), {
-            "code": record.code,
+            "code": record.raw_code,
             "new_password": "betterpass1!",
             "confirm_password": "betterpass1!",
         })
@@ -679,7 +680,7 @@ class AuthMailFailureTests(TestCase):
         self.assertIn("_auth_user_id", self.client.session)
 
         self.client.logout()
-        with patch("accounts.emails.send_mail", side_effect=OSError("smtp down")):
+        with patch("accounts.emails.send_mail", side_effect=OSError("smtp down")) as failed_send:
             missing = self.client.post(reverse("accounts:forgot_password"), {
                 "email": "nobody.reset@gmail.com",
             }, follow=True)
@@ -697,6 +698,8 @@ class AuthMailFailureTests(TestCase):
         burned = self.user.verification_codes.filter(purpose="password_reset").order_by("-created_at").first()
         self.assertIsNotNone(burned)
         self.assertTrue(burned.is_used)
+        # Only a hash is stored, so read the undelivered code from the failed send.
+        burned_code = re.search(r"\b(\d{6})\b", failed_send.call_args.args[1]).group(1)
 
         sent = self.client.post(reverse("accounts:forgot_password"), {
             "email": self.user.email,
@@ -704,7 +707,7 @@ class AuthMailFailureTests(TestCase):
         self.assertContains(sent, "Reset Password")
         self.assertNotContains(sent, "Please request a password reset code first.")
         rejected = self.client.post(reverse("accounts:reset_password"), {
-            "code": burned.code,
+            "code": burned_code,
             "new_password": "otherpass1!",
             "confirm_password": "otherpass1!",
         })
@@ -728,6 +731,11 @@ class AuthMailFailureTests(TestCase):
             "password": "securepass1!",
         })
         self.assertRedirects(started, reverse("accounts:verify_login"))
+        # Only a hash of the first code exists, so it cannot be re-sent during the cooldown.
+        early = self.client.post(reverse("accounts:verify_login"), {"resend": "1"})
+        self.assertContains(early, "Please wait a moment before requesting another code.")
+        from accounts.codes import clear_generation_cooldown
+        clear_generation_cooldown(self.user, "login_2fa")
         with patch("accounts.emails.send_mail", side_effect=OSError("smtp down")):
             failed = self.client.post(reverse("accounts:verify_login"), {"resend": "1"})
         self.assertEqual(failed.status_code, 200)
@@ -939,4 +947,4 @@ class ProxyRateLimitTests(TestCase):
             self.assertFalse(check_code(self.user, purpose="login_2fa", submitted_code="000000"))
         record.refresh_from_db()
         self.assertTrue(record.is_used)
-        self.assertFalse(check_code(self.user, purpose="login_2fa", submitted_code=record.code))
+        self.assertFalse(check_code(self.user, purpose="login_2fa", submitted_code=record.raw_code))

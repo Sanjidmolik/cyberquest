@@ -1027,7 +1027,7 @@ class CertificateManagementTests(TestCase):
         self.assertTrue(certificate.pdf_file)
         self.assertEqual(certificate.score, 100)
         self.assertNotEqual(certificate.certificate_id, "CQ-HACK")
-        self.assertRegex(certificate.certificate_id, r"^CQ-\d{4}-[0-9A-F]{8}$")
+        self.assertRegex(certificate.certificate_id, r"^CQ-\d{4}-[0-9A-F]{12}$")
 
         again = self.client.post(reverse("ops:certificate_issue", args=[self.student.pk]), {
             "score": "1",
@@ -1908,7 +1908,8 @@ class SystemHealthTests(TestCase):
         self.assertEqual(names["Email credentials"], "attention")
         self.assertEqual(names["Email delivery"], "unknown")
         self.assertEqual(names["Application version"], "unknown")
-        self.assertEqual(names["Logging"], "unknown")
+        # settings.LOGGING is now defined (console logging for production).
+        self.assertEqual(names["Logging"], "healthy")
 
     def test_database_failure_is_attention_without_the_exception_text(self):
         self.client.force_login(self.superuser)

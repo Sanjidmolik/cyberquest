@@ -1,0 +1,84 @@
+# Render Blueprint for CyberQuest — EXAMPLE, NOT ACTIVE.
+#
+# The live service was created in the Render dashboard. Applying a Blueprint
+# creates NEW resources, so copy this to render.yaml only for a fresh setup,
+# or use it as a checklist when editing the existing service by hand.
+# Every secret below is "sync: false": Render asks for the value; none is stored here.
+
+services:
+  - type: web
+    name: cyberquest
+    runtime: python
+    # A persistent disk needs a paid instance type.
+    plan: starter
+    buildCommand: ./build.sh
+    startCommand: gunicorn cyberquest.wsgi:application -c deploy/gunicorn.conf.py
+    healthCheckPath: /healthz/
+    disk:
+      name: cyberquest-media
+      mountPath: /var/data/media
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        # Match the version used in CI (.github/workflows/ci.yml).
+        value: "3.14.6"
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FIELD_ENCRYPTION_KEYS
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cyberquest-db
+          property: connectionString
+      - key: MEDIA_ROOT
+        value: /var/data/media
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: DEFAULT_FROM_EMAIL_ADDRESS
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SOURCE_CODE_URL
+        value: https://github.com/Sanjidmolik/cyberquest
+      - key: LEGAL_OPERATOR_NAME
+        sync: false
+      - key: LEGAL_CONTACT_EMAIL
+        sync: false
+
+  # Daily retention cleanup (accounts/retention.py). Cron jobs are a paid feature.
+  - type: cron
+    name: cyberquest-retention
+    runtime: python
+    plan: starter
+    schedule: "30 3 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py purge_expired_data
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.14.6"
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        sync: false
+      - key: FIELD_ENCRYPTION_KEYS
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cyberquest-db
+          property: connectionString
+
+databases:
+  - name: cyberquest-db
+    plan: basic-256mb

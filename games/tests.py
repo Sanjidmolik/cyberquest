@@ -108,6 +108,8 @@ class QuestionSetArchitectureTests(TestCase):
         # has_completed_all_courses may check CourseProgress — patch via staff bypass if needed
         from unittest.mock import patch
         with patch("games.views.has_completed_all_courses", return_value=True):
+            started = self.client.post(reverse("games:phishing_simulator"), {"action": "start"})
+            self.assertEqual(started.status_code, 302)
             res = self.client.get(reverse("games:phishing_simulator"))
             self.assertEqual(res.status_code, 200)
             self.assertContains(res, "Question Set")
@@ -128,6 +130,7 @@ class QuestionSetArchitectureTests(TestCase):
         self.client.login(email="qset@example.com", password="testpass123")
         from unittest.mock import patch
         with patch("games.views.has_completed_all_courses", return_value=True):
+            self.client.post(reverse("games:cryptography"), {"action": "start"})
             res = self.client.get(reverse("games:cryptography"))
             questions = res.context["questions"]
             # Answer all wrong (pick a different index)

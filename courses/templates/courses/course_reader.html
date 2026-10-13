@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'courses/css/reader.css' %}">
 <link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
+{% include "shared/_loading.html" %}
 {% if uses_pdf %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 {% endif %}

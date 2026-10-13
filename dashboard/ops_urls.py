@@ -50,6 +50,8 @@ urlpatterns = [
     path("contact/<int:pk>/resolve/", ops_views.resolve_contact),
     path("search/", ops_views.search, name="search"),
     path("analytics/", ops_views.analytics, name="analytics"),
+    path("mission-analytics/", ops_views.mission_analytics, name="mission_analytics"),
+    path("mission-attempts/", ops_views.mission_attempts, name="mission_attempts"),
     path("settings/", ops_views.settings_page, name="settings"),
     path("settings/administrators/new/", ops_views.create_administrator, name="create_administrator"),
 ]

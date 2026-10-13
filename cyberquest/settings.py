@@ -199,52 +199,7 @@ STATICFILES_DIRS = [
     ("vendor/page-flip", BASE_DIR / "node_modules" / "page-flip" / "dist" / "js"),
 ]
 
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        # Manifest hashing is for production collectstatic. Local/DEBUG must
-        # not require a pre-built manifest (keeps runserver and tests working).
-        "BACKEND": (
-            "django.contrib.staticfiles.storage.StaticFilesStorage"
-            if DEBUG
-            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
-        ),
-    },
-}
 
-# ---- User-uploaded files (profile pictures, etc.) ----
-# Different from STATIC_URL/STATIC_ROOT above: those are OUR css/js files,
-# these are files USERS upload at runtime (e.g. profile pictures).
-# Leave MEDIA_ROOT unset locally. Set it to a persistent disk mount in production.
-_media_root = (os.environ.get("MEDIA_ROOT") or "").strip()
-MEDIA_URL = '/media/'
-MEDIA_ROOT = Path(_media_root) if _media_root else BASE_DIR / 'media'
-
-
-# ---- Custom auth ----
-AUTH_USER_MODEL = 'accounts.CustomUser'
-AUTHENTICATION_BACKENDS = [
-    'accounts.backends.EmailAuthBackend',
-    'django.contrib.auth.backends.ModelBackend',
-]
-LOGIN_URL = '/accounts/login/'
-
-# ---- Email (development: prints to terminal instead of really sending) ----
-# To send REAL emails later (e.g. via Gmail SMTP), change EMAIL_BACKEND to
-# 'django.core.mail.backends.smtp.EmailBackend' and set EMAIL_HOST,
-# EMAIL_HOST_USER, EMAIL_HOST_PASSWORD (use a Gmail "App Password", not your
-# real password) -- keep those in a .env file, never hardcoded here.
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp-relay.brevo.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL_ADDRESS')
-# Seconds to wait for the SMTP connection. Unset means the socket blocks until
-# the worker is killed. Keep this below the Gunicorn request timeout.
 def _env_bounded_int(name: str, default: int, minimum: int, maximum: int) -> int:
     raw = (os.environ.get(name) or "").strip()
     if not raw:
@@ -258,6 +213,71 @@ def _env_bounded_int(name: str, default: int, minimum: int, maximum: int) -> int
     return value
 
 
+# ---- User-uploaded files (profile pictures, etc.) ----
+# Different from STATIC_URL/STATIC_ROOT above: those are OUR css/js files,
+# these are files USERS upload at runtime (e.g. profile pictures).
+# Leave MEDIA_ROOT unset locally. On Render Free use MEDIA_STORAGE=r2 below instead.
+_media_root = (os.environ.get("MEDIA_ROOT") or "").strip()
+MEDIA_URL = '/media/'
+MEDIA_ROOT = Path(_media_root) if _media_root else BASE_DIR / 'media'
+
+# ---- Where uploaded and generated files live ----
+# "filesystem" (default): MEDIA_ROOT on local disk, for development.
+# "r2": a private Cloudflare R2 bucket, for Render Free whose disk is wiped on
+# every deploy, restart and spin-down. Credentials come only from the
+# environment and are never logged. Files are served through
+# permission-checked views; the bucket must stay private.
+from cyberquest.storage_config import default_storage_setting, media_storage_mode  # noqa: E402
+
+MEDIA_STORAGE = media_storage_mode(os.environ)
+_default_storage = default_storage_setting(os.environ)
+
+STORAGES = {
+    "default": _default_storage,
+    "staticfiles": {
+        # Manifest hashing is for production collectstatic. Local/DEBUG must
+        # not require a pre-built manifest (keeps runserver and tests working).
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG
+            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
+
+
+# ---- Custom auth ----
+AUTH_USER_MODEL = 'accounts.CustomUser'
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.EmailAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+LOGIN_URL = '/accounts/login/'
+
+# Fernet keys for encrypting TOTP secrets at rest (comma-separated; the first
+# encrypts, all decrypt). Keep them outside the repository and the database.
+FIELD_ENCRYPTION_KEYS = [
+    k.strip() for k in (os.environ.get("FIELD_ENCRYPTION_KEYS") or "").split(",") if k.strip()
+]
+
+# ---- Email (development: prints to terminal instead of really sending) ----
+# To send REAL emails later (e.g. via Gmail SMTP), change EMAIL_BACKEND to
+# 'django.core.mail.backends.smtp.EmailBackend' and set EMAIL_HOST,
+# EMAIL_HOST_USER, EMAIL_HOST_PASSWORD (use a Gmail "App Password", not your
+# real password) -- keep those in a .env file, never hardcoded here.
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL_ADDRESS')
+# Render Free cannot open outbound SMTP. When this key is set, transactional
+# mail uses Brevo's HTTPS API. Leave it blank to keep the SMTP backend.
+BREVO_API_KEY = (os.environ.get("BREVO_API_KEY") or "").strip()
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
+# Seconds to wait for the SMTP connection. Unset means the socket blocks until
+# the worker is killed. Keep this below the Gunicorn request timeout.
 EMAIL_TIMEOUT = _env_bounded_int("EMAIL_TIMEOUT", default=10, minimum=1, maximum=20)
 
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
@@ -284,6 +304,19 @@ AI_MAX_REPAIR_ATTEMPTS = int(os.environ.get('AI_MAX_REPAIR_ATTEMPTS', '3'))
 # Falls back to the incoming request host when unset.
 PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '').rstrip('/')
 
+# ---- Legal pages (Privacy Policy, Terms, third-party notices) ----
+# Who operates this deployment and how to reach them about personal data.
+# Left blank, the pages point people to the contact form instead.
+LEGAL_OPERATOR_NAME = (os.environ.get("LEGAL_OPERATOR_NAME") or "").strip()
+LEGAL_CONTACT_EMAIL = (os.environ.get("LEGAL_CONTACT_EMAIL") or "").strip()
+# Public repository for the running code. PyMuPDF is AGPL-3.0, which requires
+# offering network users the corresponding source (see THIRD_PARTY_NOTICES.md).
+SOURCE_CODE_URL = (os.environ.get("SOURCE_CODE_URL") or "").strip().rstrip("/")
+# Render sets RENDER_GIT_COMMIT to the deployed commit.
+SOURCE_CODE_REVISION = (
+    os.environ.get("SOURCE_CODE_REVISION") or os.environ.get("RENDER_GIT_COMMIT") or ""
+).strip()
+
 # ---- Production HTTPS / cookie hardening (DEBUG keeps local HTTP working) ----
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -297,3 +330,36 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = _env_bool("SECURE_HSTS_PRELOAD", default=True)
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_REFERRER_POLICY = "same-origin"
+    # Platform health checks may arrive over plain HTTP inside the provider network.
+    SECURE_REDIRECT_EXEMPT = [r"^healthz/$"]
+
+# ---- Logging ----
+# Django's default config prints nothing to the console when DEBUG is False,
+# so production errors would never reach the host's log stream. Tracebacks and
+# messages only: request bodies, cookies and headers are not logged.
+LOG_LEVEL = (os.environ.get("LOG_LEVEL") or ("WARNING" if DEBUG else "INFO")).upper()
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "plain": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "plain"},
+    },
+    "root": {"handlers": ["console"], "level": LOG_LEVEL},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
+        # 4xx noise from scanners; 5xx stay at ERROR with a traceback.
+        "django.request": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+        "django.security.DisallowedHost": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+    },
+}
+
+# Timed missions. The server deadline is authoritative; the browser clock is not.
+MISSION_TIME_LIMIT_SECONDS = _env_bounded_int(
+    "MISSION_TIME_LIMIT_SECONDS", default=60, minimum=30, maximum=600,
+)
+MISSION_QUALIFYING_SCORE_PERCENT = _env_bounded_int(
+    "MISSION_QUALIFYING_SCORE_PERCENT", default=80, minimum=1, maximum=100,
+)

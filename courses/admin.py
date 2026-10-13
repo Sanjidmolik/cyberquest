@@ -17,6 +17,16 @@ class CourseAdmin(admin.ModelAdmin):
         }),
     )
 
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        # Phase 1 — Step 5: link current files through the protected views, never a bucket URL.
+        from certificates.admin import ProtectedFileWidget
+
+        if db_field.name == "pdf_file":
+            kwargs["widget"] = ProtectedFileWidget("courses:ebook", arg_attr="code")
+        elif db_field.name == "thumbnail":
+            kwargs["widget"] = ProtectedFileWidget("courses:thumbnail", arg_attr="code")
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
     @admin.display(description="Content type")
     def content_source(self, obj):
         return "📕 PDF e-book" if obj.uses_pdf() else "📝 Plain text"

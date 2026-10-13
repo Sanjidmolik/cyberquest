@@ -12,7 +12,10 @@ Issued output is always a PDF (download / verify), even when the template is an 
 
 from __future__ import annotations
 
+import html
 import logging
+from contextlib import contextmanager
+from functools import lru_cache
 from pathlib import Path
 
 import pymupdf
@@ -66,8 +69,17 @@ DEFAULT_SIGNATORIES = [
 ]
 
 
+def _fonts_dir() -> Path:
+    return Path(settings.BASE_DIR) / "certificates" / "static" / "certificates" / "fonts"
+
+
+# Noto Sans Bengali (SIL OFL 1.1). Used, with HarfBuzz shaping, only for text
+# Comic Neue cannot draw, so Latin certificates render exactly as before.
+SCRIPT_FALLBACK_FONT = "NotoSansBengali-Bold.ttf"
+
+
 def _font_paths() -> dict[str, Path]:
-    base = Path(settings.BASE_DIR) / "certificates" / "static" / "certificates" / "fonts"
+    base = _fonts_dir()
     return {
         "regular": base / "ComicNeue-Regular.ttf",
         "bold": base / "ComicNeue-Bold.ttf",
@@ -98,8 +110,86 @@ def _pick_fonts(page) -> dict[str, str]:
     return {"bold": bold, "regular": regular, "display": display}
 
 
+@lru_cache(maxsize=1)
+def _latin_font():
+    path = _font_paths()["bold"]
+    if not path.is_file():
+        return None
+    return pymupdf.Font(fontfile=str(path))
+
+
+def needs_script_fallback(text: str) -> bool:
+    """True when any visible character is missing from the Latin certificate font."""
+    font = _latin_font()
+    for char in text or "":
+        if char.isspace():
+            continue
+        if font is None:
+            if ord(char) > 0x24F:
+                return True
+        elif not font.has_glyph(ord(char)):
+            return True
+    return False
+
+
+def _css_color(color) -> str:
+    r, g, b = (max(0, min(255, round(c * 255))) for c in color)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def _script_runs_html(text: str) -> str:
+    """Wrap characters Comic Neue lacks in a span using the script font.
+
+    MuPDF does not fall back through a CSS font-family list glyph by glyph,
+    so each run names its font explicitly. Spaces stay with the run before.
+    """
+    font = _latin_font()
+    runs: list[tuple[bool, str]] = []
+    for char in text:
+        script = (not char.isspace()) and (font is None or not font.has_glyph(ord(char)))
+        if runs and (char.isspace() or runs[-1][0] == script):
+            runs[-1] = (runs[-1][0], runs[-1][1] + char)
+        else:
+            runs.append((script, char))
+    return "".join(
+        f'<span class="s">{html.escape(chunk)}</span>' if script else html.escape(chunk)
+        for script, chunk in runs
+    )
+
+
+def _insert_shaped_text(page, rect, text, max_size, color, align) -> float:
+    """Draw text through MuPDF's HTML engine, which shapes complex scripts.
+
+    Runs Comic Neue cannot draw use Noto Sans Bengali; long text wraps inside
+    the box, and the whole block scales down (to 25%) until it fits.
+    Returns the scale used.
+    """
+    fonts = _fonts_dir()
+    latin = _font_paths()["bold"].name
+    css = (
+        f"@font-face {{font-family: cqlatin; src: url({latin});}}\n"
+        f"@font-face {{font-family: cqscript; src: url({SCRIPT_FALLBACK_FONT});}}\n"
+        "body {margin: 0;}\n"
+        "span.s {font-family: cqscript;}\n"
+        f"p {{margin: 0; font-family: cqlatin; font-size: {float(max_size):.1f}px; "
+        f"line-height: 1.2; color: {_css_color(color)}; "
+        f"text-align: {('left', 'center', 'right', 'justify')[align if align in (0, 1, 2, 3) else 1]};}}"
+    )
+    _spare, scale = page.insert_htmlbox(
+        rect,
+        f"<p>{_script_runs_html(text)}</p>",
+        css=css,
+        archive=pymupdf.Archive(str(fonts)),
+        scale_low=0.25,
+        overlay=True,
+    )
+    return scale
+
+
 def _fit_textbox(page, rect, text, fontname, max_size, min_size=10, color=INK, align=1):
     """Shrink font until the text fits the rect; return the size used."""
+    if needs_script_fallback(text):
+        return float(max_size) * _insert_shaped_text(page, rect, text, max_size, color, align)
     size = float(max_size)
     while size >= min_size:
         overflow = page.insert_textbox(
@@ -638,24 +728,46 @@ def _fill_template_image(template_path: str, payload: dict, qr_png: bytes, field
     return pdf_bytes
 
 
-def _fill_uploaded_template(template, payload: dict, qr_png: bytes) -> bytes:
-    from cyberquest.media_access import stored_file_path
+def is_builtin_template_name(name: str) -> bool:
+    return (name or "").replace("\\", "/").endswith(ACHIEVEMENT_TEMPLATE_NAME)
 
-    stored = stored_file_path(template.pdf_file)
-    if stored is None:
-        raise ValueError("Certificate template file is missing or outside media storage.")
-    path = str(stored)
+
+@contextmanager
+def template_design_path(template):
+    """Phase 1 — Step 6: a local path to a template's design file, or None.
+
+    The built-in design ships with the code, so it is read from the repository
+    whatever the media storage is. Uploaded designs come from media storage;
+    with R2 that is a temporary download removed after use.
+    """
+    from cyberquest.media_access import local_copy
+
+    field = getattr(template, "pdf_file", None)
+    if is_builtin_template_name(getattr(field, "name", "")):
+        builtin = builtin_achievement_template()
+        if builtin.is_file():
+            yield str(builtin)
+            return
+    with local_copy(field) as path:
+        yield str(path) if path is not None else None
+
+
+def _fill_uploaded_template(template, payload: dict, qr_png: bytes) -> bytes:
+    stored_name = getattr(template.pdf_file, "name", "") or ""
     kind = getattr(template, "template_kind", None)
     if kind is None:
-        lower = path.lower()
-        kind = "pdf" if lower.endswith(".pdf") else "image"
+        kind = "pdf" if stored_name.lower().endswith(".pdf") else "image"
     config = getattr(template, "field_config", None) or {}
-    if kind == "pdf":
-        if path.replace("\\", "/").endswith(ACHIEVEMENT_TEMPLATE_NAME):
-            return _fill_achievement_template(path, payload, qr_png, config)
-        return _fill_template_pdf(path, payload, qr_png, config)
-    if kind == "image":
-        return _fill_template_image(path, payload, qr_png, config)
+    with template_design_path(template) as path:
+        if path is None:
+            raise ValueError("Certificate template file is missing or outside media storage.")
+        if kind == "pdf":
+            # Decide by the stored name: a remote file arrives as a temp file.
+            if is_builtin_template_name(stored_name):
+                return _fill_achievement_template(path, payload, qr_png, config)
+            return _fill_template_pdf(path, payload, qr_png, config)
+        if kind == "image":
+            return _fill_template_image(path, payload, qr_png, config)
     raise ValueError(f"Unsupported certificate template type: {kind}")
 
 

@@ -45,7 +45,11 @@ class TotpTests(TestCase):
         self.assertEqual(bad.status_code, 302)
         self.user.refresh_from_db()
         self.assertFalse(self.user.totp_enabled)
-        secret = self.client.session["pending_totp_secret"]
+        # The enrollment secret is stored encrypted in the session row.
+        from accounts.crypto import decrypt_secret, is_encrypted
+        stored = self.client.session["pending_totp_secret"]
+        self.assertTrue(is_encrypted(stored))
+        secret = decrypt_secret(stored)
         code = pyotp.TOTP(secret).now()
         ok = self.client.post(reverse("accounts:totp_confirm"), {"code": code})
         self.assertEqual(ok.status_code, 200)
@@ -53,6 +57,8 @@ class TotpTests(TestCase):
         self.assertTrue(self.user.totp_enabled)
         self.assertEqual(RecoveryCode.objects.filter(user=self.user).count(), 8)
         self.assertNotContains(ok, self.user.totp_secret)
+        self.assertNotContains(ok, secret)
+        self.assertNotEqual(self.user.totp_secret, secret)
 
     def test_other_user_cannot_disable(self):
         self.user.totp_enabled = True

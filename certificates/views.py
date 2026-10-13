@@ -95,8 +95,13 @@ def _preview_png(request) -> bytes:
     """
     ready = get_ready_certificate(request.user)
     if ready and ready.pdf_file:
-        with ready.pdf_file.open("rb") as handle:
-            return pdf_bytes_to_png(handle.read())
+        from cyberquest.media_access import read_stored_bytes
+
+        stored = read_stored_bytes(ready.pdf_file)
+        if stored is None:
+            # The issued PDF is shown as stored or not at all: never rebuilt silently.
+            raise Http404("Certificate file is not available.")
+        return pdf_bytes_to_png(stored)
 
     status = get_eligibility_status(request.user)
     active = CertificateTemplate.get_active()
@@ -120,6 +125,8 @@ def certificate_page(request):
 def certificate_preview(request):
     try:
         png = _preview_png(request)
+    except Http404:
+        raise
     except Exception:
         logger.exception("Certificate preview failed")
         return HttpResponse("Could not render certificate preview.", status=500)
