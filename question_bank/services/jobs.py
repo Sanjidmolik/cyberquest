@@ -52,6 +52,20 @@ def start_generation(bank_id: int, user_id: int | None) -> bool:
                 last_error="Question generation failed: unexpected server error.",
             )
         finally:
+            # If the bank is still STATUS_GENERATING at thread exit (e.g. the
+            # worker process is being shut down), mark it failed so operators
+            # can see the stuck state and retry rather than wait indefinitely.
+            try:
+                QuestionBank.objects.filter(
+                    pk=bank_id,
+                    status=QuestionBank.STATUS_GENERATING,
+                ).update(
+                    status=QuestionBank.STATUS_FAILED,
+                    generation_stage="Generation interrupted",
+                    last_error="Generation was interrupted (worker restart). Please retry.",
+                )
+            except Exception:
+                pass
             connection.close()
 
     threading.Thread(target=_run, daemon=True, name=f"qbank-{bank_id}").start()
