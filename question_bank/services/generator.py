@@ -11,6 +11,7 @@ import logging
 from typing import Any
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -377,7 +378,11 @@ def _persist_filtered(bank: QuestionBank, filtered) -> None:
         )
         items = []
         for raw_q in raw_set["questions"]:
-            question = _create_question(bank, raw_q, set_type=set_type)
+            try:
+                question = _create_question(bank, raw_q, set_type=set_type)
+            except (ValidationError, ValueError, KeyError) as exc:
+                logger.warning("Skipping invalid AI question: %s", exc)
+                continue
             items.append(
                 QuestionSetItem(
                     question_set=qset,
@@ -418,7 +423,7 @@ def _create_question(bank: QuestionBank, raw_q: dict[str, Any], *, set_type: str
         or ""
     ).strip()[:255]
 
-    return Question.objects.create(
+    q = Question(
         course=bank.domain,
         prompt=str(raw_q["question"]).strip(),
         options=options,
@@ -437,3 +442,8 @@ def _create_question(bank: QuestionBank, raw_q: dict[str, Any], *, set_type: str
         generated_by_ai=True,
         manually_edited=False,
     )
+    # Validate before persisting so malformed AI output is rejected with a
+    # clear error message rather than silently stored or crashing the job.
+    q.full_clean()
+    q.save()
+    return q

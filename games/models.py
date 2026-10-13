@@ -187,6 +187,12 @@ class Question(models.Model):
         return f"[{self.get_course_display()}] {self.prompt[:60]}"
 
     def clean(self):
+        """Validate field invariants.
+
+        Django admin calls full_clean() automatically. Any code path that calls
+        save() directly (AI generation, fixtures, management commands) must call
+        question.full_clean() before question.save() to enforce these rules.
+        """
         if not isinstance(self.options, list) or len(self.options) < 2:
             raise ValidationError({"options": "Provide at least 2 answer options."})
         if self.correct_index >= len(self.options):
