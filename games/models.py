@@ -202,17 +202,26 @@ class Question(models.Model):
 
     def save(self, *args, **kwargs):
         # Track manual edits on AI-generated questions after first create.
-        if self.pk and self.generated_by_ai and not self.manually_edited:
+        # Skip the lookup when update_fields is given and contains none of the
+        # tracked fields (e.g. save(update_fields=["approved"])), or on insert.
+        _tracked = frozenset((
+            "prompt", "options", "correct_index", "explanation",
+            "scenario_data", "source_evidence", "source_excerpt",
+        ))
+        update_fields = kwargs.get("update_fields") or (args[1] if len(args) > 1 else None)
+        needs_check = (
+            self.pk
+            and self.generated_by_ai
+            and not self.manually_edited
+            and (update_fields is None or _tracked.intersection(update_fields))
+        )
+        if needs_check:
             try:
                 previous = Question.objects.get(pk=self.pk)
             except Question.DoesNotExist:
                 previous = None
             if previous is not None:
-                tracked = (
-                    "prompt", "options", "correct_index", "explanation",
-                    "scenario_data", "source_evidence", "source_excerpt",
-                )
-                for field in tracked:
+                for field in _tracked:
                     if getattr(previous, field) != getattr(self, field):
                         self.manually_edited = True
                         break
