@@ -96,7 +96,6 @@ The local virtualenv also contains `reportlab` and `weasyprint`, which are not i
 | Package | Version | Licence | How it reaches users |
 |---|---|---|---|
 | page-flip (StPageFlip) | 2.0.7 | MIT, Copyright (c) 2020 Nodlik | Served from our static files (`courses/static/courses/js/vendor/page-flip.browser.js` and via `node_modules`). The minified file has no header, so the licence is shipped next to it as `page-flip.LICENSE.txt` and in [`LICENSES/MIT-page-flip.txt`](LICENSES/MIT-page-flip.txt). |
-| react-pageflip | 2.0.3 | MIT | Installed by `npm install` but not referenced by any template. |
 | GSAP + ScrollTrigger | 3.15.0 | GSAP Standard "No Charge" License (https://gsap.com/standard-license) | Loaded from jsDelivr on the homepage. Free for sites that do not charge end users for access. **Needs review** if CyberQuest ever charges users. Note: GSAP 3.13+ did **not** change to MIT — the licence URL moved from greensock.com to gsap.com but the terms remain the "Standard No Charge" licence. Verified against npm registry metadata 14 Oct 2026. |
 | Lenis | 1.1.13 | MIT | Loaded from jsDelivr on the homepage. |
 | PDF.js | 3.11.174 | Apache-2.0 (Mozilla) | Loaded from cdnjs in the course reader. |
