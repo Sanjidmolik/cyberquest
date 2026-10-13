@@ -38,18 +38,20 @@ def client_ip(request) -> str:
 
 
 def is_rate_limited(key: str, *, limit: int, window_seconds: int) -> bool:
-    """Return True when the keyed counter has already reached ``limit``."""
-    count = cache.get(key)
-    if count is None:
-        cache.set(key, 1, window_seconds)
-        return False
-    if int(count) >= limit:
-        return True
+    """Return True when the keyed counter has already reached ``limit``.
+
+    Uses cache.add for atomic initialisation so two simultaneous first
+    requests cannot both read None and both count as a fresh start.
+    """
+    # add() is a no-op when the key already exists; only sets when absent.
+    cache.add(key, 0, window_seconds)
     try:
-        cache.incr(key)
+        count = cache.incr(key)
     except ValueError:
+        # Key vanished between add and incr (extremely unlikely); treat as first hit.
         cache.set(key, 1, window_seconds)
-    return False
+        count = 1
+    return count > limit
 
 
 def rate_limit(
