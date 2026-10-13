@@ -10,6 +10,7 @@ False so a backend error is not reported as a successful send.
 """
 
 import logging
+from email.utils import parseaddr
 
 import requests
 from django.core.mail import send_mail
@@ -21,11 +22,14 @@ logger = logging.getLogger(__name__)
 
 
 def _sender_email() -> str:
-    """Use the configured From address. Accept Django's Name <email> form."""
-    value = (settings.DEFAULT_FROM_EMAIL or "").strip()
-    if "<" in value and value.endswith(">"):
-        value = value[value.rfind("<") + 1:-1].strip()
-    return value
+    """Extract the RFC 5322 address from DEFAULT_FROM_EMAIL.
+
+    Handles both bare 'addr@example.com' and 'Name <addr@example.com>' forms
+    correctly via the stdlib parser, unlike a raw string-split.
+    """
+    raw = (settings.DEFAULT_FROM_EMAIL or "").strip()
+    _display_name, addr = parseaddr(raw)
+    return addr or raw
 
 
 def _deliver_via_brevo(subject, message, recipient, sender) -> bool:
