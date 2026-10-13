@@ -46,7 +46,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     )
     profile_picture = models.ImageField(upload_to="profile_pictures/", blank=True, null=True)
 
-    xp = models.PositiveIntegerField(default=0)
+    xp = models.PositiveIntegerField(default=0, db_index=True)
     level = models.PositiveIntegerField(default=1)
 
     # ---- Real login-streak tracking (powers the dashboard's Day Streak) ----

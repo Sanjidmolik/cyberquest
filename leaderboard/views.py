@@ -21,12 +21,13 @@ def leaderboard_view(request):
         .order_by("-xp")[:20]
     )
 
-    # Find the current user's own rank too, even if they're outside the top 20
-    all_ranked = list(
-        UserModel.objects.filter(is_active=True).exclude(username__isnull=True).exclude(username="")
-        .order_by("-xp").values_list("id", flat=True)
-    )
-    my_rank = (all_ranked.index(request.user.id) + 1) if request.user.id in all_ranked else None
+    # Rank = number of active named users with strictly more XP, plus one.
+    # Ties are counted as the same rank (users with equal XP share a position).
+    base_qs = UserModel.objects.filter(is_active=True).exclude(username__isnull=True).exclude(username="")
+    my_rank = None
+    if request.user.username:
+        users_ahead = base_qs.filter(xp__gt=request.user.xp).count()
+        my_rank = users_ahead + 1
 
     return render(request, "leaderboard/leaderboard.html", {
         "top_users": top_users,
