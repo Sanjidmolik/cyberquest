@@ -197,3 +197,25 @@ database, and `check` passes (with `check --deploy` warnings listed here). Then:
   Dhaka midnight; boundary tests in `cyberquest/tests_timezone.py`.)
 - Added to the checklist: compare the student and Command Center leaderboards when
   ranking rules change.
+
+### Feature 2: Messaging (merged into `develop`)
+- Tests: 566 pass (35 new in `messaging/tests.py`; avatar and storage tests moved to the
+  token route). `makemigrations --check` clean; fresh-database `migrate` OK
+  (`accounts.0016_avatar_token`, `messaging.0001_initial`); `check` clean with a key, and
+  `messaging.E001` without one (intended).
+- `check --deploy` warnings: `accounts.W001` (FIELD_ENCRYPTION_KEYS not set locally).
+- Verified by hand: plain `runserver` (daphne) serves pages and static files; the socket
+  handshake is `101` when signed in, `403` when anonymous or from another origin.
+  Screenshots: conversation (desktop and 390 px), request view.
+- Security: every messaging URL needs sign-in and is participant-only (404 otherwise);
+  POSTs need CSRF; sockets need a session and a matching Origin and re-check membership
+  for every event and frame; rate limits per user; text inserted with `textContent`, no
+  `|safe`; JSON carries usernames only (no emails or user ids); avatar URLs use random
+  tokens, unknown tokens and blocked viewers get the same default image.
+- Known limitations: no WebSockets in production while it runs Gunicorn/WSGI (polling
+  covers it); in-memory channel layer is single-process (Redis needed for several); no
+  attachments, no message search by content (bodies are encrypted), no read receipts.
+  Leaderboard rows are cached for everyone, so they show a blocker's avatar URL, but the
+  avatar endpoint still returns the default image to the blocked viewer.
+- Added to the checklist: new pages must show public cards via `accounts.public` (never
+  user ids); any new message path must go through `messaging/policy.py`.
