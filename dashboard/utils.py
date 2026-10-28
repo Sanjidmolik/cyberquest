@@ -53,13 +53,9 @@ def get_dashboard_context(user):
     xp_progress_percent = min(xp_into_level, 100)
     xp_remaining = xp_needed_for_next - xp_into_level
 
-    # ---- Leaderboard rank (reuses the same ordering as the Leaderboard page) ----
-    ranked_ids = list(
-        UserModel.objects.filter(is_active=True)
-        .exclude(username__isnull=True).exclude(username="")
-        .order_by("-xp").values_list("id", flat=True)
-    )
-    my_rank = (ranked_ids.index(user.id) + 1) if user.id in ranked_ids else None
+    # ---- Leaderboard rank (the same rules as the Leaderboard page; one count query) ----
+    from leaderboard.ranking import rank_of
+    my_rank = rank_of(user)
 
     # ---- Per-game best attempt (used for both Active Missions and Skill Matrix) ----
     attempts = GameAttempt.objects.filter(user=user).finished()
@@ -133,13 +129,6 @@ def get_dashboard_context(user):
     # called on every successful login) ----
     current_streak = user.current_streak
 
-    # ---- Leaderboard preview (top 5 + this user if outside it) ----
-    top_users = list(
-        UserModel.objects.filter(is_active=True)
-        .exclude(username__isnull=True).exclude(username="")
-        .order_by("-xp")[:5]
-    )
-
     return {
         "display_name": user.display_name(),
         "username": user.username,
@@ -167,6 +156,5 @@ def get_dashboard_context(user):
         "unread_notification_count": unread_notification_count,
         "total_badges_earned": total_badges_earned,
         "current_streak": current_streak,
-        "top_users": top_users,
         "cyber_tip": random.choice(CYBER_TIPS),
     }

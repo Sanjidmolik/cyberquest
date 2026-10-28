@@ -3,33 +3,93 @@
 
 {% block title %}Leaderboard — CyberQuest{% endblock %}
 {% block context_name %}Leaderboard{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'leaderboard/css/leaderboard.css' %}?v=2">
+{% endblock %}
 
 {% block content %}
-<div class="cq-container command-page-inner" style="max-width:650px;">
-  <div class="cq-page-card">
-    <h1 class="cq-heading">🏆 Leaderboard</h1>
-    <p class="cq-sub">Top players ranked by XP.</p>
-
-    {% for u in top_users %}
-    <div class="cq-row" style="display:flex;align-items:center;gap:16px;margin-bottom:0.5rem;">
-      <span class="cq-rank {% if forloop.counter == 1 %}cq-rank-1{% elif forloop.counter == 2 %}cq-rank-2{% elif forloop.counter == 3 %}cq-rank-3{% endif %}" style="font-weight:800;width:40px;{% if forloop.counter == 1 %}color:#ffd23f;{% elif forloop.counter == 2 %}color:#c0c0c0;{% elif forloop.counter == 3 %}color:#cd7f32;{% else %}color:var(--muted);{% endif %}">
-        #{{ forloop.counter }}
-      </span>
-      <span class="cq-row-name" style="flex-grow:1;font-weight:600;">
-        {{ u.username }} <span class="cq-body small" style="display:inline;margin:0;">Lvl {{ u.level }}</span>
-      </span>
-      <span class="cq-row-xp">{{ u.xp }} XP</span>
+<div class="cq-dash lb">
+  <header class="lb-head">
+    <div>
+      <h1 class="cq-title cq-title--lg">LEADERBOARD</h1>
+      <p class="lb-range">{{ period_label }}</p>
     </div>
-    {% empty %}
-    <p class="cq-body">No ranked players yet.</p>
-    {% endfor %}
+    <nav class="lb-tabs" aria-label="Leaderboard period">
+      {% for tab in tabs %}
+      <a href="?period={{ tab.key }}" class="lb-tab{% if tab.key == period %} is-active{% endif %}"{% if tab.key == period %} aria-current="page"{% endif %}>{{ tab.label }}</a>
+      {% endfor %}
+    </nav>
+  </header>
 
-    {% if my_rank %}
-      <div class="cq-my-rank" style="margin-top:1.25rem;padding:0.75rem 1.1rem;border-radius:12px;">
-        Your current rank: <strong>#{{ my_rank }}</strong>
-      </div>
+  {% if period != "all" %}
+  <p class="lb-note">XP earned from missions and practice in this period. Manual XP adjustments count only in All-time.</p>
+  {% endif %}
+
+  {% if podium %}
+  <ol class="lb-podium" aria-label="Top three">
+    {% for p in podium %}
+    <li class="lb-step lb-step--{{ forloop.counter }}{% if p.rank == 1 %} is-first{% endif %}{% if p.is_me %} is-me{% endif %}"{% if p.is_me %} aria-current="true"{% endif %}>
+      <span class="lb-medal" aria-label="Rank {{ p.rank }}">{{ p.rank }}</span>
+      {% if p.avatar_url %}<img src="{{ p.avatar_url }}" alt="" class="lb-av lb-av--lg">{% else %}<span class="lb-av lb-av--lg" aria-hidden="true">{{ p.initial }}</span>{% endif %}
+      <span class="lb-name">{{ p.username }}{% if p.is_me %} <small>(you)</small>{% endif %}</span>
+      <span class="lb-xp">{{ p.xp }} XP</span>
+      <span class="lb-courses">{{ p.courses }} course{{ p.courses|pluralize }} completed</span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+
+  {% if rows %}
+  <section class="cq-panel">
+    <div class="lb-row lb-row--head" aria-hidden="true">
+      <span>Rank</span><span>Player</span><span class="lb-num">Courses</span><span class="lb-num">XP</span>
+    </div>
+    <ol class="lb-list" start="{{ rows.0.rank }}">
+      {% for p in rows %}
+      <li class="lb-row{% if p.is_me %} is-me{% endif %}"{% if p.is_me %} aria-current="true"{% endif %}>
+        <span class="lb-rank">{{ p.rank }}</span>
+        <span class="lb-player">
+          {% if p.avatar_url %}<img src="{{ p.avatar_url }}" alt="" class="lb-av">{% else %}<span class="lb-av" aria-hidden="true">{{ p.initial }}</span>{% endif %}
+          <span class="lb-name">{{ p.username }}{% if p.is_me %} <small>(you)</small>{% endif %}</span>
+        </span>
+        <span class="lb-num"><span class="lb-label">Courses </span>{{ p.courses }}</span>
+        <span class="lb-num lb-xp">{{ p.xp }}<span class="lb-label"> XP</span></span>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+
+  {% if not podium %}
+  <section class="cq-panel lb-empty">
+    <h2 class="cq-title">No one yet</h2>
+    <p>{% if period == "all" %}No ranked players yet.{% else %}Nobody has earned XP in this period yet. Finish a mission or a practice session to be first.{% endif %}</p>
+  </section>
+  {% endif %}
+
+  {% if board.pages > 1 %}
+  <nav class="lb-pager" aria-label="Leaderboard pages">
+    {% if board.page > 1 %}<a href="?period={{ period }}&amp;page={{ board.page|add:'-1' }}" rel="prev">Previous</a>{% endif %}
+    <span>Page {{ board.page }} of {{ board.pages }}</span>
+    {% if board.page < board.pages %}<a href="?period={{ period }}&amp;page={{ board.page|add:'1' }}" rel="next">Next</a>{% endif %}
+  </nav>
+  {% endif %}
+
+  <aside class="lb-me" aria-label="Your rank">
+    {% if me and me.rank %}
+      <span class="lb-rank">#{{ me.rank }}</span>
+      <span class="lb-player">{% if me.avatar_url %}<img src="{{ me.avatar_url }}" alt="" class="lb-av">{% else %}<span class="lb-av" aria-hidden="true">{{ me.initial }}</span>{% endif %}<span class="lb-name">{{ me.username }} <small>(you)</small></span></span>
+      <span class="lb-num"><span class="lb-label">Courses </span>{{ me.courses }}</span>
+      <span class="lb-num lb-xp">{{ me.xp }}<span class="lb-label"> XP</span></span>
+    {% elif me %}
+      <span class="lb-me-text">You haven’t earned XP {% if period == "week" %}this week{% else %}this month{% endif %} yet. Finish a mission or a practice session to get on the board.</span>
+    {% elif is_staff_account %}
+      <span class="lb-me-text">Staff accounts aren’t ranked.</span>
+    {% else %}
+      <span class="lb-me-text">Choose a username in your profile to appear on the leaderboard.</span>
     {% endif %}
-  </div>
+  </aside>
 </div>
 {% endblock %}

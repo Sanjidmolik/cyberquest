@@ -179,3 +179,21 @@ database, and `check` passes (with `check --deploy` warnings listed here). Then:
 - **Commit hygiene:** no secrets, databases or media in the commit.
 - **Regressions:** dashboard, practice, Practice Studio and login/2FA still work.
 - **Merge:** merge into `develop` with `--no-ff`, re-run the full suite, and report.
+
+## Audit log
+
+### Feature 1: Leaderboard (merged into `develop`)
+- Tests: 525 pass (14 new in `leaderboard/tests_board.py`, Command Center leaderboard tests
+  updated to the shared rules). `makemigrations --check` clean (no migrations needed);
+  fresh-database `migrate` OK; `check` clean.
+- `check --deploy` warnings: `accounts.W001` (FIELD_ENCRYPTION_KEYS not set). Expected
+  locally; must be set in production.
+- Security: `/leaderboard/` needs sign-in; GET only; `period` is allow-listed, `page` is
+  parsed as an int and clamped; usernames are escaped; rows carry public fields only (the
+  cache holds the same). Avatars use the existing sign-in-only `accounts:profile_photo`
+  URL, which contains the user's numeric id (as on the dashboard before).
+- Known limitations: `TIME_ZONE` is `UTC`, so weeks start Saturday 00:00 UTC (06:00 in
+  Dhaka); set `TIME_ZONE = "Asia/Dhaka"` if the week should start at local midnight (this
+  also moves daily streak boundaries). Period XP leaves out manual XP adjustments.
+- Added to the checklist: compare the student and Command Center leaderboards when
+  ranking rules change.
