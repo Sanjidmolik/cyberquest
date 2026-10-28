@@ -1,12 +1,12 @@
 # Deploying CyberQuest
 
-> **Status:** there is no deployment for now. The production database will be **MySQL**
-> (8.0.11 or later); development and the test suite use SQLite. No hosting provider has
-> been chosen: the Render-specific steps below (service settings, R2 media, health check,
+> **Status:** there is no deployment for now. Development uses SQLite or MySQL; the
+> production database at launch will be **PostgreSQL**. No hosting provider has been
+> chosen: the Render-specific steps below (service settings, R2 media, health check,
 > rollback) describe the earlier Render plan and need adapting to the chosen host.
-> **Before the first deploy, run the full test suite against MySQL** (see section 6).
+> **Before the first deploy, run the full test suite against PostgreSQL** (see section 6).
 
-CyberQuest runs as a Python web service (Gunicorn) with a **MySQL** database and private
+CyberQuest runs as a Python web service (Gunicorn) with a **PostgreSQL** database and private
 storage for uploads. This guide covers configuration, the upgrade to this release,
 backups, rollback, and checks after a deploy. `deploy/render.yaml.example` shows the
 earlier Render setup as a Blueprint.
@@ -16,7 +16,7 @@ earlier Render setup as a Blueprint.
 | Piece | Where | Notes |
 |---|---|---|
 | Web app | Render web service, Gunicorn | `gunicorn cyberquest.wsgi:application -c deploy/gunicorn.conf.py` |
-| Database | MySQL 8.0.11+ via `DATABASE_URL` (`mysqlclient` driver) | Also holds sessions and the rate-limit cache table. Unset locally: SQLite |
+| Database | PostgreSQL via `DATABASE_URL` (`psycopg2` driver) at launch | Also holds sessions and the rate-limit cache table. Locally: SQLite (unset) or MySQL (`mysqlclient`) |
 | Static files | WhiteNoise, collected at build | Hashed, compressed, served by the app |
 | Uploads and issued certificates | Private Cloudflare R2 bucket on Render Free (`MEDIA_STORAGE=r2`, section 2a), or a persistent disk at `MEDIA_ROOT` on paid plans | Served only through permission-checked views |
 | Email | Brevo HTTPS API (`BREVO_API_KEY`), SMTP fallback | Render's free tier blocks outbound SMTP |
@@ -32,7 +32,7 @@ lists every variable with blank placeholders.
 | `DEBUG` | yes | `False` in production |
 | `SECRET_KEY` | yes | Long random value. Signs sessions and keys the verification-code hashes |
 | `FIELD_ENCRYPTION_KEYS` | yes | Fernet key that encrypts authenticator secrets. **Back it up**: if it is lost, users with an authenticator app must re-enrol |
-| `DATABASE_URL` | yes | `mysql://USER:PASSWORD@HOST:3306/DBNAME`. The app adds `utf8mb4` and strict mode itself (`cyberquest/settings.py`) |
+| `DATABASE_URL` | yes | `postgres://USER:PASSWORD@HOST:5432/DBNAME`. (A local `mysql://` URL also works; the app adds `utf8mb4` and strict mode for MySQL itself.) |
 | `MEDIA_ROOT` | yes | Mount path of the persistent disk, e.g. `/var/data/media` |
 | `ALLOWED_HOSTS` | custom domain | Comma-separated. The `*.onrender.com` host is added automatically |
 | `CSRF_TRUSTED_ORIGINS` | custom domain | e.g. `https://learn.example.org` |
@@ -137,36 +137,34 @@ contains `games.0008_mission_attempt_timing`.
 - New certificate IDs use 12 hex characters (`CQ-2026-1A2B3C4D5E6F`). Existing IDs are
   unchanged and still verify.
 
-## 6. Database: MySQL setup, tests, backups and restore
+## 6. Database: local setup, tests, backups and restore
 
-**Create the database** with full Unicode (Bengali text and emoji need `utf8mb4`):
+**Local development** uses SQLite (leave `DATABASE_URL` unset) or MySQL 8.0.11+
+(`DATABASE_URL=mysql://USER:PASSWORD@HOST:3306/DBNAME`; create the database with
+`CHARACTER SET utf8mb4`). **Production at launch is PostgreSQL**
+(`DATABASE_URL=postgres://USER:PASSWORD@HOST:5432/DBNAME`). The code uses only portable
+database features, and JSON is compared in a canonical form because database JSON types
+reorder keys.
 
-```sql
-CREATE DATABASE cyberquest CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-CREATE USER 'cyberquest'@'%' IDENTIFIED BY '<strong password>';
-GRANT ALL PRIVILEGES ON cyberquest.* TO 'cyberquest'@'%';
-```
-
-**Before the first deploy, run the full suite against MySQL.** MySQL's JSON type stores
-objects in its own key order, like other databases; CyberQuest compares and fingerprints
-JSON in a canonical form, but this has only been tested on SQLite so far. The test runner
+**Before the first deploy, run the full suite against PostgreSQL.** It has only run on
+SQLite so far. A local Docker/PostgreSQL setup is planned, not done yet. The test runner
 creates and drops its own `test_<DBNAME>` database, so the user needs rights to create it:
 
 ```bash
-DATABASE_URL=mysql://cyberquest:<password>@127.0.0.1:3306/cyberquest python manage.py test --noinput
+DATABASE_URL=postgres://cyberquest:<password>@127.0.0.1:5432/cyberquest python manage.py test --noinput
 ```
 
 **Backups.** Use the host's automatic backups if it has them. Before every risky deploy,
-also take a manual dump:
+also take a manual dump from a machine with PostgreSQL client tools:
 
 ```bash
-mysqldump --single-transaction --routines --default-character-set=utf8mb4   -h "$DB_HOST" -u "$DB_USER" -p cyberquest > cyberquest-$(date +%Y%m%d-%H%M).sql
+pg_dump --format=custom --no-owner --file=cyberquest-$(date +%Y%m%d-%H%M).dump "$EXTERNAL_DATABASE_URL"
 ```
 
 Restore into an empty database (or after confirming you intend to overwrite):
 
 ```bash
-mysql --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" -p cyberquest < cyberquest-YYYYMMDD-HHMM.sql
+pg_restore --no-owner --clean --if-exists --dbname="$TARGET_DATABASE_URL" cyberquest-YYYYMMDD-HHMM.dump
 ```
 
 Dumps contain personal data: store them encrypted and delete them on the same schedule

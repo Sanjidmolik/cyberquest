@@ -1,6 +1,7 @@
 # Practice Studio: implementation plan
 
-Status: **signed off**; implementation in progress (see §7).
+Status: **phases 1–3 done and tested. Phases 4–7 are paused** until the four features in
+`docs/features/PLAN.md` (leaderboard, messaging, moderation, blog) are finished.
 
 ---
 
@@ -16,7 +17,7 @@ Status: **signed off**; implementation in progress (see §7).
 | D6 | Commits | Full suite on `fix/audit-phase2`, `git status` reviewed by folder, no secrets / `.env` / `db.sqlite3` / media. One baseline commit "chore: baseline practice engine and audit fixes" on `fix/audit-phase2`, then branch `feat/practice-studio` with one commit per phase. |
 | D7 | Deploys overwriting edits | `Scenario.source` (`seed` / `studio`) plus `content_hash`. `convert_scenarios` and `load_scenarios`: create missing sessions; update a seed session only while `source="seed"`; **never** touch `source="studio"` or a session with published studio versions; log every skip; `--force` only with an explicit slug list. The first studio save sets `source="studio"`. Tests include "running the build twice changes nothing". |
 | D8 | `meta` block | `content["meta"] = {badge, description}`. `public_content()` passes it through (it holds no answer keys; a test checks that). A test checks the player ignores unknown top-level keys. |
-| D9 | Database | **MySQL** (8.0.11+) in production, SQLite locally and in tests, chosen by `DATABASE_URL`. Only portable `JSONField` use (no database-specific JSON lookups). JSON is compared and fingerprinted as canonical JSON, because MySQL's JSON type reorders keys. No deployment for now. |
+| D9 | Database | SQLite or MySQL locally now; **PostgreSQL in production at launch**; chosen by `DATABASE_URL`. Only portable database features (no database-specific SQL or JSON lookups). JSON is compared and fingerprinted as canonical JSON, because database JSON types reorder keys. No deployment for now. |
 
 ## 1. Step types: the exact format the studio reads and writes
 
@@ -180,7 +181,7 @@ Tests run after every phase; one commit per phase on `feat/practice-studio`.
 - The HANDOFF.md "MySQL" correction (D9) landed in the baseline commit `14daaf5`, not in the phase 1 commit `b26ffc3` whose message mentions it.
 - Phase 1 fixes (review): canonical-JSON fingerprint test (database JSON types reorder keys); `ScenarioVersion.origin` (seed / studio) with a seed snapshot of every existing version (migration 0008) and on every seed write, so attempts started before a deploy grade on their own content and seed snapshots never block seed updates; wider preview isolation tests; preview runs purged after 7 days by `purge_expired_data`.
 
-**Before first deploy: run the full suite against MySQL** (`DATABASE_URL=mysql://... python manage.py test`; see DEPLOYMENT.md section 6). Not done yet: there is no MySQL server here and no deployment is planned for now.
+**Before first deploy: run the full suite against PostgreSQL** (`DATABASE_URL=postgres://... python manage.py test`; see DEPLOYMENT.md section 6).
 
 ## 8. Definition of done (as I'll verify it)
 
@@ -202,3 +203,10 @@ Dropped from the studio forms because the player doesn't render them (D2). Each 
 | Branch scene channel (email, SMS, chat, call) with its own chrome | branch | New `channel` key + per-channel scene styling in `steps/branch.js` |
 | Badge name shown in the player | results | Read `content.meta.badge` in `engine.js` instead of the topic-derived badge |
 | Topic Kit generator | studio start screen | A `practice/generation/` package (kits per topic, assembler) that outputs content passing `validate_content` |
+
+## 10. Future
+
+- **Docker + PostgreSQL for local development and tests**, to run the full suite against
+  the production database before launch (deferred).
+- **Topic Kit generation**: the start-screen card stays disabled ("Coming soon"). The Gemini
+  integration will be written by the project owner; the studio must not include it.

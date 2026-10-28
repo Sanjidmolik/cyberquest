@@ -135,9 +135,9 @@ WSGI_APPLICATION = 'cyberquest.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 #
 # Chosen by DATABASE_URL. Unset: the local SQLite file db.sqlite3 (development and tests).
-# MySQL 8.0.11+ (the planned production database):
-#   DATABASE_URL=mysql://USER:PASSWORD@HOST:3306/DBNAME
-# Only portable JSONField features are used, so both behave the same.
+# Local MySQL 8.0.11+:  DATABASE_URL=mysql://USER:PASSWORD@HOST:3306/DBNAME
+# Production at launch: DATABASE_URL=postgres://USER:PASSWORD@HOST:5432/DBNAME
+# Only portable database features are used (no database-specific SQL or JSON queries).
 
 DATABASES = {
     'default': dj_database_url.config(

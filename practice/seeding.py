@@ -27,8 +27,8 @@ SEED_FIELDS = ("kind", "title", "difficulty", "est_minutes", "time_limit_sec", "
 
 
 def canonical_json(content):
-    """One spelling of a JSON value: sorted keys, no whitespace. Database JSON types (MySQL's
-    included) do not keep key order, so anything compared or fingerprinted goes through this."""
+    """One spelling of a JSON value: sorted keys, no whitespace. Database JSON types (PostgreSQL's
+    and MySQL's) do not keep key order, so anything compared or fingerprinted goes through this."""
     return json.dumps(content, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
 
 
