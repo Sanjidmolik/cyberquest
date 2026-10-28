@@ -1,0 +1,27 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_head %}{% include "practice/studio/_head.html" %}{% endblock %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'studio:start' %}">Back to the start screen</a></p>
+
+<form class="ops-panel st-import" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <h2>Import a session file</h2>
+  <p class="ops-note">The file is checked first. Nothing is saved unless every check passes, and the session arrives as a draft.</p>
+  {% if problems %}
+  <ul class="st-problems" role="alert" aria-label="Why the file can’t be imported">
+    {% for problem in problems %}<li>{{ problem }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  <label for="{{ form.file.id_for_label }}">Session file (.json)</label>
+  {{ form.file }}
+  <small>{{ form.file.help_text }}</small>
+  {{ form.file.errors }}
+
+  <label for="{{ form.topic.id_for_label }}">Topic</label>
+  {{ form.topic }}
+  <small>{{ form.topic.help_text }}</small>
+  {{ form.topic.errors }}
+
+  <button type="submit">Check and import</button>
+</form>
+{% endblock %}

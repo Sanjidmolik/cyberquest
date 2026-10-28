@@ -1,0 +1,55 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_head %}{% include "practice/studio/_head.html" %}{% endblock %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'studio:list' %}">Back to all sessions</a></p>
+<p class="ops-note">Choose how to start. Every new session begins as a draft: students won’t see it until you publish it.</p>
+
+<div class="st-start">
+  <a class="st-card is-recommended" href="{% url 'studio:duplicate' %}">
+    <span class="st-tag">Recommended</span>
+    <h2><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>Duplicate an existing session</h2>
+    <p>Copy one of the {{ published }} published sessions, then change only the text. The copy keeps the same steps, answers and settings, so it plays exactly like the original.</p>
+    <ol class="st-how">
+      <li>Pick a session to copy (search by title, topic or kind).</li>
+      <li>Change the topic and rewrite the text, step by step.</li>
+      <li>Preview it in the real player, pass the checks, publish.</li>
+    </ol>
+    <span class="st-cta">Choose a session →</span>
+  </a>
+
+  <section class="st-card" aria-labelledby="st-template-title">
+    <h2 id="st-template-title"><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v4H5zM5 11h6v9H5zM14 11h5v9h-5z"/></svg>Start from a template</h2>
+    <p>A complete example session with the right steps for its kind. Overwrite the example text with your own.</p>
+    <div class="st-templates">
+      {% for t in templates %}
+      <form class="st-template" method="post" action="{% url 'studio:template' t.kind %}">
+        {% csrf_token %}
+        <div>
+          <strong>{{ t.kind|capfirst }}</strong>
+          <ol class="st-flow" aria-label="Steps">{% for step in t.steps %}<li>{{ step }}</li>{% endfor %}<li>Results</li></ol>
+        </div>
+        <label>Topic
+          <select name="topic" required>
+            <option value="">Choose a topic</option>
+            {% for course in template_form.fields.topic.queryset %}<option value="{{ course.pk }}">{{ course.title }} ({{ course.code }})</option>{% endfor %}
+          </select>
+        </label>
+        <button type="submit">Use {{ t.kind }} template</button>
+      </form>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="st-card is-disabled" aria-disabled="true">
+    <span class="st-tag">Coming soon</span>
+    <h2><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.6 7.1 18.2 8 12.7 4 8.8l5.5-.8z"/></svg>Generate from Topic Kit</h2>
+    <p>Build a first draft from a topic’s kit of facts and examples. Not available yet.</p>
+  </div>
+
+  <a class="st-card" href="{% url 'studio:import' %}">
+    <h2><svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Import a file</h2>
+    <p>Bring in a session exported from the Practice Studio of another CyberQuest site. It is checked before anything is saved.</p>
+    <span class="st-cta">Choose a file →</span>
+  </a>
+</div>
+{% endblock %}

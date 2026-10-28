@@ -1,0 +1,38 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_head %}{% include "practice/studio/_head.html" %}{% endblock %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'studio:start' %}">Back to the start screen</a></p>
+<p class="ops-note">Pick the session to copy. The copy is a new draft with the same steps, answers and settings; afterwards you only change the text.</p>
+
+<form class="ops-filters" method="get">
+  <input type="search" name="q" value="{{ form.q.value|default:'' }}" placeholder="Search by title" aria-label="Search sessions">
+  {{ form.topic }}
+  {{ form.kind }}
+  <button type="submit">Filter</button>
+</form>
+
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead><tr><th>Session</th><th>Topic</th><th>Kind</th><th>Steps</th><th><span class="visually-hidden">Copy</span></th></tr></thead>
+  <tbody>
+    {% for s in rows %}
+    <tr>
+      <td><strong>{{ s.title }}</strong><br><small class="st-meta"><span class="ops-badge ops-s-{{ s.status }}">{{ s.get_status_display }}</span> · v{{ s.version }}</small></td>
+      <td>{{ s.topic.title }}</td>
+      <td>{{ s.get_kind_display }}</td>
+      <td><ol class="st-flow" aria-label="Steps">{% for step in s.step_names %}<li>{{ step }}</li>{% endfor %}</ol></td>
+      <td>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="source" value="{{ s.slug }}">
+          <button type="submit" aria-label="Duplicate {{ s.title }}">Duplicate</button>
+        </form>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="5">No sessions match. Try another topic or kind.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

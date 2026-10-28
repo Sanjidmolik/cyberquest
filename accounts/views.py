@@ -236,10 +236,25 @@ def login_view(request):
 
 
 def _admin_target_allowed(user, target: str) -> bool:
-    """Superusers may go anywhere. Plain staff may only reach the Django admin."""
+    """Superusers may go anywhere. Plain staff may reach the Django admin, and Content
+    Editors / Publishers the Practice Studio. Every other Command Center page stays closed."""
+    from practice.studio.access import can_use_studio
+
     if user.is_superuser:
         return True
+    if can_use_studio(user) and target.startswith(reverse("studio:list")):
+        return True
     return bool(user.is_staff) and target.startswith(reverse("admin:index"))
+
+
+def _admin_home(user) -> str:
+    """Where an administrator lands without a ?next: the Command Center, or the Practice Studio
+    for Content Editors and Publishers."""
+    from practice.studio.access import can_use_studio
+
+    if not user.is_superuser and can_use_studio(user):
+        return reverse("studio:list")
+    return reverse("ops:overview")
 
 
 def _finish_login(request, user):
@@ -264,9 +279,8 @@ def admin_login_view(request):
     Superusers reach the Command Center. Staff without superuser rights may
     only continue to the Django admin. Students are refused.
     """
-    fallback = reverse("ops:overview")
     if request.user.is_authenticated:
-        target = _safe_next(request, fallback)
+        target = _safe_next(request, _admin_home(request.user))
         if _admin_target_allowed(request.user, target):
             return redirect(target)
         return redirect(next_step_url_name(request.user))
@@ -283,10 +297,10 @@ def admin_login_view(request):
             messages.error(request, "Invalid email or password.")
         elif not user.is_active:
             messages.error(request, "This administrator account is suspended.")
-        elif not _admin_target_allowed(user, _safe_next(request, fallback)):
+        elif not _admin_target_allowed(user, _safe_next(request, _admin_home(user))):
             messages.error(request, "This sign-in is only for CyberQuest administrators.")
         else:
-            target = _safe_next(request, fallback)
+            target = _safe_next(request, _admin_home(user))
             # The admin sign-in never skips the account's second factor.
             if user.totp_enabled:
                 request.session.cycle_key()

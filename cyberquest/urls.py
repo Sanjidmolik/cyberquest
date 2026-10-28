@@ -32,6 +32,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('dashboard/', include('dashboard.urls')),
+    # The Practice Studio lives in the Command Center but has its own gate (practice/studio/access.py).
+    path('admin-dashboard/studio/', include('practice.studio.urls')),
     path('admin-dashboard/', include('dashboard.ops_urls')),
     path('courses/', include('courses.urls')),
     path('learning/', include('courses.learning_urls')),

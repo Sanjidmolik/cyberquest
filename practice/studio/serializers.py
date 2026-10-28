@@ -22,6 +22,11 @@ from ..conversion import ALERT_COLOURS, STEP_LABEL
 DEFAULT_LABELS = {**STEP_LABEL, "configure": "Lock down", "order": "Respond", "branch": "Decide", "story": "Brief"}
 # Default meter changes per choice quality (the most common values in the existing content).
 DEFAULT_EFFECTS = {"good": (25, 10), "meh": (-10, 0), "bad": (-25, -10)}
+# What each step type is called in the studio.
+STEP_NAMES = {
+    "story": "Briefing", "concept_cards": "Learn cards", "hotspot": "Find the clues", "configure": "Settings",
+    "mcq": "Question", "triage": "Triage", "order": "Put in order", "match": "Match pairs", "branch": "Choices",
+}
 QUALITY_CHOICES = [("good", "Good"), ("meh", "Risky"), ("bad", "Bad")]
 LAYOUT_CHOICES = [("flow", "Workflow diagram"), ("fields", "Detail list")]
 MOODS = ["neutral", "smile", "talk", "think", "happy", "surprised", "correct", "wrong"]

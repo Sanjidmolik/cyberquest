@@ -1,0 +1,69 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_head %}{% include "practice/studio/_head.html" %}{% endblock %}
+{% block ops_content %}
+<div class="ops-page-head">
+  <p class="ops-note">Every practice session students can play, and the drafts being prepared. Drafts and archived sessions are hidden from students.</p>
+  {% if perms.practice.add_scenario %}<a class="ops-create" href="{% url 'studio:start' %}">New practice session</a>{% endif %}
+</div>
+
+<div class="ops-kpis">
+  <div class="ops-kpi"><strong>{{ total }}</strong><span>Sessions</span></div>
+  <div class="ops-kpi"><strong>{{ counts.published }}</strong><span>Published</span></div>
+  <div class="ops-kpi"><strong>{{ counts.draft }}</strong><span>Drafts</span></div>
+  <div class="ops-kpi"><strong>{{ counts.archived }}</strong><span>Archived</span></div>
+</div>
+
+{% if total %}
+<form class="ops-filters" method="get">
+  <input type="search" name="q" value="{{ form.q.value|default:'' }}" placeholder="Search by title" aria-label="Search sessions">
+  {{ form.topic }}
+  {{ form.kind }}
+  {{ form.status }}
+  <button type="submit">Filter</button>
+  {% if filtered %}<a href="{% url 'studio:list' %}">Clear</a>{% endif %}
+</form>
+
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead>
+    <tr><th>Session</th><th>Topic</th><th>Kind</th><th>Status</th><th>Version</th><th>Last change</th><th><span class="visually-hidden">Actions</span></th></tr>
+  </thead>
+  <tbody>
+    {% for s in rows %}
+    <tr{% if s.slug == created %} class="st-row-new"{% endif %}>
+      <td>
+        <strong>{{ s.title }}</strong><br>
+        <small class="st-meta">{{ s.slug }}{% if s.source == "seed" %} · built in{% endif %}</small>
+      </td>
+      <td>{{ s.topic.title }}</td>
+      <td>{{ s.get_kind_display }}</td>
+      <td><span class="ops-badge ops-s-{{ s.status }}">{{ s.get_status_display }}</span>{% if s.draft_content is not None %} <small class="st-meta">unpublished changes</small>{% endif %}</td>
+      <td>v{{ s.version }}</td>
+      <td><small class="st-meta">{{ s.updated_at|date:"j M Y, H:i" }}{% if s.updated_by %}<br>{{ s.updated_by.email }}{% endif %}</small></td>
+      <td>
+        <div class="st-actions">
+          {% if perms.practice.add_scenario %}
+          <form method="post" action="{% url 'studio:duplicate' %}">
+            {% csrf_token %}
+            <input type="hidden" name="source" value="{{ s.slug }}">
+            <button class="ops-btn-quiet" type="submit" aria-label="Duplicate {{ s.title }}">Duplicate</button>
+          </form>
+          {% endif %}
+          {% if s.status == "published" %}<a href="{% url 'practice:session' s.slug %}" target="_blank" rel="noopener">Open as student</a>{% endif %}
+        </div>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="7">No sessions match these filters. <a href="{% url 'studio:list' %}">Show all sessions</a></td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="ops-panel st-empty">
+  <h2>No practice sessions yet</h2>
+  <p>Start from a template, or import a session file from another CyberQuest site.</p>
+  {% if perms.practice.add_scenario %}<a class="ops-create" href="{% url 'studio:start' %}">New practice session</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}
