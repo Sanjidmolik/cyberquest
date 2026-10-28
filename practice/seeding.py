@@ -26,10 +26,15 @@ logger = logging.getLogger("practice.seeding")
 SEED_FIELDS = ("kind", "title", "difficulty", "est_minutes", "time_limit_sec", "xp_reward")
 
 
+def canonical_json(content):
+    """One spelling of a JSON value: sorted keys, no whitespace. PostgreSQL jsonb does not keep
+    key order, so anything compared or fingerprinted goes through this."""
+    return json.dumps(content, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+
+
 def content_hash(content):
     """A stable fingerprint of scenario content (key order and whitespace don't matter)."""
-    canonical = json.dumps(content, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return hashlib.sha256(canonical_json(content).encode("utf-8")).hexdigest()
 
 
 def snapshot_seed(row):

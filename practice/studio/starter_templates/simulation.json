@@ -1,0 +1,295 @@
+{
+  "template": "simulation",
+  "template_version": 1,
+  "based_on": "docs/practice-redesign/samples/crypto-01-simulation.json",
+  "kind": "simulation",
+  "title": "Secure-message workflow review",
+  "difficulty": "beginner",
+  "est_minutes": 12,
+  "xp_reward": 50,
+  "time_limit_sec": null,
+  "content": {
+    "steps": [
+      {
+        "type": "story",
+        "desc": "A team claims their message workflow is “secure”. Audit it, then fix it hands-on in a live console.",
+        "intro": "Hi, I’m Hana, your senior analyst. A team swears their file sharing is “totally secure”. Nobody has checked. Let’s test it together.",
+        "labels": [
+          "Learn",
+          "Investigate",
+          "Configure",
+          "Recap"
+        ],
+        "end_expression": "smile"
+      },
+      {
+        "type": "concept_cards",
+        "title": "3 things that make file sharing secure",
+        "tips": {
+          "start": "Quick primer first. Tap each card to flip it.",
+          "progress": "Nice! Keep flipping.",
+          "done": "You’ve got the basics. Time to investigate!"
+        },
+        "cards": [
+          {
+            "icon": "lock",
+            "title": "Strong cipher",
+            "back": "Use modern authenticated encryption like AES-256-GCM. Old ciphers such as DES can be cracked."
+          },
+          {
+            "icon": "key",
+            "title": "Separate key",
+            "back": "Never send the key with the file. Share it another way, so one leak can’t unlock everything."
+          },
+          {
+            "icon": "users",
+            "title": "Limited access",
+            "back": "Links should reach named people only, and expire. “Anyone with the link” means anyone."
+          }
+        ]
+      },
+      {
+        "type": "hotspot",
+        "layout": "flow",
+        "title": "Tap the 3 weak spots in this workflow",
+        "select": 3,
+        "items": [
+          {
+            "icon": "user",
+            "label": "Sender",
+            "value": "Ops team · SSO"
+          },
+          {
+            "icon": "lock",
+            "label": "Encryption",
+            "value": "DES · 56-bit · ECB"
+          },
+          {
+            "icon": "key",
+            "label": "Key sharing",
+            "value": "Pasted in same chat"
+          },
+          {
+            "icon": "link",
+            "label": "Share link",
+            "value": "Anyone · no expiry"
+          },
+          {
+            "icon": "building",
+            "label": "Recipient",
+            "value": "Partner · managed"
+          }
+        ],
+        "correct": [
+          1,
+          2,
+          3
+        ],
+        "tips": {
+          "start": "Something here isn’t as secure as it looks…",
+          "progress": "Good eye! Keep looking.",
+          "ready": "Happy with your picks? Hit Check.",
+          "good": "Sharp eyes! Next, let’s actually fix it.",
+          "bad": "Close! Look at what turned orange."
+        },
+        "feedback": {
+          "good": {
+            "title": "Sharp eyes!",
+            "text": "Weak cipher, key sent with the file and a public link. You caught all three."
+          },
+          "bad": {
+            "title": "Not quite",
+            "text": "The weak spots were the encryption, the key sharing and the share link."
+          }
+        }
+      },
+      {
+        "type": "configure",
+        "title": "Fix it in the console, then run the attack",
+        "console_title": "SecureShare Admin · workflow/customer-reports",
+        "check_label": "Run attack",
+        "settings": [
+          {
+            "key": "cipher",
+            "label": "Encryption",
+            "hint": "How the file is locked",
+            "options": [
+              "DES · 56-bit",
+              "3DES",
+              "AES-256-GCM"
+            ],
+            "secure": 2,
+            "points": [
+              0,
+              10,
+              30
+            ]
+          },
+          {
+            "key": "keyd",
+            "label": "Key delivery",
+            "hint": "How the recipient gets the key",
+            "options": [
+              "Same chat thread",
+              "Email",
+              "Separate channel"
+            ],
+            "secure": 2,
+            "points": [
+              0,
+              10,
+              30
+            ]
+          },
+          {
+            "key": "access",
+            "label": "Link access",
+            "hint": "Who can open the share link",
+            "options": [
+              "Anyone with link",
+              "Anyone in org",
+              "Named people"
+            ],
+            "secure": 2,
+            "points": [
+              0,
+              10,
+              25
+            ]
+          },
+          {
+            "key": "expiry",
+            "label": "Link expiry",
+            "hint": "How long the link works",
+            "options": [
+              "Never",
+              "30 days",
+              "7 days"
+            ],
+            "secure": 2,
+            "points": [
+              0,
+              8,
+              15
+            ]
+          }
+        ],
+        "threats": [
+          {
+            "label": "Brute-force cracking",
+            "settings": [
+              "cipher"
+            ]
+          },
+          {
+            "label": "Key leaked from chat",
+            "settings": [
+              "keyd"
+            ]
+          },
+          {
+            "label": "Link forwarded around",
+            "settings": [
+              "access",
+              "expiry"
+            ]
+          }
+        ],
+        "tips": {
+          "start": "This is their live config. Pick the setting you trust most in each row, then run the attack simulator.",
+          "progress": "Happy with every row? Run the attack and see what gets through.",
+          "good": "Every attack bounced off. Great work!",
+          "bad": "Something got through. Check what’s still orange."
+        },
+        "feedback": {
+          "good": {
+            "title": "Attack blocked!",
+            "text": "Strong cipher, separate key, named recipients and a short expiry. Nothing got through."
+          },
+          "bad": {
+            "title": "Breach!",
+            "text": "Attackers got in through the settings still marked orange. Use the strongest option in each row."
+          }
+        }
+      },
+      {
+        "type": "match",
+        "eyebrow": "RECAP · MATCH THE PAIRS",
+        "left_label": "PROBLEM",
+        "right_label": "FIX",
+        "left": [
+          {
+            "id": "des",
+            "text": "Old DES encryption"
+          },
+          {
+            "id": "key",
+            "text": "Key sent in the same chat"
+          },
+          {
+            "id": "link",
+            "text": "Public link that never expires"
+          }
+        ],
+        "right": [
+          {
+            "id": "named",
+            "text": "Named people + expiry date"
+          },
+          {
+            "id": "aes",
+            "text": "AES-256-GCM encryption"
+          },
+          {
+            "id": "sep",
+            "text": "Share the key separately"
+          }
+        ],
+        "correct": [
+          [
+            "des",
+            "aes"
+          ],
+          [
+            "key",
+            "sep"
+          ],
+          [
+            "link",
+            "named"
+          ]
+        ],
+        "tips": {
+          "start": "Tap a problem, then the fix that solves it.",
+          "progress": "Keep pairing. Tap a pair again to undo it.",
+          "ready": "All paired up? Check your matches.",
+          "good": "Perfect match! You really get it.",
+          "bad": "Nearly. The orange pairs were mixed up."
+        },
+        "feedback": {
+          "good": {
+            "title": "Perfect match!",
+            "text": "You know exactly how to fix each weak spot."
+          },
+          "bad": {
+            "title": "Not quite",
+            "text": "DES → AES-256-GCM, key in the same chat → share it separately, public link → named people and an expiry date."
+          }
+        }
+      }
+    ],
+    "debrief": {
+      "headline": "Mission complete!",
+      "sub": "You found the weak spots and locked the workflow down in the console.",
+      "learned": [
+        "Spot weak ciphers",
+        "Keep keys separate",
+        "Lock down share links"
+      ]
+    },
+    "meta": {
+      "badge": "Workflow Guardian",
+      "description": "Review a team's workflow, find the weak spots and lock the settings down."
+    }
+  }
+}

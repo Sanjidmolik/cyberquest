@@ -1,0 +1,198 @@
+{
+  "template": "choice",
+  "template_version": 1,
+  "based_on": "practice/scenario_content/phish-01-choice.json",
+  "kind": "choice",
+  "title": "The urgent CEO request",
+  "difficulty": "beginner",
+  "est_minutes": 8,
+  "xp_reward": 50,
+  "time_limit_sec": null,
+  "content": {
+    "steps": [
+      {
+        "type": "story",
+        "desc": "An “urgent” message from the CEO lands in your inbox. Every choice you make changes how the story ends.",
+        "intro": "Your call this time. You’ll face three decisions, and each one changes how the story plays out. There’s more than one ending.",
+        "labels": [
+          "Scene 1",
+          "Scene 2",
+          "Scene 3",
+          "Ending"
+        ],
+        "end_expression": "smile"
+      },
+      {
+        "type": "branch",
+        "meter_labels": {
+          "sec": "Security",
+          "trust": "Team trust"
+        },
+        "scenes": [
+          {
+            "title": "Inbox",
+            "time": "Monday · 09:12",
+            "tip": "An urgent email from the CEO. What do you do?",
+            "msgs": [
+              {
+                "ini": "DA",
+                "bg": "#3F55C9",
+                "from": "Daniel Ahmed (CEO)",
+                "addr": "ceo@cyberquest-corp.co",
+                "text": "URGENT. I’m in a board meeting. Buy 5 × $100 gift cards for a client and send me the codes within 10 minutes. Don’t call, I can’t talk."
+              }
+            ],
+            "choices": [
+              {
+                "text": "Buy the gift cards right away. It’s the CEO!",
+                "effects": {
+                  "sec": -30,
+                  "trust": -5,
+                  "kind": "bad",
+                  "out": "The codes are gone within minutes. The “CEO” was a scammer using a lookalike domain."
+                }
+              },
+              {
+                "text": "Reply to the email and ask if it’s really them.",
+                "effects": {
+                  "sec": -10,
+                  "trust": 0,
+                  "kind": "meh",
+                  "out": "The scammer replies “Yes it’s me, hurry!”. Replying in the same thread only reaches the attacker."
+                }
+              },
+              {
+                "text": "Check the sender address, then call the CEO’s office on the known number.",
+                "effects": {
+                  "sec": 25,
+                  "trust": 10,
+                  "kind": "good",
+                  "out": "The address is cyberquest-corp.co, not cyberquest.co. The CEO’s assistant confirms it isn’t real."
+                }
+              }
+            ]
+          },
+          {
+            "title": "SMS",
+            "time": "Monday · 09:19",
+            "tip": "Now they’re pushing harder. How do you respond?",
+            "msgs": [
+              {
+                "ini": "??",
+                "bg": "#D9480F",
+                "from": "Unknown number",
+                "addr": "+00 000 000 000",
+                "text": "Why is this taking so long? Do it NOW or there will be consequences. – Daniel"
+              }
+            ],
+            "choices": [
+              {
+                "text": "Give in. Pressure from the top is too risky to ignore.",
+                "effects": {
+                  "sec": -25,
+                  "trust": -10,
+                  "kind": "bad",
+                  "out": "Urgency and threats are classic pressure tactics. Real leaders don’t demand secret gift card codes."
+                }
+              },
+              {
+                "text": "Report it with the Report Phishing button and tell Security.",
+                "effects": {
+                  "sec": 25,
+                  "trust": 10,
+                  "kind": "good",
+                  "out": "Security blocks the sender and the lookalike domain for the whole company within minutes."
+                }
+              },
+              {
+                "text": "Ignore it and get back to work.",
+                "effects": {
+                  "sec": 0,
+                  "trust": -5,
+                  "kind": "meh",
+                  "out": "You’re safe, but nobody else is warned. The same message is still hitting other inboxes."
+                }
+              }
+            ]
+          },
+          {
+            "title": "Team chat",
+            "time": "Monday · 10:02",
+            "tip": "A colleague needs help. What do you tell Rafi?",
+            "msgs": [
+              {
+                "ini": "RK",
+                "bg": "#0B8A5F",
+                "from": "Rafi Karim",
+                "addr": "Finance",
+                "text": "Hey, I got the same email this morning and already sent the codes… was that bad?"
+              }
+            ],
+            "choices": [
+              {
+                "text": "Tell Rafi not to worry about it.",
+                "effects": {
+                  "sec": -20,
+                  "trust": -10,
+                  "kind": "bad",
+                  "out": "The stolen codes are already being spent. The sooner it’s reported, the better the chance to stop it."
+                }
+              },
+              {
+                "text": "Help Rafi report it to Security and Finance right away.",
+                "effects": {
+                  "sec": 25,
+                  "trust": 15,
+                  "kind": "good",
+                  "out": "Finance contacts the gift card provider fast enough to freeze most of the codes."
+                }
+              },
+              {
+                "text": "Forward the scam email to the whole team as a warning.",
+                "effects": {
+                  "sec": -5,
+                  "trust": 5,
+                  "kind": "meh",
+                  "out": "Good intent, but forwarding spreads the malicious message. Report it and share a screenshot through official channels instead."
+                }
+              }
+            ]
+          }
+        ],
+        "endings": {
+          "best": {
+            "tag": "BEST",
+            "title": "Threat contained",
+            "text": "You verified, reported and helped a colleague act fast. The scam went nowhere.",
+            "face": "happy"
+          },
+          "mid": {
+            "tag": "CLOSE CALL",
+            "title": "Close call",
+            "text": "Some good instincts, but a few gaps let the scam spread. See if you can find the best ending.",
+            "face": "think"
+          },
+          "bad": {
+            "tag": "BAD",
+            "title": "The scam paid off",
+            "text": "Pressure won this time. Lookalike domains plus urgency is the oldest trick in the book. Try another path.",
+            "face": "wrong"
+          }
+        }
+      }
+    ],
+    "debrief": {
+      "headline": "Story complete!",
+      "sub": "Every path teaches something. Here’s how your choices played out.",
+      "learned": [
+        "Verify through a known channel",
+        "Pressure is a red flag",
+        "Report, don’t forward"
+      ]
+    },
+    "meta": {
+      "badge": "Steady Under Pressure",
+      "description": "Three tense moments, three choices each: keep security and trust high."
+    }
+  }
+}
