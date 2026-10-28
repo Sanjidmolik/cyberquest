@@ -117,14 +117,7 @@
 .cq-badge.is-locked{color:var(--cq-muted)}
 .cq-badge__frame{position:relative;width:54px;height:60px}
 .cq-badge__icon{position:absolute;inset:0;display:grid;place-items:center;font-size:22px}
-.cq-board{display:flex;flex-direction:column;gap:4px}
-.cq-board li{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:10px;border:1px solid transparent;font-size:13px}
-.cq-board li.is-me{background:var(--cq-track);border-color:var(--cq-line)}
-.cq-board__rank{width:14px;font:12px var(--cq-mono)}
-.cq-board__av{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--cq-track);border:1px solid var(--cq-line);font-weight:700;font-size:12px;object-fit:cover}
-.is-me .cq-board__av{background:var(--cq-me);color:var(--cq-on-me);border-color:transparent}
-.cq-board__name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cq-board__xp{font:12px var(--cq-mono)}
+.cq-board-cta{margin:0 0 4px;font-size:13px;color:var(--cq-text-2)}
 
 /* ---------- small screens + motion ---------- */
 @media (max-width:640px){

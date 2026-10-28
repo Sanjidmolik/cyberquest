@@ -116,12 +116,10 @@ def set_student_active(user, active):
 
 
 def ranked_accounts():
-    """Accounts the student leaderboard ranks: active, and a username was chosen."""
-    return (
-        User.objects.filter(is_active=True)
-        .exclude(username__isnull=True)
-        .exclude(username="")
-    )
+    """Accounts the student leaderboard ranks (leaderboard/ranking.py): active, with a username,
+    not staff or superusers."""
+    from leaderboard.ranking import eligible_users
+    return eligible_users()
 
 
 def leaderboard_summary():
@@ -137,19 +135,21 @@ def leaderboard_summary():
 
 def leaderboard_directory(query="", level="", activity=""):
     """
-    Overall rank is the position in the student leaderboard order.
-    Equal XP keeps the earlier account ahead so the page stays stable.
-    Search and filters narrow the rows and leave those ranks in place.
+    Overall rank is the student leaderboard's all-time rank: equal XP shares a rank, and
+    whoever reached it first is listed first. Search and filters narrow the rows and leave
+    those ranks in place.
     """
+    from leaderboard.ranking import scored
+
     ahead = (
         ranked_accounts()
-        .filter(Q(xp__gt=OuterRef("xp")) | Q(xp=OuterRef("xp"), pk__lt=OuterRef("pk")))
+        .filter(xp__gt=OuterRef("xp"))
         .order_by()
         .values("is_active")
         .annotate(c=Count("pk"))
         .values("c")
     )
-    qs = ranked_accounts().annotate(
+    qs = scored("all").annotate(
         board_rank=Coalesce(Subquery(ahead, output_field=IntegerField()), Value(0)) + Value(1)
     )
     needle = (query or "").strip()
@@ -166,7 +166,7 @@ def leaderboard_directory(query="", level="", activity=""):
         qs = qs.filter(last_active_date__gte=start)
     elif activity == "never":
         qs = qs.filter(last_active_date__isnull=True)
-    return qs.order_by("board_rank", "id")
+    return qs.order_by("board_rank", "reached", "id")
 
 
 def notification_summary():

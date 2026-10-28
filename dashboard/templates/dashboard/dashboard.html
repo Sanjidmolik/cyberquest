@@ -5,7 +5,7 @@
 {% block body_class %}{% endblock %}
 {% block extra_css %}
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
 {% endblock %}
 
 {% block top_chrome %}
@@ -176,19 +176,9 @@
         </div>
 
         <div class="cq-panel">
-            <div class="cq-panel__head"><h2 class="cq-title">LEADERBOARD</h2><a href="{% url 'leaderboard:list' %}" class="cq-link">View all</a></div>
-            <ol class="cq-list cq-board">
-                {% for p in leaderboard %}
-                <li class="{% if p.is_me %}is-me{% endif %}"{% if p.is_me %} aria-current="true"{% endif %}>
-                    <span class="cq-board__rank">{{ p.rank }}</span>
-                    {% if p.avatar_url %}<img src="{{ p.avatar_url }}" alt="" class="cq-board__av">{% else %}<span class="cq-board__av" aria-hidden="true">{{ p.initial }}</span>{% endif %}
-                    <span class="cq-board__name">{{ p.name }}</span>
-                    <span class="cq-board__xp">{{ p.xp }} XP</span>
-                </li>
-                {% empty %}
-                <li>No players yet.</li>
-                {% endfor %}
-            </ol>
+            <div class="cq-panel__head"><h2 class="cq-title">LEADERBOARD</h2></div>
+            <p class="cq-board-cta">{% if profile.rank %}You’re ranked <strong>#{{ profile.rank }}</strong> all-time.{% else %}See how you compare with other players.{% endif %}</p>
+            <a href="{% url 'leaderboard:list' %}" class="cq-link">View leaderboard →</a>
         </div>
 
     </section>

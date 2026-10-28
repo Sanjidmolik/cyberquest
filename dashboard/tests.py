@@ -1254,17 +1254,18 @@ class LeaderboardManagementTests(TestCase):
         self.client.force_login(self.superuser)
         page = self.client.get(reverse("ops:leaderboard"))
         rows = list(page.context["page_obj"].object_list)
+        # Staff and superusers are not ranked; equal XP shares a rank, earlier first.
         self.assertEqual(
             [user.username for user in rows],
-            ["coach_rank", "ada_rank", "ben_rank", "cara_rank"],
+            ["ada_rank", "ben_rank", "cara_rank"],
         )
-        self.assertEqual([user.board_rank for user in rows], [1, 2, 3, 4])
+        self.assertEqual([user.board_rank for user in rows], [1, 2, 2])
         self.assertLess(self.ben.pk, self.cara.pk)
-        self.assertEqual(page.context["summary"]["total"], 4)
-        self.assertEqual(page.context["summary"]["highest"], 500)
-        self.assertEqual(page.context["summary"]["average"], 250)
+        self.assertEqual(page.context["summary"]["total"], 3)
+        self.assertEqual(page.context["summary"]["highest"], 300)
+        self.assertEqual(page.context["summary"]["average"], 167)
         self.assertContains(page, "300")
-        self.assertContains(page, ">4<")
+        self.assertNotContains(page, "coach_rank")
         self.assertContains(page, reverse("ops:student", args=[self.ada.pk]))
         self.assertNotContains(page, reverse("ops:student", args=[self.staff.pk]))
         self.assertNotContains(page, "inactive_rank")
@@ -1277,8 +1278,8 @@ class LeaderboardManagementTests(TestCase):
         by_name = self.client.get(reverse("ops:leaderboard"), {"q": "Ada Rank"})
         found = list(by_name.context["page_obj"].object_list)
         self.assertEqual([user.username for user in found], ["ada_rank"])
-        self.assertEqual(found[0].board_rank, 2)
-        self.assertEqual(by_name.context["summary"]["total"], 4)
+        self.assertEqual(found[0].board_rank, 1)
+        self.assertEqual(by_name.context["summary"]["total"], 3)
         self.assertContains(by_name, "overall position")
 
         by_level = self.client.get(reverse("ops:leaderboard"), {"level": "2"})
@@ -1288,7 +1289,7 @@ class LeaderboardManagementTests(TestCase):
         )
         self.assertEqual(
             [user.board_rank for user in by_level.context["page_obj"].object_list],
-            [3, 4],
+            [2, 2],
         )
         quiet = self.client.get(reverse("ops:leaderboard"), {"activity": "never"})
         self.assertEqual(
@@ -1296,14 +1297,15 @@ class LeaderboardManagementTests(TestCase):
             ["ben_rank", "cara_rank"],
         )
         ignored = self.client.get(reverse("ops:leaderboard"), {"level": "high", "activity": "forever"})
-        self.assertEqual(len(ignored.context["page_obj"].object_list), 4)
+        self.assertEqual(len(ignored.context["page_obj"].object_list), 3)
 
     def test_matches_student_leaderboard_and_rejects_changes(self):
         self.client.force_login(self.ada)
         public = self.client.get(reverse("leaderboard:list"))
-        self.assertEqual(public.context["my_rank"], 2)
-        public_names = [user.username for user in public.context["top_users"]]
-        self.assertEqual(public_names[:2], ["coach_rank", "ada_rank"])
+        self.assertEqual(public.context["my_rank"], 1)
+        public_names = [row["username"] for row in public.context["podium"] + public.context["rows"]]
+        self.assertEqual(public_names[:3], ["ada_rank", "ben_rank", "cara_rank"])
+        self.assertNotIn("coach_rank", public_names)
         self.assertNotIn("inactive_rank", public_names)
         self.assertNotIn("", public_names)
 

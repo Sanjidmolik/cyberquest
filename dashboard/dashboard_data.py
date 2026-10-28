@@ -3,7 +3,7 @@ dashboard/dashboard_data.py
 ---------------------------
 Turns the real dashboard data (utils.get_dashboard_context) into the plain
 dicts the bookshelf dashboard template reads: profile, stats, books, skills,
-radar, activity, badges, leaderboard, tip and quote.
+radar, activity, badges, tip and quote. The leaderboard has its own page.
 
 Nothing here invents numbers. The only fixed values are cosmetic: the hero
 quote and the badge frame colours (Badge has no colour field).
@@ -171,21 +171,6 @@ def get_badges(user):
     return badges
 
 
-def get_leaderboard(user, base):
-    rows = []
-    for rank, person in enumerate(base["top_users"], start=1):
-        name = person.username or person.display_name()
-        rows.append({
-            "rank": rank,
-            "name": name,
-            "xp": person.xp,
-            "initial": (name[:1] or "?").upper(),
-            "avatar_url": reverse("accounts:profile_photo", args=[person.pk]) if person.profile_picture else None,
-            "is_me": person.pk == user.pk,
-        })
-    return rows
-
-
 def build_dashboard_context(user, base):
     """`base` is utils.get_dashboard_context(user); its keys stay available too."""
     profile = get_profile(user, base)
@@ -199,7 +184,6 @@ def build_dashboard_context(user, base):
         "radar": radar_points(skills),
         "activity": get_activity(base),
         "badges": get_badges(user),
-        "leaderboard": get_leaderboard(user, base),
         "tip": base["cyber_tip"],
         "quote": HERO_QUOTE,
     }
