@@ -19,7 +19,7 @@ import logging
 
 from django.db import transaction
 
-from .models import Scenario, StudioAuditLog
+from .models import Scenario, ScenarioVersion, StudioAuditLog
 
 logger = logging.getLogger("practice.seeding")
 
@@ -32,11 +32,21 @@ def content_hash(content):
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def snapshot_seed(row):
+    """Keep a copy of the content the seed just wrote, so attempts started on it grade on it
+    even after a later seed update or studio publish."""
+    ScenarioVersion.objects.get_or_create(
+        scenario=row, version=row.version,
+        defaults={"origin": ScenarioVersion.SEED, "content": row.content,
+                  "meta": {f: getattr(row, f) for f in SEED_FIELDS} | {"topic": row.topic.code}},
+    )
+
+
 def skip_reason(row):
     """Why the seed commands must leave this row alone, or "" when they may update it."""
     if row.source == Scenario.STUDIO:
         return "edited in the Practice Studio"
-    if row.versions.exists():
+    if row.versions.filter(origin=ScenarioVersion.STUDIO).exists():
         return "has published studio versions"
     if row.content_hash and row.content_hash != content_hash(row.content):
         return "content was changed outside the seed commands"
@@ -55,8 +65,9 @@ def seed_scenario(data, course, *, force=frozenset(), dry=False):
         row = Scenario.objects.select_for_update().filter(slug=slug).first()
         if row is None:
             if not dry:
-                Scenario.objects.create(slug=slug, topic=course, content=data["content"], content_hash=new_hash,
-                                        **{f: data.get(f) for f in SEED_FIELDS})
+                row = Scenario.objects.create(slug=slug, topic=course, content=data["content"], content_hash=new_hash,
+                                              **{f: data.get(f) for f in SEED_FIELDS})
+                snapshot_seed(row)
             return "create", ""
 
         forced = slug in force
@@ -92,6 +103,8 @@ def seed_scenario(data, course, *, force=frozenset(), dry=False):
             row.draft_content = None
             row.draft_meta = None
         row.save()
+        if content_changed:
+            snapshot_seed(row)
         if forced:
             StudioAuditLog.objects.create(
                 scenario=row, slug=row.slug, action="seed_force", version=row.version,

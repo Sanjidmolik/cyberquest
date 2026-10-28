@@ -305,7 +305,7 @@ def _record_practice_session(attempt, finished_at):
 
 def _completed_ids(user):
     return set(
-        Attempt.objects.filter(user=user, finished_at__isnull=False, is_preview=False)
+        Attempt.objects.real().filter(user=user, finished_at__isnull=False)
         .values_list("scenario_id", flat=True)
     )
 

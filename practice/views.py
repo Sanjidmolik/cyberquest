@@ -229,7 +229,7 @@ def practice_center(request):
         PracticeSession.objects.filter(user=request.user, status="completed")
         .aggregate(total=Sum("xp_awarded"))["total"] or 0
     ) + (
-        Attempt.objects.filter(user=request.user, finished_at__isnull=False)
+        Attempt.objects.real().filter(user=request.user, finished_at__isnull=False)
         .aggregate(total=Sum("xp_awarded"))["total"] or 0
     )
     return render(request, "practice/center.html", {

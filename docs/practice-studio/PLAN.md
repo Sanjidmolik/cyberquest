@@ -53,11 +53,11 @@ Converted rows carry hand-tuned values that a derived rule wouldn't reproduce (e
 
 `content` stays **the published content**. It's the only thing students receive (through `public_content`) and the only thing graded. Editing a published row writes `draft_content`; publishing copies it into `content`, bumps `version`, and snapshots it.
 
-New `ScenarioVersion`: scenario FK, `version`, `content`, `meta`, `published_by`, `published_at`; unique per (scenario, version). It's written on every publish. **Restore** copies a version into `draft_content` (it still has to be published, and still goes through the checks).
+New `ScenarioVersion`: scenario FK, `version`, `origin` (seed / studio), `content`, `meta`, `published_by`, `published_at`; unique per (scenario, version). Written by the seed commands whenever they write new content (origin seed) and by the studio on every publish (origin studio). Only studio snapshots stop the seed commands. **Restore** copies a version into `draft_content` (it still has to be published, and still goes through the checks).
 
 **Grading during a publish.** `Attempt.state["version"]` is already recorded at start. Answers and completion grade against `ScenarioVersion(version=attempt version)` when it differs from the live one. That way a learner mid-attempt isn't graded against new answers.
 
-New `Attempt.is_preview` (bool). A preview attempt: awards **no XP**, writes **no** mirror `PracticeSession` (so no stats, DNA, history or badges), runs **no** badge check, and is hidden from history.
+New `Attempt.is_preview` (bool), with `Attempt.objects.real()` for learner-only queries. Preview runs are deleted after 7 days by `purge_expired_data` (listed in the Privacy Policy retention table). A preview attempt: awards **no XP**, writes **no** mirror `PracticeSession` (so no stats, DNA, history or badges), runs **no** badge check, and is hidden from history.
 
 New `StudioAuditLog`: user, scenario (null), action (create / edit / duplicate / import / publish / unpublish / archive / restore), version, summary, at. Append-only; read-only in Django admin.
 
@@ -175,6 +175,12 @@ The **template test** fills every field with its "Insert example" text and asser
 7. `docs/practice-studio/ADMIN_GUIDE.md` (simple English, screenshot placeholders, 5-minute walkthrough), sidebar/dashboard links, polish, a screenshot pass at 1280 px and tablet width.
 
 Tests run after every phase; one commit per phase on `feat/practice-studio`.
+
+**Commit notes**
+- The HANDOFF.md "MySQL" correction (D9) landed in the baseline commit `14daaf5`, not in the phase 1 commit `b26ffc3` whose message mentions it.
+- Phase 1 fixes (review): canonical-JSON fingerprint test (PostgreSQL jsonb reorders keys); `ScenarioVersion.origin` (seed / studio) with a seed snapshot of every existing version (migration 0008) and on every seed write, so attempts started before a deploy grade on their own content and seed snapshots never block seed updates; wider preview isolation tests; preview runs purged after 7 days by `purge_expired_data`.
+
+**Before deploying:** run the full suite once against a local PostgreSQL (jsonb behaves differently from SQLite). Not yet done: this machine has no Docker, PostgreSQL or WSL distribution.
 
 ## 8. Definition of done (as I'll verify it)
 

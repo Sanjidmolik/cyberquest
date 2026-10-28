@@ -137,9 +137,15 @@ class Scenario(models.Model):
 
 
 class ScenarioVersion(models.Model):
-    """A snapshot of a scenario's content, written on every publish."""
+    """A snapshot of a scenario's content: written by the seed commands whenever they write new
+    content, and by the studio on every publish. Attempts are graded on the snapshot of the
+    version they started on."""
+    SEED, STUDIO = "seed", "studio"
+    ORIGIN = [(SEED, "Seed command"), (STUDIO, "Studio publish")]
+
     scenario = models.ForeignKey(Scenario, on_delete=models.CASCADE, related_name="versions")
     version = models.PositiveIntegerField()
+    origin = models.CharField(max_length=10, choices=ORIGIN, default=STUDIO)
     content = models.JSONField()
     meta = models.JSONField(default=dict, blank=True)  # title, difficulty, minutes, XP, topic code
     published_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
@@ -177,6 +183,12 @@ class StudioAuditLog(models.Model):
         return f"{self.slug} {self.action} {self.created_at:%Y-%m-%d %H:%M}"
 
 
+class AttemptQuerySet(models.QuerySet):
+    def real(self):
+        """Learner attempts: everything except Practice Studio previews."""
+        return self.filter(is_preview=False)
+
+
 class Attempt(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="practice_attempts")
     scenario = models.ForeignKey(Scenario, on_delete=models.CASCADE, related_name="attempts")
@@ -190,6 +202,8 @@ class Attempt(models.Model):
     # Staff preview from the Practice Studio: graded like any attempt, but never awards XP or
     # badges and never reaches history, Cyber DNA or analytics.
     is_preview = models.BooleanField(default=False)
+
+    objects = AttemptQuerySet.as_manager()
 
     class Meta:
         ordering = ["-started_at"]

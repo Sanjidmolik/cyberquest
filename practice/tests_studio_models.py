@@ -2,8 +2,10 @@
 that keep deploys (build.sh) from overwriting studio work."""
 
 import copy
+import importlib
 import json
 import re
+from datetime import timedelta
 from io import StringIO
 from pathlib import Path
 
@@ -14,10 +16,12 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
 from django.urls import URLPattern, reverse
+from django.utils import timezone
 
 from practice.graders import ANSWER_KEYS, public_content
 from practice.models import Attempt, PracticeSession, Scenario, ScenarioVersion, StudioAuditLog
 from practice.seeding import content_hash
+from practice.session_views import attempt_content
 from practice.testing import answer_for, convert_all
 
 User = get_user_model()
@@ -36,6 +40,18 @@ def _snapshot():
         s.slug: (s.content, s.version, s.title, s.status, s.source, s.content_hash, s.topic_id)
         for s in Scenario.objects.all()
     }
+
+
+def _publish_new_answer(row):
+    """Simulate a studio publish that changes the decision's right answer. Returns the step index."""
+    decide = next(i for i, s in enumerate(row.content["steps"]) if s["type"] == "mcq")
+    step = row.content["steps"][decide]
+    right = step["correct"][0] if isinstance(step["correct"], list) else step["correct"]
+    step["correct"] = (right + 1) % len(step["options"])
+    row.version += 1
+    row.save()
+    ScenarioVersion.objects.create(scenario=row, version=row.version, content=row.content, origin=ScenarioVersion.STUDIO)
+    return decide
 
 
 def _build_seed_commands():
@@ -87,9 +103,36 @@ class SeedRuleTests(TestCase):
         row.content_hash = content_hash(row.content)   # as if the seed itself had said this
         row.save()
         out, _ = _run("convert_scenarios")
-        self.assertIn(f"update {CONVERTED}", out)
+        self.assertIn(f"update {CONVERTED}", out)   # the seed's own v1 snapshot does not block it
         row.refresh_from_db()
         self.assertEqual((row.content, row.version), (old, 2))
+        self.assertEqual(list(row.versions.order_by("version").values_list("version", "origin")),
+                         [(1, "seed"), (2, "seed")])
+
+    def test_every_seed_scenario_has_a_snapshot_of_its_version(self):
+        for row in Scenario.objects.all():
+            snap = row.versions.get(version=row.version)
+            self.assertEqual((snap.origin, snap.content), ("seed", row.content), row.slug)
+
+    def test_fingerprint_ignores_key_order_and_whitespace(self):
+        content = Scenario.objects.get(slug=CHOICE).content
+
+        def reorder(value):
+            if isinstance(value, dict):
+                return {k: reorder(value[k]) for k in reversed(list(value))}
+            if isinstance(value, list):
+                return [reorder(v) for v in value]
+            return value
+
+        shuffled = reorder(content)
+        self.assertNotEqual(json.dumps(shuffled), json.dumps(content))     # really reordered
+        self.assertEqual(content_hash(shuffled), content_hash(content))
+        self.assertEqual(content_hash(json.loads(json.dumps(content, indent=4))), content_hash(content))
+        # A seed row whose stored JSON comes back reordered (PostgreSQL jsonb) is not "hand-edited".
+        row = Scenario.objects.get(slug=CHOICE)
+        Scenario.objects.filter(pk=row.pk).update(content=shuffled)
+        _, err = _run("load_scenarios")
+        self.assertNotIn("skip", err)
 
     def test_studio_rows_are_never_touched_and_the_skip_is_logged(self):
         row = self._studio_edit(CONVERTED)
@@ -103,7 +146,8 @@ class SeedRuleTests(TestCase):
 
     def test_rows_with_published_versions_are_never_touched(self):
         row = Scenario.objects.get(slug=CHOICE)
-        ScenarioVersion.objects.create(scenario=row, version=row.version, content=row.content)
+        ScenarioVersion.objects.create(scenario=row, version=row.version + 1, content=row.content,
+                                       origin=ScenarioVersion.STUDIO)
         row.title = "Changed"
         row.save()   # still source "seed": the published version alone protects it
         _, err = _run("load_scenarios")
@@ -175,21 +219,33 @@ class StudentVisibilityTests(TestCase):
         Scenario.objects.filter(slug=CONVERTED).update(title="A brand new title", source=Scenario.STUDIO)
         self.assertContains(self.client.get(reverse("practice:center")), "A brand new title")
 
+    def _answer(self, attempt_id, step_no, step):
+        return self.client.post(reverse("practice:api_answer", args=[attempt_id]),
+                                json.dumps({"step": step_no, "answer": answer_for(step)}),
+                                content_type="application/json").json()
+
     def test_an_attempt_is_graded_on_the_version_it_started_on(self):
         start = self._start(CONVERTED).json()
         row = Scenario.objects.get(slug=CONVERTED)
         old_steps = copy.deepcopy(row.content["steps"])
-        # Publish v2 with a different right answer for the decision.
-        ScenarioVersion.objects.create(scenario=row, version=row.version, content=copy.deepcopy(row.content))
-        decide = next(i for i, s in enumerate(row.content["steps"]) if s["type"] == "mcq")
-        right = old_steps[decide]["correct"]
-        row.content["steps"][decide]["correct"] = (right + 1) % len(old_steps[decide]["options"])
-        row.version += 1
-        row.save()
-        res = self.client.post(reverse("practice:api_answer", args=[start["attempt_id"]]),
-                               json.dumps({"step": decide, "answer": answer_for(old_steps[decide])}),
-                               content_type="application/json").json()
-        self.assertTrue(res["correct"])
+        decide = _publish_new_answer(row)
+        self.assertTrue(self._answer(start["attempt_id"], decide, old_steps[decide])["correct"])
+        # A learner who starts now plays (and is graded on) the new version.
+        fresh = self._start(CONVERTED).json()
+        self.assertFalse(self._answer(fresh["attempt_id"], decide, old_steps[decide])["correct"])
+
+    def test_attempt_started_before_this_deploy_still_grades_on_its_content(self):
+        row = Scenario.objects.get(slug=CONVERTED)
+        row.versions.all().delete()                       # the database as it was before 0008
+        start = self._start(CONVERTED).json()             # an in-progress attempt from before the deploy
+        importlib.import_module("practice.migrations.0008_version_origin").snapshot_existing(
+            __import__("django.apps", fromlist=["apps"]).apps, None)
+        self.assertEqual(row.versions.get().origin, "seed")
+        old_steps = copy.deepcopy(row.content["steps"])
+        decide = _publish_new_answer(Scenario.objects.get(pk=row.pk))
+        attempt = Attempt.objects.get(pk=start["attempt_id"])
+        self.assertEqual(attempt_content(attempt)["steps"], old_steps)
+        self.assertTrue(self._answer(start["attempt_id"], decide, old_steps[decide])["correct"])
 
     def test_preview_attempts_award_nothing_and_record_nothing(self):
         start = self._start(CONVERTED).json()
@@ -206,6 +262,56 @@ class StudentVisibilityTests(TestCase):
         self.assertEqual(done["accuracy"], 100)
         self.assertFalse(PracticeSession.objects.filter(user=self.user).exists())
         self.assertEqual(Attempt.objects.get(pk=start["attempt_id"]).xp_awarded, 0)
+
+    def _signals(self):
+        """Everything leaderboards, achievements, Cyber DNA, analytics and dashboards read."""
+        from accounts.models import UserActivityDay
+        from achievements.models import UserBadge
+        from dashboard import ops
+        from notifications.models import Notification
+        from practice.adaptive import get_cyber_dna
+        user = User.objects.get(pk=self.user.pk)
+        return {
+            "user": (user.xp, user.level, user.current_streak, user.longest_streak, user.last_active_date),
+            "badges": list(UserBadge.objects.values_list("user_id", "badge_id")),
+            "practice": list(PracticeSession.objects.values_list("pk", flat=True)),
+            "activity_days": list(UserActivityDay.objects.values_list("user_id", "day")),
+            "notifications": Notification.objects.count(),
+            "cyber_dna": get_cyber_dna(user),
+            "leaderboard": ops.leaderboard_summary(),
+            "practice_analytics": ops.practice_rows(),
+            "student_practice": ops.student_practice(user),
+            "completed": Attempt.objects.real().filter(finished_at__isnull=False).count(),
+            "center_xp": self.client.get(reverse("practice:center")).context["practice_xp"],
+        }
+
+    def test_preview_attempts_leave_every_progress_signal_unchanged(self):
+        before = self._signals()
+        start = self._start(CHOICE).json()
+        Attempt.objects.filter(pk=start["attempt_id"]).update(is_preview=True)
+        steps = Scenario.objects.get(slug=CHOICE).content["steps"]
+        branch = next(i for i, s in enumerate(steps) if s["type"] == "branch")
+        for scene_no, scene in enumerate(steps[branch]["scenes"]):   # the best ending: badge-worthy if it counted
+            good = next(i for i, c in enumerate(scene["choices"]) if c["effects"]["kind"] == "good")
+            self.client.post(reverse("practice:api_answer", args=[start["attempt_id"]]),
+                             json.dumps({"step": branch, "answer": {"scene": scene_no, "choice": good}}),
+                             content_type="application/json")
+        done = self.client.post(reverse("practice:api_complete", args=[start["attempt_id"]]))
+        self.assertEqual(done.status_code, 200, done.content)
+        self.assertEqual(self._signals(), before)
+
+    def test_preview_runs_older_than_seven_days_are_purged(self):
+        from accounts.retention import purge_preview_attempts, run_all
+        old = timezone.now() - timedelta(days=8)
+        rows = {}
+        for name, preview, when in (("old_preview", True, old), ("new_preview", True, timezone.now()),
+                                    ("old_real", False, old)):
+            rows[name] = self._start(CONVERTED).json()["attempt_id"]
+            Attempt.objects.filter(pk=rows[name]).update(is_preview=preview, started_at=when)
+        self.assertEqual(purge_preview_attempts(dry_run=True), 1)
+        self.assertEqual(run_all()["old_practice_preview_runs"], 1)
+        self.assertEqual(set(Attempt.objects.values_list("pk", flat=True)), {rows["new_preview"], rows["old_real"]})
+        self.assertEqual(purge_preview_attempts(), 0)
 
 
 class MetaBlockTests(TestCase):

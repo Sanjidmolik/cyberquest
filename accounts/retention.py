@@ -16,6 +16,7 @@ from django.utils import timezone
 
 VERIFICATION_CODE_GRACE_DAYS = 7
 UNVERIFIED_SIGNUP_DAYS = 30
+PREVIEW_ATTEMPT_DAYS = 7
 
 # (record, how long it is kept, how it is removed)
 RETENTION = [
@@ -41,6 +42,9 @@ RETENTION = [
     ("Mission attempts left unfinished",
      "Closed automatically when the mission timer ends",
      "Kept as part of your attempt history"),
+    ("Practice Studio preview runs by staff (never count toward XP, badges or progress)",
+     f"{PREVIEW_ATTEMPT_DAYS} days",
+     "Automatic cleanup"),
     ("Data exports",
      "Not stored; generated when you ask and sent straight to your browser",
      "Nothing to remove"),
@@ -121,6 +125,18 @@ def purge_expired_cache(now=None, dry_run=False) -> int:
         return cursor.rowcount or 0
 
 
+def purge_preview_attempts(now=None, dry_run=False) -> int:
+    """Remove staff preview runs from the Practice Studio (and their answers)."""
+    from practice.models import Attempt
+
+    cutoff = (now or timezone.now()) - timedelta(days=PREVIEW_ATTEMPT_DAYS)
+    qs = Attempt.objects.filter(is_preview=True, started_at__lt=cutoff)
+    count = qs.count()
+    if not dry_run and count:
+        qs.delete()
+    return count
+
+
 def close_expired_attempts(dry_run=False) -> int:
     from games.attempts import finalize_expired_attempts
     from games.models import GameAttempt
@@ -144,4 +160,5 @@ def run_all(dry_run=False) -> dict:
         "expired_sessions": purge_expired_sessions(dry_run=dry_run),
         "expired_cache_entries": purge_expired_cache(dry_run=dry_run),
         "expired_mission_attempts_closed": close_expired_attempts(dry_run=dry_run),
+        "old_practice_preview_runs": purge_preview_attempts(dry_run=dry_run),
     }
