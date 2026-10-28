@@ -81,10 +81,12 @@ def _center_catalog(user):
     from .session_views import practice_domain, scenario_is_open
 
     best = _best_by_scenario(user)
+    rows = {row.slug: row for row in Scenario.objects.select_related("topic").order_by("slug")}
     # Interactive scenarios written for the new engine (not converted from one of the cards above).
     interactive_only = {}
-    for extra in Scenario.objects.select_related("topic").order_by("slug"):
-        if "source" not in (extra.content or {}) and scenario_is_open(extra, user):
+    for extra in rows.values():
+        if (extra.status == Scenario.PUBLISHED and "source" not in (extra.content or {})
+                and scenario_is_open(extra, user)):
             interactive_only.setdefault(practice_domain(extra), []).append(extra)
     catalog = []
     for row in get_domain_competencies(user):
@@ -92,21 +94,27 @@ def _center_catalog(user):
         preferred = choose_scenario(row["slug"], _recent_scenario_keys(user, row["slug"]))
         preferred_key = preferred["key"] if preferred else ""
         scenarios = []
-        for index, scenario in enumerate(scenarios_for_domain(row["slug"]), start=1):
+        # An original whose row was unpublished or archived in the studio is hidden.
+        originals = [s for s in scenarios_for_domain(row["slug"])
+                     if getattr(rows.get(slug_for(s["key"])), "status", Scenario.PUBLISHED) == Scenario.PUBLISHED]
+        for index, scenario in enumerate(originals, start=1):
             slug = slug_for(scenario["key"])
+            # A row edited in the studio shows its own published text, not the original's.
+            edited = rows[slug] if slug in rows and rows[slug].source == Scenario.STUDIO else None
+            story = (edited.content.get("steps") or [{}])[0] if edited else {}
             scene = scenario.get("scene") or {}
             completed = scenario["key"] in best
             scenarios.append({
                 "key": scenario["key"],
                 "number": f"{index:02d}",
-                "title": scenario["title"],
-                "summary": scenario.get("briefing", {}).get("summary", ""),
+                "title": edited.title if edited else scenario["title"],
+                "summary": story.get("intro", "") if edited else scenario.get("briefing", {}).get("summary", ""),
                 "activity": scenario.get("activity_type") or "simulation",
                 "activity_label": (scenario.get("activity_type") or "simulation").replace("_", " ").title(),
                 "difficulty": scenario.get("difficulty") or "beginner",
                 "difficulty_label": (scenario.get("difficulty") or "beginner").title(),
                 "minutes": _SCENARIO_MINUTES.get(scenario.get("difficulty"), 15),
-                "objective": scenario.get("objective") or "",
+                "objective": story.get("desc", "") if edited else scenario.get("objective") or "",
                 "completed": completed,
                 "best": best.get(scenario["key"]) if completed else None,
                 "preferred": scenario["key"] == preferred_key,
@@ -254,7 +262,7 @@ def _session_redirect(scenario_key):
     """The interactive session for an original scenario key (every scenario runs there now)."""
     from .models import Scenario
     slug = slug_for(scenario_key)
-    if not Scenario.objects.filter(slug=slug).exists():
+    if not Scenario.objects.published().filter(slug=slug).exists():
         raise Http404("This scenario has not been converted yet. Run manage.py convert_scenarios.")
     return redirect("practice:session", slug=slug)
 

@@ -12,6 +12,7 @@ from courses.models import Course
 from practice import graders
 from practice.graders import ANSWER_KEYS, InvalidAnswer, public_content
 from practice.models import Attempt, Scenario, StepAnswer
+from practice.seeding import content_hash
 
 User = get_user_model()
 
@@ -147,6 +148,7 @@ class LoaderAndStrippingTests(TestCase):
         self.assertIn("0 created, 0 updated, 1 unchanged", out.getvalue())   # phish-01-choice
         scenario = Scenario.objects.get(slug="phish-01-choice")
         scenario.content = {"steps": []}
+        scenario.content_hash = content_hash(scenario.content)  # an older seed, not a hand edit
         scenario.save()
         call_command("load_scenarios", stdout=StringIO())
         scenario.refresh_from_db()

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class PracticeSession(models.Model):
@@ -68,11 +69,22 @@ class PracticeSession(models.Model):
 
 
 # ---- Interactive practice sessions (step engine) ----
-# Scenario content lives in practice/scenario_content/*.json and is loaded with
-# `manage.py load_scenarios`. Answers stay on the server: see practice/graders.py.
+# Seed content comes from practice/scenario_content/*.json (`load_scenarios`) and the original
+# scenarios (`convert_scenarios`); staff edit and publish in the Practice Studio. Answers stay on
+# the server: see practice/graders.py.
+
+class ScenarioQuerySet(models.QuerySet):
+    def published(self):
+        """What students can see and play."""
+        return self.filter(status=Scenario.PUBLISHED)
+
 
 class Scenario(models.Model):
     KIND = [("simulation", "Simulation"), ("incident", "Incident"), ("choice", "Choice")]
+    DRAFT, PUBLISHED, ARCHIVED = "draft", "published", "archived"
+    STATUS = [(DRAFT, "Draft"), (PUBLISHED, "Published"), (ARCHIVED, "Archived")]
+    SEED, STUDIO = "seed", "studio"
+    SOURCE = [(SEED, "Seed (management commands)"), (STUDIO, "Practice Studio")]
 
     slug = models.SlugField(unique=True)
     # The course this scenario practises. CyberQuest has no separate module model,
@@ -85,14 +97,84 @@ class Scenario(models.Model):
     # Kept for the data format, but Practice is self-paced: the engine never shows a countdown.
     time_limit_sec = models.PositiveIntegerField(null=True, blank=True)
     xp_reward = models.PositiveIntegerField()
-    content = models.JSONField()  # steps including answers; never sent to the browser as-is
+    # The published content: steps including answers. Never sent to the browser as-is.
+    content = models.JSONField()
     version = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=10, choices=STATUS, default=PUBLISHED)
+    # Studio edits not yet published. Students keep getting `content` until publish.
+    draft_content = models.JSONField(null=True, blank=True)
+    draft_meta = models.JSONField(null=True, blank=True)  # pending title, difficulty, minutes, XP, topic
+    # "seed" rows may be rewritten by the seed commands; the first studio save makes a row "studio",
+    # and the seed commands never touch it again.
+    source = models.CharField(max_length=10, choices=SOURCE, default=SEED)
+    # sha256 of the content the seed commands last wrote, so a hand edit is never overwritten.
+    content_hash = models.CharField(max_length=64, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name="+")
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name="+")
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = ScenarioQuerySet.as_manager()
 
     class Meta:
         ordering = ["topic__order", "slug"]
+        permissions = [
+            ("use_studio", "Can use the Practice Studio (create, edit, preview)"),
+            ("publish_scenario", "Can publish, unpublish, archive and restore practice scenarios"),
+        ]
 
     def __str__(self):
         return self.slug
+
+    def content_for_version(self, version):
+        """The content an attempt was started on: the live content, or a published snapshot."""
+        if not version or version == self.version:
+            return self.content
+        snapshot = self.versions.filter(version=version).values_list("content", flat=True).first()
+        return snapshot if snapshot is not None else self.content
+
+
+class ScenarioVersion(models.Model):
+    """A snapshot of a scenario's content, written on every publish."""
+    scenario = models.ForeignKey(Scenario, on_delete=models.CASCADE, related_name="versions")
+    version = models.PositiveIntegerField()
+    content = models.JSONField()
+    meta = models.JSONField(default=dict, blank=True)  # title, difficulty, minutes, XP, topic code
+    published_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name="+")
+    published_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["scenario", "-version"]
+        constraints = [models.UniqueConstraint(fields=["scenario", "version"], name="unique_scenario_version")]
+
+    def __str__(self):
+        return f"{self.scenario_id} v{self.version}"
+
+
+class StudioAuditLog(models.Model):
+    """Append-only record of who changed which practice scenario, and how."""
+    ACTIONS = [
+        ("create", "Created"), ("duplicate", "Duplicated"), ("import", "Imported"), ("edit", "Edited"),
+        ("publish", "Published"), ("unpublish", "Unpublished"), ("archive", "Archived"),
+        ("restore", "Restored a version"), ("seed_force", "Overwritten by a forced seed command"),
+    ]
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                             related_name="+")
+    scenario = models.ForeignKey(Scenario, on_delete=models.SET_NULL, null=True, blank=True, related_name="audit")
+    slug = models.CharField(max_length=50)  # kept if the scenario is deleted
+    action = models.CharField(max_length=12, choices=ACTIONS)
+    version = models.PositiveIntegerField(null=True, blank=True)
+    summary = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+    def __str__(self):
+        return f"{self.slug} {self.action} {self.created_at:%Y-%m-%d %H:%M}"
 
 
 class Attempt(models.Model):
@@ -105,6 +187,9 @@ class Attempt(models.Model):
     state = models.JSONField(default=dict, blank=True)  # branch meters, current scene, results
     outcome = models.CharField(max_length=20, blank=True)
     xp_awarded = models.PositiveIntegerField(default=0)
+    # Staff preview from the Practice Studio: graded like any attempt, but never awards XP or
+    # badges and never reaches history, Cyber DNA or analytics.
+    is_preview = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-started_at"]

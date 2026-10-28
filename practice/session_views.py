@@ -44,8 +44,16 @@ def session_url(scenario):
 
 
 def topic_label(scenario):
-    siblings = list(Scenario.objects.filter(topic=scenario.topic).order_by("slug").values_list("slug", flat=True))
+    siblings = list(Scenario.objects.published().filter(topic=scenario.topic).order_by("slug").values_list("slug", flat=True))
+    if scenario.slug not in siblings:  # a draft in studio preview
+        return f"{scenario.topic.title.upper()} · PREVIEW"
     return f"{scenario.topic.title.upper()} · SCENARIO {siblings.index(scenario.slug) + 1} OF {len(siblings)}"
+
+
+def attempt_content(attempt):
+    """The content this attempt is graded on: the version it started on, so publishing a new
+    version never changes the answers under a learner who is mid-session."""
+    return attempt.scenario.content_for_version(attempt.state.get("version"))
 
 
 def _json_error(message, status):
@@ -71,7 +79,7 @@ def _own_attempt(request, attempt_id):
 
 @login_required(login_url=LOGIN_URL)
 def session_page(request, slug):
-    scenario = Scenario.objects.select_related("topic").filter(slug=slug).first()
+    scenario = Scenario.objects.published().select_related("topic").filter(slug=slug).first()
     if scenario is None:
         raise Http404("Unknown practice scenario.")
     locked = not scenario_is_open(scenario, request.user)
@@ -107,7 +115,8 @@ def session_page(request, slug):
 def api_start(request):
     data = _body(request)
     slug = data.get("scenario") if data else None
-    scenario = Scenario.objects.select_related("topic").filter(slug=slug).first() if isinstance(slug, str) else None
+    scenario = (Scenario.objects.published().select_related("topic").filter(slug=slug).first()
+                if isinstance(slug, str) else None)
     if scenario is None:
         return _json_error("Unknown scenario.", 404)
     if not scenario_is_open(scenario, request.user):
@@ -136,7 +145,7 @@ def api_answer(request, attempt_id):
             return _json_error("Attempt not found.", 404)
         if attempt.finished_at:
             return _json_error("This attempt is already finished.", 409)
-        steps = attempt.scenario.content["steps"]
+        steps = attempt_content(attempt)["steps"]
         step_no = data.get("step")
         if isinstance(step_no, bool) or not isinstance(step_no, int) or not 0 <= step_no < len(steps):
             return _json_error("Unknown step.", 400)
@@ -194,7 +203,8 @@ def api_complete(request, attempt_id):
             return JsonResponse(attempt.state.get("results") or {})
 
         scenario = attempt.scenario
-        steps = scenario.content["steps"]
+        content = attempt_content(attempt)
+        steps = content["steps"]
         answers = list(attempt.answers.all())
         answered = {a.step_index for a in answers}
         branch = attempt.state.get("branch") or {}
@@ -206,7 +216,7 @@ def api_complete(request, attempt_id):
         if missing:
             return JsonResponse({"error": "Finish every step first.", "missing": missing}, status=400)
 
-        results = {"kind": scenario.kind, "debrief": scenario.content.get("debrief") or {}}
+        results = {"kind": scenario.kind, "debrief": content.get("debrief") or {}}
         if scenario.kind == "choice":
             branch_step = next(s for s in steps if s["type"] == "branch")
             picks = branch.get("picks") or []
@@ -229,16 +239,21 @@ def api_complete(request, attempt_id):
         attempt.score = accuracy
         attempt.outcome = outcome
         user = get_user_model().objects.select_for_update().get(pk=request.user.pk)
-        leveled = apply_xp_and_level_up(user, scenario.xp_reward)
-        attempt.xp_awarded = scenario.xp_reward
-        # Saved as finished before badges and skill progress are counted, so this attempt counts.
-        attempt.save(update_fields=["finished_at", "score", "outcome", "xp_awarded"])
-        _record_practice_session(attempt, now)
-        badges = check_and_award_badges(user)
+        if attempt.is_preview:
+            # Studio preview: graded and shown like a real run, but nothing is awarded or recorded.
+            leveled, badges = False, []
+            attempt.save(update_fields=["finished_at", "score", "outcome"])
+        else:
+            leveled = apply_xp_and_level_up(user, scenario.xp_reward)
+            attempt.xp_awarded = scenario.xp_reward
+            # Saved as finished before badges and skill progress are counted, so this attempt counts.
+            attempt.save(update_fields=["finished_at", "score", "outcome", "xp_awarded"])
+            _record_practice_session(attempt, now)
+            badges = check_and_award_badges(user)
 
         seconds = int((now - attempt.started_at).total_seconds())
         results.update({
-            "xp": scenario.xp_reward,
+            "xp": attempt.xp_awarded,
             "accuracy": accuracy,
             "hearts": attempt.hearts,
             "time": f"{seconds // 60}:{seconds % 60:02d}",
@@ -283,19 +298,20 @@ def _record_practice_session(attempt, finished_at):
         status="completed",
         completed_at=finished_at,
         xp_awarded=0,
-        result_summary=(scenario.content.get("debrief") or {}).get("sub", ""),
+        result_summary=(attempt_content(attempt).get("debrief") or {}).get("sub", ""),
         state={"engine": "interactive", "attempt_id": attempt.pk, "slug": scenario.slug},
     )
 
 
 def _completed_ids(user):
     return set(
-        Attempt.objects.filter(user=user, finished_at__isnull=False).values_list("scenario_id", flat=True)
+        Attempt.objects.filter(user=user, finished_at__isnull=False, is_preview=False)
+        .values_list("scenario_id", flat=True)
     )
 
 
 def _competency(user, scenario):
-    course_ids = list(Scenario.objects.filter(topic=scenario.topic).values_list("pk", flat=True))
+    course_ids = list(Scenario.objects.published().filter(topic=scenario.topic).values_list("pk", flat=True))
     done = len(_completed_ids(user) & set(course_ids))
     return {
         "course": scenario.topic.title,
@@ -309,7 +325,7 @@ def _next_scenario(user, scenario):
     """Next open scenario: an unplayed one in the same course first, then in any course."""
     done = _completed_ids(user)
     others = [
-        s for s in Scenario.objects.select_related("topic").exclude(pk=scenario.pk)
+        s for s in Scenario.objects.published().select_related("topic").exclude(pk=scenario.pk)
         if scenario_is_open(s, user)
     ]
     others.sort(key=lambda s: (s.topic_id != scenario.topic_id, s.pk in done, s.topic.order, s.slug))
