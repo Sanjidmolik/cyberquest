@@ -192,7 +192,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# The site's calendar: days (streaks, activity days, "today") and leaderboard weeks and months
+# follow Dhaka time. Datetimes are still stored in UTC (USE_TZ = True); code takes dates with
+# timezone.localdate() / localtime(), never date.today() or a UTC .date().
+TIME_ZONE = 'Asia/Dhaka'
 
 USE_I18N = True
 

@@ -1126,7 +1126,7 @@ class AchievementManagementTests(TestCase):
         self.assertEqual(page.context["summary"]["holders"], 1)
         self.assertEqual(page.context["summary"]["awards"], 1)
         self.assertEqual(page.context["summary"]["students"], 2)
-        self.assertContains(page, self.award.earned_at.date().isoformat())
+        self.assertContains(page, timezone.localtime(self.award.earned_at).date().isoformat())
 
         by_name = self.client.get(reverse("ops:achievements"), {"q": "First Steps"})
         self.assertContains(by_name, "First Steps")

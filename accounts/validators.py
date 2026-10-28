@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
-import re, datetime
+from django.utils import timezone
+import re
 
 ALLOWED_EXACT_DOMAINS = {"gmail.com", "hotmail.com", "outlook.com"}
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -42,7 +43,7 @@ class SpecialCharacterValidator:
 def validate_minimum_age(dob, minimum_age=13):
     """Shared by SignupForm and CompleteProfileForm so the age rule lives in one place."""
     if dob:
-        today = datetime.date.today()
+        today = timezone.localdate()   # the site's calendar day (settings.TIME_ZONE)
         age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
         if age < minimum_age:
             raise ValidationError(f"You must be at least {minimum_age} years old to register.")

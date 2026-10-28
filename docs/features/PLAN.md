@@ -192,8 +192,8 @@ database, and `check` passes (with `check --deploy` warnings listed here). Then:
   parsed as an int and clamped; usernames are escaped; rows carry public fields only (the
   cache holds the same). Avatars use the existing sign-in-only `accounts:profile_photo`
   URL, which contains the user's numeric id (as on the dashboard before).
-- Known limitations: `TIME_ZONE` is `UTC`, so weeks start Saturday 00:00 UTC (06:00 in
-  Dhaka); set `TIME_ZONE = "Asia/Dhaka"` if the week should start at local midnight (this
-  also moves daily streak boundaries). Period XP leaves out manual XP adjustments.
+- Known limitations: period XP leaves out manual XP adjustments. (Follow-up on `develop`:
+  `TIME_ZONE = "Asia/Dhaka"`, so weeks, months, streaks and activity days turn over at
+  Dhaka midnight; boundary tests in `cyberquest/tests_timezone.py`.)
 - Added to the checklist: compare the student and Command Center leaderboards when
   ranking rules change.
