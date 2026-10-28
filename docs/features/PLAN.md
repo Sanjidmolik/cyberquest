@@ -1,6 +1,6 @@
 # Four features: plan
 
-Status: **waiting for sign-off** (step 0). Practice Studio phases 4–7 are paused until
+Status: **approved**; feature 1 in progress. Practice Studio phases 4–7 are paused until
 these are done (`docs/practice-studio/PLAN.md`).
 
 ## Order and Git
@@ -103,6 +103,32 @@ No paid services. `cryptography` and `Pillow` are already installed.
 - **Cover image:** Pillow `verify()` + reopen, JPEG/PNG/WebP only, at most 5 MB, re-encoded
   without metadata, random file name. Served by a view that 404s unless the post is
   published or the viewer may edit.
+
+## Decisions (sign-off)
+
+**Leaderboard**
+- Week and month boundaries use `settings.TIME_ZONE`; weeks start on **Saturday**
+  (Bangladesh week). The page shows the range, e.g. "This week: 25–31 Oct".
+- Only staff and superusers are excluded. Content Editors, Publishers and Moderators who
+  are regular students still appear.
+- Ties: the same XP gets the same rank (1, 2, 2, 4); whoever reached it first is listed first.
+
+**Messaging (feature 2)**
+- `MESSAGE_ENCRYPTION_KEYS`: a system check errors clearly if messaging is used without a
+  key. Tests use their own generated key. `.env.example` and DEPLOYMENT.md get "generate and
+  back up the message key" with the exact command.
+- Polling: a lightweight endpoint (only messages after the last id). It pauses while the tab
+  is hidden and slows to 15 s after 2 minutes without activity. The 4 s interval applies only
+  while a conversation is open and active.
+- Plain `python manage.py runserver` keeps working with daphne installed, static files
+  included. Production stays on Gunicorn/WSGI for now (polling only).
+- Account deletion: a deleted user's messages show as "Deleted user" with the text removed.
+  Moderation log entries are kept, with the user reference anonymised.
+- The Privacy Policy retention entries and data-export changes for messages, blocks and
+  moderation records are part of features 2 and 3, not later.
+
+**Dependencies:** channels, daphne, markdown and nh3 are approved. Exact versions are
+pinned and listed in the third-party notices.
 
 ## WebSockets: local vs production
 
