@@ -33,7 +33,7 @@ def _initials(name):
 def get_profile(user, base):
     level = user.level
     xp_next = level * 100  # level = xp // 100 + 1, so the next level starts here
-    avatar_url = reverse("accounts:profile_photo", args=[user.pk]) if base["profile_picture"] else None
+    avatar_url = reverse("accounts:avatar", args=[user.avatar_token]) if base["profile_picture"] else None
     return {
         "name": base["display_name"],
         "initials": _initials(base["display_name"]),

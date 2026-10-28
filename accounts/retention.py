@@ -42,6 +42,13 @@ RETENTION = [
     ("Mission attempts left unfinished",
      "Closed automatically when the mission timer ends",
      "Kept as part of your attempt history"),
+    ("Messages you send and receive (text encrypted when stored; not end-to-end)",
+     "While your account exists",
+     "When you delete your account, your messages stay in the other person's conversation as "
+     "\"Deleted user\" with the text removed"),
+    ("Message settings and the members you blocked",
+     "While your account exists",
+     "Deleted when you delete your account"),
     ("Practice Studio preview runs by staff (never count toward XP, badges or progress)",
      f"{PREVIEW_ATTEMPT_DAYS} days",
      "Automatic cleanup"),

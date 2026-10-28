@@ -802,18 +802,27 @@ def totp_disable(request):
 
 
 @login_required(login_url="/accounts/login/")
-def profile_photo(request, pk):
-    """Serve one user's profile photo to any signed-in member. No client path is accepted."""
-    from django.http import Http404
+def avatar(request, token):
+    """One member's public profile photo, by their random avatar token.
+
+    Only the `profile_picture` file is ever served; no client path is accepted. A user
+    without a photo, an unknown token, and a photo whose owner blocked the viewer all get
+    the same default image, so stepping through tokens reveals nothing.
+    """
+    from django.http import HttpResponse
 
     from cyberquest.media_access import serve_stored_file
 
-    owner = UserModel.objects.filter(pk=pk).first()
-    if owner is None or not owner.profile_picture:
-        raise Http404("Profile photo not found.")
-    response = serve_stored_file(owner.profile_picture)
-    if response is None:
-        raise Http404("Profile photo not found.")
+    from .public import DEFAULT_AVATAR_SVG, hidden_from
+
+    owner = UserModel.objects.filter(avatar_token=token, is_active=True).only(
+        "pk", "profile_picture", "avatar_token").first() if len(token) <= 32 else None
+    if owner is not None and owner.profile_picture and not hidden_from(owner, request.user):
+        response = serve_stored_file(owner.profile_picture)
+        if response is not None:
+            return response
+    response = HttpResponse(DEFAULT_AVATAR_SVG, content_type="image/svg+xml")
+    response["Cache-Control"] = "private, max-age=300"
     return response
 
 

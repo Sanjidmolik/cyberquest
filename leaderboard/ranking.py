@@ -15,8 +15,9 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db.models import Case, Count, F, IntegerField, OuterRef, Subquery, Sum, Value, When, Window
 from django.db.models.functions import Coalesce, Greatest, Rank
-from django.urls import reverse
 from django.utils import timezone
+
+from accounts.public import avatar_url
 
 PERIODS = ("all", "month", "week")
 PERIOD_LABELS = {"all": "All-time", "month": "This month", "week": "This week"}
@@ -141,7 +142,7 @@ def _row(user):
         "rank": user.board_rank,
         "username": user.username,
         "initial": (user.username[:1] or "?").upper(),
-        "avatar_url": reverse("accounts:profile_photo", args=[user.pk]) if user.profile_picture else "",
+        "avatar_url": avatar_url(user),             # random token; default image if no photo
         "courses": user.courses,
         "xp": user.score,
     }
@@ -152,10 +153,10 @@ def board(period="all", page=1, now=None):
     public fields only. Cached for 60 s per period window and page."""
     start, _ = period_bounds(period, now)
     page = max(1, int(page))
-    key = f"leaderboard:v1:{period}:{start.date().isoformat() if start else 'all'}:{page}"
+    key = f"leaderboard:v2:{period}:{start.date().isoformat() if start else 'all'}:{page}"
     data = cache.get(key)
     if data is None:
-        qs = ranked(period, now).only("pk", "username", "profile_picture", "xp", "date_joined")
+        qs = ranked(period, now).only("pk", "username", "avatar_token", "xp", "date_joined")
         total = qs.count()
         rest = max(0, total - PODIUM)
         pages = max(1, -(-rest // PAGE_SIZE))

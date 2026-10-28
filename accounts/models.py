@@ -1,6 +1,11 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
-from django.utils.crypto import salted_hmac
+from django.utils.crypto import get_random_string, salted_hmac
+
+
+def new_avatar_token():
+    """Random, unguessable id for a user's public avatar URL (never the numeric user id)."""
+    return get_random_string(24)
 
 
 class CustomUserManager(BaseUserManager):
@@ -45,6 +50,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         help_text="True if this account was created via 'Sign in with Google' (no local password set).",
     )
     profile_picture = models.ImageField(upload_to="profile_pictures/", blank=True, null=True)
+    # Public avatar URLs use this token, so pages never show numeric user ids and ids can't be
+    # stepped through. Unknown tokens get the same default image as users without a photo.
+    avatar_token = models.CharField(max_length=32, unique=True, default=new_avatar_token, editable=False)
 
     xp = models.PositiveIntegerField(default=0, db_index=True)
     level = models.PositiveIntegerField(default=1)

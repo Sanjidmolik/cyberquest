@@ -185,7 +185,7 @@ class ProfileSettingsTests(TestCase):
         self.user.refresh_from_db()
         self.assertFalse(bool(self.user.profile_picture))
 
-    def test_profile_photo_requires_login_and_serves_that_user_only(self):
+    def test_avatar_requires_login_and_serves_that_user_only(self):
         from io import BytesIO
 
         from django.core.files.base import ContentFile
@@ -195,19 +195,20 @@ class ProfileSettingsTests(TestCase):
         Image.new("RGB", (8, 8), (9, 8, 7)).save(buffer, format="PNG")
         self.user.profile_picture.save("face.png", ContentFile(buffer.getvalue()), save=True)
         anon = Client()
-        denied = anon.get(reverse("accounts:profile_photo", args=[self.user.pk]))
+        denied = anon.get(reverse("accounts:avatar", args=[self.user.avatar_token]))
         self.assertEqual(denied.status_code, 302)
         self.assertIn("/accounts/login/", denied.url)
         self.client.force_login(self.user)
-        photo = self.client.get(reverse("accounts:profile_photo", args=[self.user.pk]))
+        photo = self.client.get(reverse("accounts:avatar", args=[self.user.avatar_token]))
         self.assertEqual(photo.status_code, 200)
         self.assertEqual(photo["Content-Type"], "image/png")
         self.assertTrue(b"".join(photo.streaming_content).startswith(b"\x89PNG"))
         photo.close()
-        missing = self.client.get(reverse("accounts:profile_photo", args=[self.other.pk]))
-        self.assertEqual(missing.status_code, 404)
+        # No photo: the default avatar, never another file.
+        missing = self.client.get(reverse("accounts:avatar", args=[self.other.avatar_token]))
+        self.assertEqual((missing.status_code, missing["Content-Type"]), (200, "image/svg+xml"))
         settings_page = self.client.get(self.url)
-        self.assertContains(settings_page, reverse("accounts:profile_photo", args=[self.user.pk]))
+        self.assertContains(settings_page, reverse("accounts:avatar", args=[self.user.avatar_token]))
 
     def test_oversized_image_rejected(self):
         self.client.force_login(self.user)

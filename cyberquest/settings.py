@@ -81,6 +81,8 @@ if RENDER_EXTERNAL_HOSTNAME:
 # Application definition
 
 INSTALLED_APPS = [
+    # First, so `manage.py runserver` serves HTTP and WebSockets (static files included).
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -99,6 +101,8 @@ INSTALLED_APPS = [
     'certificates',
     'practice',
     'question_bank',
+    'channels',
+    'messaging',
 ]
 
 MIDDLEWARE = [
@@ -129,6 +133,18 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'cyberquest.wsgi.application'
+# Local `runserver` (daphne) and an ASGI production server use this; Gunicorn/WSGI keeps working
+# without WebSockets (messaging falls back to polling).
+ASGI_APPLICATION = 'cyberquest.asgi.application'
+
+# Messaging push. In-memory works for one process (local development). With several processes
+# (production), set REDIS_URL and install channels-redis; without it, messaging relies on polling.
+REDIS_URL = (os.environ.get("REDIS_URL") or "").strip()
+if REDIS_URL:
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels_redis.core.RedisChannelLayer",
+                                  "CONFIG": {"hosts": [REDIS_URL]}}}
+else:
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 
 # Database
@@ -275,6 +291,13 @@ LOGIN_URL = '/accounts/login/'
 FIELD_ENCRYPTION_KEYS = [
     k.strip() for k in (os.environ.get("FIELD_ENCRYPTION_KEYS") or "").split(",") if k.strip()
 ]
+# Fernet keys for message bodies at rest, newest first (MultiFernet: add a new key in front to
+# rotate, then run `manage.py rotate_message_keys`). Required: a system check stops the app
+# without one. Back it up: lost keys make stored messages unreadable.
+MESSAGE_ENCRYPTION_KEYS = [
+    k.strip() for k in (os.environ.get("MESSAGE_ENCRYPTION_KEYS") or "").split(",") if k.strip()
+]
+MESSAGING_MAX_LENGTH = 2000
 
 # ---- Email (development: prints to terminal instead of really sending) ----
 # To send REAL emails later (e.g. via Gmail SMTP), change EMAIL_BACKEND to
@@ -392,3 +415,14 @@ MISSION_QUALIFYING_SCORE_PERCENT = _env_bounded_int(
 if sys.argv[1:2] == ["test"]:
     BREVO_API_KEY = ""
     GEMINI_API_KEY = ""
+
+# ---- Messaging limits (per user) ----
+MESSAGING_MESSAGES_PER_MINUTE = _env_bounded_int("MESSAGING_MESSAGES_PER_MINUTE", default=20, minimum=1, maximum=600)
+MESSAGING_NEW_CONVERSATIONS_PER_DAY = _env_bounded_int(
+    "MESSAGING_NEW_CONVERSATIONS_PER_DAY", default=10, minimum=1, maximum=500,
+)
+
+if sys.argv[1:2] == ["test"]:
+    # Tests use their own throwaway message key, never one from .env.
+    from cryptography.fernet import Fernet as _Fernet
+    MESSAGE_ENCRYPTION_KEYS = [_Fernet.generate_key().decode()]

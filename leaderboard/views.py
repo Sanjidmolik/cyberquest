@@ -8,7 +8,8 @@ shown (avatar, username, completed courses, XP). Ranking rules live in ranking.p
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from django.urls import reverse
+
+from accounts.public import avatar_url
 
 from . import ranking
 
@@ -39,7 +40,7 @@ def leaderboard_view(request):
             "courses": CourseProgress.objects.filter(user=user).values("course").distinct().count(),
             "username": user.username,
             "initial": (user.username[:1] or "?").upper(),
-            "avatar_url": reverse("accounts:profile_photo", args=[user.pk]) if user.profile_picture else "",
+            "avatar_url": avatar_url(user),
             "on_page": any(row["is_me"] for row in data["podium"] + data["rows"]),
         }
     return render(request, "leaderboard/leaderboard.html", {
