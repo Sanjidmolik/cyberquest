@@ -10,4 +10,10 @@ urlpatterns = [
     path("osint/", views.quiz_game, {"game_key": "osint"}, name="osint"),
     path("steganography/", views.quiz_game, {"game_key": "steganography"}, name="steganography"),
     path("network-defense/", views.quiz_game, {"game_key": "network_defense"}, name="network_defense"),
+    # Defence-curriculum missions, one per course.
+    path("online-safety/", views.quiz_game, {"game_key": "online_safety"}, name="online_safety"),
+    path("malware-defence/", views.quiz_game, {"game_key": "malware_defense"}, name="malware_defense"),
+    path("device-protection/", views.quiz_game, {"game_key": "device_protection"}, name="device_protection"),
+    path("privacy-shield/", views.quiz_game, {"game_key": "privacy_defense"}, name="privacy_defense"),
+    path("incident-response/", views.quiz_game, {"game_key": "incident_response"}, name="incident_response"),
 ]

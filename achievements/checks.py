@@ -53,8 +53,8 @@ def check_level_up(user):
 
 
 def check_first_lesson(user):
-    from courses.models import CourseProgress
-    return CourseProgress.objects.filter(user=user, course__is_published=True).exists()
+    from courses.progress import active_completions
+    return active_completions(user).exists()
 
 
 def _completed_practice(user, domain):

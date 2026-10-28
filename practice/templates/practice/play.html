@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
 <link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
 {% include "shared/_loading.html" %}
-<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}?v=soc5">
+<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}?v=soc6">
 </head>
 <body class="practice-body console-body">
 
@@ -71,6 +71,7 @@
             {% endif %}
         </div>
         {% include "practice/_briefing_topo.html" %}
+        <p class="pace-note">Self-paced: there is no timer. Take as long as you need, and you can replay this scenario afterwards.</p>
         {% if is_incident %}
         <ol class="flow-steps">
             <li class="active">ALERT</li><li>INVESTIGATE</li><li>COLLECT</li>
@@ -81,6 +82,7 @@
             {% csrf_token %}
             <button type="submit" class="practice-btn brief-go">
                 {% if scenario.workspace_type == "email" %}OPEN EMAIL CONSOLE →
+                {% elif scenario.workspace_type == "panels" %}OPEN {{ scenario.environment|upper }} →
                 {% else %}INVESTIGATE INCIDENT →{% endif %}
             </button>
         </form>
@@ -93,7 +95,7 @@
         <section class="console-panel workspace-panel">
             <header class="console-panel-head">
                 <span>WORKSPACE</span>
-                <span class="muted">{{ scenario.workspace_type|upper }}</span>
+                <span class="muted">{% if scenario.workspace_type == "panels" %}LIVE VIEW{% else %}{{ scenario.workspace_type|upper }}{% endif %}</span>
             </header>
             <div class="soc-topo">
                 {% include "practice/_sim_stage.html" %}
@@ -142,6 +144,50 @@
                 <div><dt>Claim</dt><dd>{{ scenario.workspace.claim }}</dd></div>
                 <div><dt>Rule</dt><dd>{{ scenario.workspace.rule }}</dd></div>
             </dl>
+            {% elif scenario.workspace_type == "stego" %}
+            <dl class="context-list">
+                <div><dt>File</dt><dd>{{ scenario.workspace.filename }}</dd></div>
+                <div><dt>Size</dt><dd>{{ scenario.workspace.file_size }}</dd></div>
+                {% if scenario.workspace.sender %}<div><dt>Sender</dt><dd>{{ scenario.workspace.sender }}</dd></div>{% endif %}
+                {% if scenario.workspace.recipient %}<div><dt>Recipient</dt><dd>{{ scenario.workspace.recipient }}</dd></div>{% endif %}
+                {% if scenario.workspace.uploader %}<div><dt>Uploader</dt><dd>{{ scenario.workspace.uploader }}</dd></div>{% endif %}
+                {% if scenario.workspace.entropy_score %}<div><dt>Entropy</dt><dd>{{ scenario.workspace.entropy_score }}</dd></div>{% endif %}
+                {% if scenario.workspace.watermark_type %}<div><dt>Watermark</dt><dd>{{ scenario.workspace.watermark_type }}</dd></div>{% endif %}
+                <div><dt>Note</dt><dd>{{ scenario.workspace.note }}</dd></div>
+            </dl>
+            {% elif scenario.workspace_type == "panels" %}
+            <div class="ws-panels">
+                {% for panel in scenario.workspace.panels %}
+                <div class="ws-panel ws-{{ panel.kind }}">
+                    <p class="ws-title">{{ panel.title }}</p>
+                    {% if panel.kind == "table" %}
+                    <div class="ws-table-wrap">
+                        <table class="ws-table">
+                            <thead><tr>{% for h in panel.head %}<th scope="col">{{ h }}</th>{% endfor %}</tr></thead>
+                            <tbody>
+                            {% for row in panel.rows %}
+                            <tr{% if forloop.counter0 in panel.flagged %} class="is-flag"{% endif %}>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% elif panel.kind == "messages" %}
+                    <ul class="ws-messages">
+                        {% for m in panel.items %}
+                        <li class="ws-msg{% if m.flag %} is-flag{% endif %}"><span class="ws-from">{{ m.from }}</span><span>{{ m.text }}</span></li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <dl class="context-list">
+                        {% for r in panel.rows %}
+                        <div{% if r.flag %} class="is-flag"{% endif %}><dt>{{ r.label }}</dt><dd>{{ r.value }}</dd></div>
+                        {% endfor %}
+                    </dl>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                <p class="ws-legend"><span class="ws-flag-dot" aria-hidden="true"></span>Highlighted items look suspicious. Use the investigation tools to confirm.</p>
+            </div>
             {% endif %}
         </section>
     </div>
@@ -208,6 +254,11 @@
             {% if evidence_count < evidence_needed %}
             <p class="hint-note">Investigate the available indicators before deciding.</p>
             {% endif %}
+            <details class="hint-box">
+                <summary>Need a hint? <span class="muted">(optional, no penalty)</span></summary>
+                {% if scenario.hint %}<p>{{ scenario.hint }}</p>{% endif %}
+                {% if required_labels %}<p>Evidence that matters most here: <strong>{{ required_labels|join:", " }}</strong>.</p>{% endif %}
+            </details>
             <div class="tool-list">
                 {% for d in decision_actions %}
                 <form method="post" action="{% url 'practice:decide' session.pk %}">

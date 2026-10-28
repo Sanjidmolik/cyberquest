@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from games.attempts import qualifying_percent
 from games.models import GameAttempt
-from games.registry import playable_games
+from games.registry import GAMES_REGISTRY
 
 PAGE_SIZE = 15
 FAST_MARK_SECONDS = 30
@@ -34,7 +34,8 @@ def _percent(score, total) -> int:
 
 
 def _names():
-    return {game["key"]: game.get("card_name") or game["name"] for game in playable_games()}
+    """Every mission, including Coming Soon ones, so past attempts stay in the report."""
+    return {game["key"]: game.get("card_name") or game["name"] for game in GAMES_REGISTRY}
 
 
 def mission_analytics_report(params) -> dict:

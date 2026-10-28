@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <title>{% if course %}{{ course.title }} — CyberQuest{% else %}CyberQuest learning{% endif %}</title>
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'courses/css/reader.css' %}">
+<link rel="stylesheet" href="{% static 'courses/css/reader.css' %}?v=2">
 <link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
 {% include "shared/_loading.html" %}
 {% if uses_pdf %}
@@ -70,7 +70,11 @@
 </div>
 
 {% if not uses_pdf %}
+{% if chapters %}
+<div id="raw-course-content" hidden>{% include "courses/_comic_chapters.html" %}</div>
+{% else %}
 <div id="raw-course-content" hidden>{{ course.content|linebreaks }}</div>
+{% endif %}
 {% endif %}
 
 <script>
@@ -91,7 +95,7 @@
     };
 </script>
 <script src="{% static 'courses/js/vendor/page-flip.browser.js' %}"></script>
-<script src="{% static 'courses/js/reader.js' %}"></script>
+<script src="{% static 'courses/js/reader.js' %}?v=2"></script>
 {% endif %}
 </body>
 </html>

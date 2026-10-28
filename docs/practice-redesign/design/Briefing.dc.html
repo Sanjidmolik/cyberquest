@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CyberQuest – Mission intro</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF}
+a{color:#5B2FE0}
+.btn3d{transition:transform .08s ease, box-shadow .08s ease, filter .15s ease}
+.btn3d:hover{filter:brightness(1.07)}
+.btn3d:active{transform:translateY(5px);box-shadow:0 0 0 transparent !important}
+.opt{transition:transform .15s ease, border-color .15s ease, background-color .15s ease, box-shadow .15s ease, opacity .3s ease}
+.opt:hover{transform:translateY(-3px)}
+.opt:active{transform:translateY(3px)}
+.rise{animation:rise .55s cubic-bezier(.2,1.2,.3,1) both}
+.pop-in{animation:popIn .45s cubic-bezier(.2,1.8,.4,1) both}
+.bob{animation:bob 2.6s ease-in-out infinite}
+.jump{animation:jump .8s cubic-bezier(.3,1.6,.4,1)}
+.party{animation:jump 1.1s cubic-bezier(.3,1.6,.4,1) infinite}
+.shake{animation:shake .5s ease}
+.eyes{transform-box:fill-box;transform-origin:center;animation:blinkEye 4.2s infinite}
+.antenna{animation:glow 1.6s ease-in-out infinite}
+.waving .arm-r{transform-box:fill-box;transform-origin:0% 100%;animation:wave 1.2s ease-in-out infinite}
+.sheet{animation:sheetUp .4s cubic-bezier(.2,1.1,.3,1) both}
+.fill{transition:width 1s cubic-bezier(.3,1.2,.4,1)}
+.shine{position:relative;overflow:hidden}
+.shine::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);transform:translateX(-100%);animation:shine 2.6s ease-in-out infinite}
+.caret::after{content:"";display:inline-block;width:3px;height:1.1em;margin-left:3px;vertical-align:-0.15em;background:#7C4DFF;animation:caret .8s steps(1) infinite}
+.ring-pulse{animation:ringPulse 1.8s ease-out infinite}
+.packet{animation:travel 3.6s linear infinite}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes jump{0%{transform:translateY(0) scale(1)}25%{transform:translateY(4px) scale(1.08,.9)}55%{transform:translateY(-26px) scale(.95,1.06)}80%{transform:translateY(0) scale(1.04,.96)}100%{transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+@keyframes blinkEye{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+@keyframes glow{0%,100%{fill:#FFB020}50%{fill:#FFE08A}}
+@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-24deg)}}
+@keyframes sheetUp{from{transform:translateY(100%);opacity:.4}to{transform:none;opacity:1}}
+@keyframes shine{0%,60%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes caret{50%{opacity:0}}
+@keyframes ringPulse{0%{box-shadow:0 0 0 0 rgba(124,77,255,.45)}100%{box-shadow:0 0 0 16px rgba(124,77,255,0)}}
+@keyframes travel{from{left:6%}to{left:94%}}
+button{font-family:Nunito,system-ui,sans-serif}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #7C4DFF;outline-offset:3px}
+.hana .head{transform-box:view-box;transform-origin:120px 168px;transition:transform .45s cubic-bezier(.3,1.4,.4,1)}
+.hana .body{transform-box:view-box;transform-origin:120px 240px;animation:breathe 3.6s ease-in-out infinite}
+.hana .bangs{transform-box:fill-box;transform-origin:50% 0%;animation:sway 5s ease-in-out infinite}
+.hana .lids{transform-box:fill-box;transform-origin:center;animation:blinkEye 4.6s infinite}
+.hana.think .head{transform:rotate(-5deg)}
+.hana.correct .head{animation:nod .7s cubic-bezier(.3,1.5,.4,1)}
+.hana.happy .head{animation:nod 1.6s ease-in-out infinite}
+.hana.wrong .head{animation:headShake .6s ease}
+.hana.surprised .head{transform:translateY(-3px)}
+.hana .fx-spark,.hana .fx-sweat{opacity:0;transform-box:fill-box;transform-origin:center}
+.hana.correct .fx-spark,.hana.happy .fx-spark{animation:spark 1.6s ease-in-out infinite}
+.hana .s2{animation-delay:.5s !important}.hana .s3{animation-delay:1s !important}
+.hana.wrong .fx-sweat{animation:drip 1.6s ease-in infinite}
+@keyframes breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.015)}}
+@keyframes sway{0%,100%{transform:rotate(0)}50%{transform:rotate(1.4deg)}}
+@keyframes nod{0%{transform:none}35%{transform:translateY(5px) rotate(2deg)}70%{transform:translateY(-2px)}100%{transform:none}}
+@keyframes headShake{0%,100%{transform:none}25%{transform:rotate(-4deg)}50%{transform:rotate(3deg)}75%{transform:rotate(-2deg)}}
+@keyframes spark{0%,100%{opacity:0;transform:scale(.3) rotate(0)}50%{opacity:1;transform:scale(1) rotate(45deg)}}
+@keyframes drip{0%{opacity:0;transform:translateY(-4px)}20%{opacity:1}100%{opacity:0;transform:translateY(12px)}}
+.tick{animation:tick 1s steps(1) infinite}
+@keyframes tick{50%{opacity:.55}}
+.ring-fill{transition:stroke-dashoffset .9s cubic-bezier(.3,1.2,.4,1), stroke .4s ease}
+.meter{transition:width .8s cubic-bezier(.3,1.2,.4,1), background-color .4s ease}
+@media (prefers-reduced-motion: reduce){*,*::after{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; position: relative; overflow: hidden; display: flex; flex-direction: column; background: #FFFFFF; color: #1F1440; font-family: Nunito, system-ui, sans-serif">
+<div style="max-width: 1040px; width: 100%; margin: 0 auto; padding: 28px 32px 0; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 16px"><a href="Practice.dc.html" aria-label="Back to Practice Center" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #8C84A8; border-radius: 12px"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></a><span style="font-size: 14px; font-weight: 900; letter-spacing: 1.5px; color: #6D3FE8">{{m.topic}}</span><div style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: #FFF2D6; color: #8A5A00; font-size: 15px; font-weight: 900"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#FFB020" stroke="#8A5A00" stroke-width="1.5" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg>502 XP</div></div><main style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 32px 40px"><div style="max-width: 900px; width: 100%; display: flex; flex-direction: column; gap: 30px"><div style="display: flex; align-items: center; gap: 30px"><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><div class="{{hana.cls}}" style="flex-shrink: 0; width: 200px; height: 200px; border-radius: 56px; overflow: hidden; background: #EDE8FB; position: relative">
+<svg width="200" height="200" viewBox="0 0 240 240" role="img" aria-label="Hana Seo, your CyberQuest mentor">
+<circle cx="200" cy="54" r="44" fill="#E2D9FF"></circle>
+<g class="head"><path d="M70 128 C62 74 88 36 122 36 C158 36 182 70 174 128 C172 150 168 166 160 178 C150 172 148 160 150 150 L92 150 C94 160 92 172 82 178 C74 166 70 150 70 128 Z" fill="#2A1E5C" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path></g>
+<g class="body">
+<path d="M108 148 L108 188 Q120 194 132 188 L132 148 Z" fill="#F6D3C2" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M108 154 Q120 172 132 154 L132 166 Q120 182 108 166 Z" fill="#E8B5A2"></path>
+<path d="M28 242 C32 205 64 188 102 180 L120 200 L138 180 C176 188 208 205 212 242 Z" fill="#2B2350" stroke="#1F1440" stroke-width="3" stroke-linejoin="round"></path>
+<path d="M102 181 C92 187 84 197 80 212" fill="none" stroke="#4A3A88" stroke-width="2.5" stroke-linecap="round"></path>
+<path d="M138 181 C148 187 156 197 160 212" fill="none" stroke="#4A3A88" stroke-width="2.5" stroke-linecap="round"></path>
+<path d="M104 184 Q120 193 136 184 L120 216 Z" fill="#7C4DFF" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M138 186 L160 208" stroke="#FFB020" stroke-width="3" stroke-linecap="round"></path>
+<g transform="rotate(-6 166 216)"><rect x="152" y="206" width="30" height="20" rx="4" fill="#FFB020" stroke="#1F1440" stroke-width="2"></rect><text x="167" y="220" text-anchor="middle" font-family="Nunito, sans-serif" font-size="10" font-weight="900" fill="#1F1440">CQ</text></g>
+</g>
+<g class="head">
+<ellipse cx="84" cy="114" rx="6" ry="10" fill="#FBE0D2" stroke="#1F1440" stroke-width="2"></ellipse>
+<ellipse cx="156" cy="114" rx="6" ry="10" fill="#FBE0D2" stroke="#1F1440" stroke-width="2"></ellipse>
+<path d="M84 92 C84 70 100 58 120 58 C140 58 156 70 156 92 L156 112 C156 128 148 142 136 154 L124 166 Q120 170 116 166 L104 154 C92 142 84 128 84 112 Z" fill="#FBE0D2" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M86 96 Q120 84 155 96 L155 106 Q120 94 86 106 Z" fill="#EFC2B0"></path>
+<path d="M150 120 C150 136 142 148 132 158 L136 158 C148 146 155 132 155 118 Z" fill="#EFC2B0"></path>
+<g opacity="{{hana.blush}}"><ellipse cx="99" cy="133" rx="9" ry="4" fill="#F7A1A8"></ellipse><ellipse cx="141" cy="133" rx="9" ry="4" fill="#F7A1A8"></ellipse>
+<path d="M94 131 l-2 4 M99 131 l-2 4 M104 131 l-2 4 M136 131 l-2 4 M141 131 l-2 4 M146 131 l-2 4" stroke="#E57A86" stroke-width="1.3" stroke-linecap="round"></path></g>
+<path d="M121 125 Q119 131 117 135 L121 136" fill="none" stroke="#C98E7C" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="{{hana.mouth}}" fill="{{hana.mouthFill}}" stroke="#7A2E3A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+<sc-if value="{{hana.open}}" hint-placeholder-val="{{ true }}"><g class="lids">
+<path d="M92 112 Q103 103 116 109 Q114 120 104 121 Q94 120 92 112 Z" fill="#FFFFFF" stroke="#1F1440" stroke-width="1"></path>
+<ellipse cx="104" cy="114" rx="6.5" ry="7.5" fill="#6D3FE8"></ellipse><ellipse cx="104" cy="117" rx="4.5" ry="3.5" fill="#9B7BFF"></ellipse>
+<ellipse cx="104" cy="114" rx="3" ry="3.8" fill="#1F1440"></ellipse><circle cx="101.5" cy="110.5" r="2.4" fill="#FFFFFF"></circle><circle cx="107" cy="118" r="1.2" fill="#FFFFFF"></circle>
+<path d="M90 111 Q102 100 117 107" fill="none" stroke="#1F1440" stroke-width="3.6" stroke-linecap="round"></path><path d="M90 111 L86 107" stroke="#1F1440" stroke-width="2.5" stroke-linecap="round"></path>
+<path d="M97 120 Q104 123 111 120" fill="none" stroke="#1F1440" stroke-width="1.2" stroke-linecap="round"></path>
+<path d="M148 112 Q137 103 124 109 Q126 120 136 121 Q146 120 148 112 Z" fill="#FFFFFF" stroke="#1F1440" stroke-width="1"></path>
+<ellipse cx="136" cy="114" rx="6.5" ry="7.5" fill="#6D3FE8"></ellipse><ellipse cx="136" cy="117" rx="4.5" ry="3.5" fill="#9B7BFF"></ellipse>
+<ellipse cx="136" cy="114" rx="3" ry="3.8" fill="#1F1440"></ellipse><circle cx="133.5" cy="110.5" r="2.4" fill="#FFFFFF"></circle><circle cx="139" cy="118" r="1.2" fill="#FFFFFF"></circle>
+<path d="M150 111 Q138 100 123 107" fill="none" stroke="#1F1440" stroke-width="3.6" stroke-linecap="round"></path><path d="M150 111 L154 107" stroke="#1F1440" stroke-width="2.5" stroke-linecap="round"></path>
+<path d="M129 120 Q136 123 143 120" fill="none" stroke="#1F1440" stroke-width="1.2" stroke-linecap="round"></path>
+</g></sc-if>
+<sc-if value="{{hana.closed}}" hint-placeholder-val="{{ false }}"><g>
+<path d="M93 115 Q104 105 115 115" fill="none" stroke="#1F1440" stroke-width="3.4" stroke-linecap="round"></path>
+<path d="M125 115 Q136 105 147 115" fill="none" stroke="#1F1440" stroke-width="3.4" stroke-linecap="round"></path></g></sc-if>
+<path d="{{hana.browL}}" fill="none" stroke="#2A1E5C" stroke-width="3" stroke-linecap="round"></path>
+<path d="{{hana.browR}}" fill="none" stroke="#2A1E5C" stroke-width="3" stroke-linecap="round"></path>
+<g class="bangs">
+<path d="M80 104 C76 66 98 42 124 42 C152 42 168 64 162 104 L156 86 L150 100 L142 74 L132 98 L124 66 L114 96 L104 72 L96 100 L90 84 Z" fill="#2A1E5C" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M84 96 C78 122 80 146 90 162 L92 136 L88 120 Z" fill="#2A1E5C" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M158 96 C164 122 162 146 152 162 L150 136 L154 120 Z" fill="#2A1E5C" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M100 58 Q120 50 142 56" fill="none" stroke="#6D5BB8" stroke-width="3.5" stroke-linecap="round"></path>
+<path d="M108 64 Q118 60 128 62" fill="none" stroke="#6D5BB8" stroke-width="2" stroke-linecap="round"></path>
+<rect x="140" y="57" width="15" height="5" rx="2" fill="#FFB020" stroke="#1F1440" stroke-width="1.5" transform="rotate(-25 147 60)"></rect>
+</g>
+<rect x="152" y="104" width="9" height="14" rx="4" fill="#7C4DFF" stroke="#1F1440" stroke-width="2"></rect>
+<path d="M156 118 Q158 140 142 146" fill="none" stroke="#1F1440" stroke-width="2" stroke-linecap="round"></path>
+<circle cx="141" cy="146" r="3" fill="#1F1440"></circle>
+<g class="fx-sweat"><path d="M168 78 C172 84 174 88 174 91 A6 6 0 0 1 162 91 C162 88 164 84 168 78 Z" fill="#9AD8FF" stroke="#1F1440" stroke-width="2"></path><path d="M165 89 Q165 86 167 84" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"></path></g>
+</g>
+<g class="fx-spark s1"><path transform="translate(204 74)" d="M0 -11 L2.8 -2.8 L11 0 L2.8 2.8 L0 11 L-2.8 2.8 L-11 0 L-2.8 -2.8 Z" fill="#FFB020" stroke="#1F1440" stroke-width="1.5"></path></g>
+<g class="fx-spark s2"><path transform="translate(38 90)" d="M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z" fill="#FFFFFF" stroke="#1F1440" stroke-width="1.5"></path></g>
+<g class="fx-spark s3"><path transform="translate(212 132)" d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#7C4DFF" stroke="#1F1440" stroke-width="1.5"></path></g>
+</svg></div><span style="font-size: 14px; font-weight: 900; color: #5B5277">Hana Seo · Senior Analyst</span></div><div class="rise" style="position: relative; flex: 1; background: #FFFFFF; border: 2px solid #E5DEFF; border-radius: 20px; padding: 18px 22px; box-shadow: 0 4px 0 #E5DEFF; font-size: 21px; font-weight: 800; line-height: 1.4; color: #1F1440"><span class="{{caretClass}}">{{typed}}</span><div aria-hidden="true" style="position: absolute; left: -11px; top: 50%; margin-top: -10px; width: 18px; height: 18px; background: #FFFFFF; border-left: 2px solid #E5DEFF; border-bottom: 2px solid #E5DEFF; transform: rotate(45deg)"></div></div></div><section class="rise" style="animation-delay: .25s; border: 2px solid #E5DEFF; box-shadow: 0 6px 0 #E5DEFF; border-radius: 24px; padding: 28px; display: flex; flex-direction: column; gap: 22px"><div style="display: flex; flex-direction: column; gap: 10px"><span style="align-self: flex-start; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; padding: 6px 12px; border-radius: 8px; background: {{m.tagBg}}; color: {{m.tagFg}}">{{m.tag}} SESSION</span><h1 style="margin: 0; font-size: 32px; font-weight: 900; line-height: 1.15">{{m.title}}</h1><p style="margin: 0; font-size: 17px; font-weight: 700; line-height: 1.5; color: #5B5277">{{m.desc}}</p></div><div style="display: flex; flex-wrap: wrap; gap: 10px"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 900; padding: 8px 14px; border-radius: 999px; background: {{m.lvlBg}}; color: {{m.lvlFg}}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1"></circle></svg>{{m.level}}</span><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 900; padding: 8px 14px; border-radius: 999px; background: #F1EBFF; color: #5B2FE0"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>{{m.time}}</span><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 900; padding: 8px 14px; border-radius: 999px; background: #FFF2D6; color: #8A5A00">{{m.xp}}</span></div><div style="position: relative; display: flex; align-items: flex-start; justify-content: space-between; padding-top: 4px"><div aria-hidden="true" style="position: absolute; left: 52px; right: 52px; top: 30px; height: 5px; border-radius: 3px; background: #EDE8FB"></div><sc-for list="{{m.steps}}" as="s" hint-placeholder-count="4"><div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 104px"><div class="{{s.cls}}" style="{{s.style}}">{{s.n}}</div><span style="font-size: 15px; font-weight: 800; color: {{s.color}}">{{s.label}}</span></div></sc-for></div></section></div></main><footer style="border-top: 2px solid #EDE8FB; padding: 24px 32px 28px"><div style="max-width: 1040px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px"><label style="display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 700; color: #5B5277; cursor: pointer; max-width: 560px"><input type="checkbox" checked="{{agreed}}" onChange="{{toggleAgree}}" style="accent-color: #7C4DFF; width: 22px; height: 22px; margin: 0; flex-shrink: 0"><span>This is a fictional training scenario. I’ll only test systems I’m authorised to.</span></label><a href="{{m.href}}" class="btn3d" style="{{startStyle}}">Start mission</a></div></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode": {"editor": "enum", "options": ["simulation", "incident", "choice"], "default": "simulation"}, "$preview": {"width": 1440, "height": 900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { n: 0, agreed: false }; }
+  mode() {
+    const M = {
+      simulation: { tag: 'SIMULATION', tagBg: '#F1EBFF', tagFg: '#5B2FE0', topic: 'CRYPTOGRAPHY · SCENARIO 1 OF 4', title: 'Secure-message workflow review', desc: 'A team claims their message workflow is “secure”. Audit it, then fix it hands-on in a live console.', level: 'Beginner', lvlBg: '#DDF7EC', lvlFg: '#0B6E50', time: '~12 min', xp: '+60 XP', text: 'Hi, I’m Hana, your senior analyst. A team swears their file sharing is “totally secure”. Nobody has checked. Let’s test it together.', steps: ['Learn', 'Investigate', 'Configure', 'Recap'], href: 'Learn.dc.html', end: 'smile' },
+      incident: { tag: 'INCIDENT', tagBg: '#FFE9DC', tagFg: '#9A3412', topic: 'CRYPTOGRAPHY · SCENARIO 4 OF 4', title: 'Certificate and TLS problem', desc: 'Patients see a certificate warning on the clinic portal, and staff are telling them to click through. The doors open in 15 minutes.', level: 'Advanced', lvlBg: '#FFE9DC', lvlFg: '#9A3412', time: '~18 min', xp: '+120 XP', text: 'Heads up, this one is live. The clinic’s patient portal is throwing certificate warnings and the doors open soon. Stay calm and work the problem.', steps: ['Triage', 'Evidence', 'Act', 'Respond'], href: 'Triage.dc.html', end: 'think' },
+      choice: { tag: 'CHOICE', tagBg: '#DDF7EC', tagFg: '#0B6E50', topic: 'PHISHING & SCAM PREVENTION · MOD-01', title: 'The urgent CEO request', desc: 'An “urgent” message from the CEO lands in your inbox. Every choice you make changes how the story ends.', level: 'Beginner', lvlBg: '#DDF7EC', lvlFg: '#0B6E50', time: '~8 min', xp: '+50 XP', text: 'Your call this time. You’ll face three decisions, and each one changes how the story plays out. There’s more than one ending.', steps: ['Scene 1', 'Scene 2', 'Scene 3', 'Ending'], href: 'Branch.dc.html', end: 'smile' }
+    };
+    return M[this.props.mode] || M.simulation;
+  }
+  componentDidMount() {
+    this.t = setInterval(() => {
+      if (this.state.n >= this.mode().text.length) { clearInterval(this.t); return; }
+      this.setState({ n: this.state.n + 1 });
+    }, 28);
+  }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const P = 'height: 56px; padding: 0 36px; border-radius: 16px; font: 900 17px Nunito, system-ui, sans-serif; letter-spacing: 0.6px; text-transform: uppercase; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border: 0; box-sizing: border-box; ';
+    const btn = (k) => P + ({
+      primary: 'background: #7C4DFF; color: #FFFFFF; box-shadow: 0 5px 0 #5B2FE0; cursor: pointer;',
+      off: 'background: #E9E5F5; color: #8C84A8; box-shadow: 0 5px 0 #D6D0EA; cursor: not-allowed; pointer-events: none;',
+      good: 'background: #0B8A5F; color: #FFFFFF; box-shadow: 0 5px 0 #076B49; cursor: pointer;',
+      bad: 'background: #D9480F; color: #FFFFFF; box-shadow: 0 5px 0 #A8360A; cursor: pointer;',
+      ghost: 'background: #FFFFFF; color: #5B5277; border: 2px solid #E5DEFF; box-shadow: 0 5px 0 #E5DEFF; cursor: pointer;'
+    })[k];
+    const MOUTH = { happy: 'M47 70 Q60 81 73 70', wow: 'M55 73 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0', sad: 'M49 77 Q60 69 71 77', think: 'M51 74 L69 72' };
+    const sheet = (ok) => ({ sheetBg: ok ? '#DDF7EC' : '#FFE9DC', sheetColor: ok ? '#0B6E50' : '#9A3412', sheetBtn: btn(ok ? 'good' : 'bad'), good: ok, bad: !ok });
+    const NB = { bl: 'M92 97 Q103 91 115 95', br: 'M125 95 Q137 91 148 97' };
+    const EXP = {
+      neutral: Object.assign({}, NB, { m: 'M114 148 Q120 151 126 148', f: 'none', blush: 0.35 }),
+      smile: Object.assign({}, NB, { m: 'M112 147 Q120 154 128 147', f: 'none', blush: 0.55 }),
+      talk: Object.assign({}, NB, { m: 'M113 147 Q120 155 127 147 Z', f: '#B5434F', blush: 0.45 }),
+      think: { bl: 'M92 94 Q103 88 115 93', br: 'M125 97 Q137 95 148 98', m: 'M115 149 L125 148', f: 'none', blush: 0.3 },
+      correct: { bl: 'M92 94 Q103 87 115 92', br: 'M125 92 Q137 87 148 94', m: 'M111 145 Q120 158 129 145 Z', f: '#B5434F', blush: 0.75, closed: true },
+      happy: { bl: 'M92 94 Q103 87 115 92', br: 'M125 92 Q137 87 148 94', m: 'M111 145 Q120 158 129 145 Z', f: '#B5434F', blush: 0.75, closed: true },
+      wrong: { bl: 'M92 96 Q103 95 115 90', br: 'M125 90 Q137 95 148 96', m: 'M113 151 Q120 146 127 151', f: 'none', blush: 0.2 },
+      surprised: { bl: 'M92 92 Q103 85 115 90', br: 'M125 90 Q137 85 148 92', m: 'M117 149 a3 4 0 1 0 6 0 a3 4 0 1 0 -6 0', f: '#B5434F', blush: 0.3 }
+    };
+    const hana = (s) => { const e = EXP[s] || EXP.neutral; return { cls: 'hana ' + s, browL: e.bl, browR: e.br, mouth: e.m, mouthFill: e.f, blush: String(e.blush), open: !e.closed, closed: !!e.closed }; };
+    const md = this.mode();
+    const n = this.state.n;
+    const typing = n < md.text.length;
+    const steps = md.steps.map((l, i) => ({
+      n: String(i + 1), label: l, cls: i === 0 ? 'ring-pulse' : '', color: i === 0 ? '#1F1440' : '#5B5277',
+      style: 'width: 60px; height: 60px; border-radius: 50%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; ' + (i === 0 ? 'background: #7C4DFF; color: #FFFFFF; box-shadow: 0 5px 0 #5B2FE0;' : 'background: #F1EBFF; color: #6D3FE8; border: 3px solid #E5DEFF;')
+    }));
+    return {
+      m: Object.assign({}, md, { steps }),
+      typed: md.text.slice(0, n), caretClass: typing ? 'caret' : '',
+      hana: hana(typing ? (n % 6 < 3 ? 'talk' : 'smile') : md.end),
+      agreed: this.state.agreed,
+      toggleAgree: () => this.setState({ agreed: !this.state.agreed }),
+      startStyle: btn(this.state.agreed ? 'primary' : 'off')
+    };
+  }
+}
+</script>
+</body>
+</html>

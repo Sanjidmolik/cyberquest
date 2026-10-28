@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CyberQuest – Investigate</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF}
+a{color:#5B2FE0}
+.btn3d{transition:transform .08s ease, box-shadow .08s ease, filter .15s ease}
+.btn3d:hover{filter:brightness(1.07)}
+.btn3d:active{transform:translateY(5px);box-shadow:0 0 0 transparent !important}
+.opt{transition:transform .15s ease, border-color .15s ease, background-color .15s ease, box-shadow .15s ease, opacity .3s ease}
+.opt:hover{transform:translateY(-3px)}
+.opt:active{transform:translateY(3px)}
+.rise{animation:rise .55s cubic-bezier(.2,1.2,.3,1) both}
+.pop-in{animation:popIn .45s cubic-bezier(.2,1.8,.4,1) both}
+.bob{animation:bob 2.6s ease-in-out infinite}
+.jump{animation:jump .8s cubic-bezier(.3,1.6,.4,1)}
+.party{animation:jump 1.1s cubic-bezier(.3,1.6,.4,1) infinite}
+.shake{animation:shake .5s ease}
+.eyes{transform-box:fill-box;transform-origin:center;animation:blinkEye 4.2s infinite}
+.antenna{animation:glow 1.6s ease-in-out infinite}
+.waving .arm-r{transform-box:fill-box;transform-origin:0% 100%;animation:wave 1.2s ease-in-out infinite}
+.sheet{animation:sheetUp .4s cubic-bezier(.2,1.1,.3,1) both}
+.fill{transition:width 1s cubic-bezier(.3,1.2,.4,1)}
+.shine{position:relative;overflow:hidden}
+.shine::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);transform:translateX(-100%);animation:shine 2.6s ease-in-out infinite}
+.caret::after{content:"";display:inline-block;width:3px;height:1.1em;margin-left:3px;vertical-align:-0.15em;background:#7C4DFF;animation:caret .8s steps(1) infinite}
+.ring-pulse{animation:ringPulse 1.8s ease-out infinite}
+.packet{animation:travel 3.6s linear infinite}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes jump{0%{transform:translateY(0) scale(1)}25%{transform:translateY(4px) scale(1.08,.9)}55%{transform:translateY(-26px) scale(.95,1.06)}80%{transform:translateY(0) scale(1.04,.96)}100%{transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+@keyframes blinkEye{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+@keyframes glow{0%,100%{fill:#FFB020}50%{fill:#FFE08A}}
+@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-24deg)}}
+@keyframes sheetUp{from{transform:translateY(100%);opacity:.4}to{transform:none;opacity:1}}
+@keyframes shine{0%,60%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes caret{50%{opacity:0}}
+@keyframes ringPulse{0%{box-shadow:0 0 0 0 rgba(124,77,255,.45)}100%{box-shadow:0 0 0 16px rgba(124,77,255,0)}}
+@keyframes travel{from{left:6%}to{left:94%}}
+button{font-family:Nunito,system-ui,sans-serif}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #7C4DFF;outline-offset:3px}
+.hana .head{transform-box:view-box;transform-origin:120px 168px;transition:transform .45s cubic-bezier(.3,1.4,.4,1)}
+.hana .body{transform-box:view-box;transform-origin:120px 240px;animation:breathe 3.6s ease-in-out infinite}
+.hana .bangs{transform-box:fill-box;transform-origin:50% 0%;animation:sway 5s ease-in-out infinite}
+.hana .lids{transform-box:fill-box;transform-origin:center;animation:blinkEye 4.6s infinite}
+.hana.think .head{transform:rotate(-5deg)}
+.hana.correct .head{animation:nod .7s cubic-bezier(.3,1.5,.4,1)}
+.hana.happy .head{animation:nod 1.6s ease-in-out infinite}
+.hana.wrong .head{animation:headShake .6s ease}
+.hana.surprised .head{transform:translateY(-3px)}
+.hana .fx-spark,.hana .fx-sweat{opacity:0;transform-box:fill-box;transform-origin:center}
+.hana.correct .fx-spark,.hana.happy .fx-spark{animation:spark 1.6s ease-in-out infinite}
+.hana .s2{animation-delay:.5s !important}.hana .s3{animation-delay:1s !important}
+.hana.wrong .fx-sweat{animation:drip 1.6s ease-in infinite}
+@keyframes breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.015)}}
+@keyframes sway{0%,100%{transform:rotate(0)}50%{transform:rotate(1.4deg)}}
+@keyframes nod{0%{transform:none}35%{transform:translateY(5px) rotate(2deg)}70%{transform:translateY(-2px)}100%{transform:none}}
+@keyframes headShake{0%,100%{transform:none}25%{transform:rotate(-4deg)}50%{transform:rotate(3deg)}75%{transform:rotate(-2deg)}}
+@keyframes spark{0%,100%{opacity:0;transform:scale(.3) rotate(0)}50%{opacity:1;transform:scale(1) rotate(45deg)}}
+@keyframes drip{0%{opacity:0;transform:translateY(-4px)}20%{opacity:1}100%{opacity:0;transform:translateY(12px)}}
+.tick{animation:tick 1s steps(1) infinite}
+@keyframes tick{50%{opacity:.55}}
+.ring-fill{transition:stroke-dashoffset .9s cubic-bezier(.3,1.2,.4,1), stroke .4s ease}
+.meter{transition:width .8s cubic-bezier(.3,1.2,.4,1), background-color .4s ease}
+@media (prefers-reduced-motion: reduce){*,*::after{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; position: relative; overflow: hidden; display: flex; flex-direction: column; background: #FFFFFF; color: #1F1440; font-family: Nunito, system-ui, sans-serif">
+<div style="max-width: 1040px; width: 100%; margin: 0 auto; padding: 28px 32px 8px; box-sizing: border-box; display: flex; align-items: center; gap: 20px"><a href="Practice.dc.html" aria-label="Quit mission" style="flex-shrink: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #8C84A8; border-radius: 12px"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></a><div role="progressbar" aria-label="Mission progress" aria-valuenow="{{progN}}" aria-valuemin="0" aria-valuemax="100" style="flex: 1; height: 18px; border-radius: 9px; background: #EDE8FB; overflow: hidden"><div class="fill shine" style="height: 100%; width: {{progW}}; background: #7C4DFF; border-radius: 9px"></div></div><div aria-label="{{hearts}} lives left" style="flex-shrink: 0; display: flex; align-items: center; gap: 6px; font-size: 19px; font-weight: 900; color: #C81E45"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="#F25F7A" stroke="#C81E45" stroke-width="1.5"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.1 0 3.6 1.1 5.2 3 1.6-1.9 3.1-3 5.2-3 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"></path></svg><span>{{hearts}}</span></div></div><main style="flex: 1; padding: 20px 32px 36px"><div style="max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px"><div style="display: flex; align-items: center; gap: 24px"><div class="{{hana.cls}}" style="flex-shrink: 0; width: 112px; height: 112px; border-radius: 31px; overflow: hidden; background: #EDE8FB; position: relative">
+<svg width="112" height="112" viewBox="0 0 240 240" role="img" aria-label="Hana Seo, your CyberQuest mentor">
+<circle cx="200" cy="54" r="44" fill="#E2D9FF"></circle>
+<g class="head"><path d="M70 128 C62 74 88 36 122 36 C158 36 182 70 174 128 C172 150 168 166 160 178 C150 172 148 160 150 150 L92 150 C94 160 92 172 82 178 C74 166 70 150 70 128 Z" fill="#2A1E5C" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path></g>
+<g class="body">
+<path d="M108 148 L108 188 Q120 194 132 188 L132 148 Z" fill="#F6D3C2" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M108 154 Q120 172 132 154 L132 166 Q120 182 108 166 Z" fill="#E8B5A2"></path>
+<path d="M28 242 C32 205 64 188 102 180 L120 200 L138 180 C176 188 208 205 212 242 Z" fill="#2B2350" stroke="#1F1440" stroke-width="3" stroke-linejoin="round"></path>
+<path d="M102 181 C92 187 84 197 80 212" fill="none" stroke="#4A3A88" stroke-width="2.5" stroke-linecap="round"></path>
+<path d="M138 181 C148 187 156 197 160 212" fill="none" stroke="#4A3A88" stroke-width="2.5" stroke-linecap="round"></path>
+<path d="M104 184 Q120 193 136 184 L120 216 Z" fill="#7C4DFF" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M138 186 L160 208" stroke="#FFB020" stroke-width="3" stroke-linecap="round"></path>
+<g transform="rotate(-6 166 216)"><rect x="152" y="206" width="30" height="20" rx="4" fill="#FFB020" stroke="#1F1440" stroke-width="2"></rect><text x="167" y="220" text-anchor="middle" font-family="Nunito, sans-serif" font-size="10" font-weight="900" fill="#1F1440">CQ</text></g>
+</g>
+<g class="head">
+<ellipse cx="84" cy="114" rx="6" ry="10" fill="#FBE0D2" stroke="#1F1440" stroke-width="2"></ellipse>
+<ellipse cx="156" cy="114" rx="6" ry="10" fill="#FBE0D2" stroke="#1F1440" stroke-width="2"></ellipse>
+<path d="M84 92 C84 70 100 58 120 58 C140 58 156 70 156 92 L156 112 C156 128 148 142 136 154 L124 166 Q120 170 116 166 L104 154 C92 142 84 128 84 112 Z" fill="#FBE0D2" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M86 96 Q120 84 155 96 L155 106 Q120 94 86 106 Z" fill="#EFC2B0"></path>
+<path d="M150 120 C150 136 142 148 132 158 L136 158 C148 146 155 132 155 118 Z" fill="#EFC2B0"></path>
+<g opacity="{{hana.blush}}"><ellipse cx="99" cy="133" rx="9" ry="4" fill="#F7A1A8"></ellipse><ellipse cx="141" cy="133" rx="9" ry="4" fill="#F7A1A8"></ellipse>
+<path d="M94 131 l-2 4 M99 131 l-2 4 M104 131 l-2 4 M136 131 l-2 4 M141 131 l-2 4 M146 131 l-2 4" stroke="#E57A86" stroke-width="1.3" stroke-linecap="round"></path></g>
+<path d="M121 125 Q119 131 117 135 L121 136" fill="none" stroke="#C98E7C" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="{{hana.mouth}}" fill="{{hana.mouthFill}}" stroke="#7A2E3A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+<sc-if value="{{hana.open}}" hint-placeholder-val="{{ true }}"><g class="lids">
+<path d="M92 112 Q103 103 116 109 Q114 120 104 121 Q94 120 92 112 Z" fill="#FFFFFF" stroke="#1F1440" stroke-width="1"></path>
+<ellipse cx="104" cy="114" rx="6.5" ry="7.5" fill="#6D3FE8"></ellipse><ellipse cx="104" cy="117" rx="4.5" ry="3.5" fill="#9B7BFF"></ellipse>
+<ellipse cx="104" cy="114" rx="3" ry="3.8" fill="#1F1440"></ellipse><circle cx="101.5" cy="110.5" r="2.4" fill="#FFFFFF"></circle><circle cx="107" cy="118" r="1.2" fill="#FFFFFF"></circle>
+<path d="M90 111 Q102 100 117 107" fill="none" stroke="#1F1440" stroke-width="3.6" stroke-linecap="round"></path><path d="M90 111 L86 107" stroke="#1F1440" stroke-width="2.5" stroke-linecap="round"></path>
+<path d="M97 120 Q104 123 111 120" fill="none" stroke="#1F1440" stroke-width="1.2" stroke-linecap="round"></path>
+<path d="M148 112 Q137 103 124 109 Q126 120 136 121 Q146 120 148 112 Z" fill="#FFFFFF" stroke="#1F1440" stroke-width="1"></path>
+<ellipse cx="136" cy="114" rx="6.5" ry="7.5" fill="#6D3FE8"></ellipse><ellipse cx="136" cy="117" rx="4.5" ry="3.5" fill="#9B7BFF"></ellipse>
+<ellipse cx="136" cy="114" rx="3" ry="3.8" fill="#1F1440"></ellipse><circle cx="133.5" cy="110.5" r="2.4" fill="#FFFFFF"></circle><circle cx="139" cy="118" r="1.2" fill="#FFFFFF"></circle>
+<path d="M150 111 Q138 100 123 107" fill="none" stroke="#1F1440" stroke-width="3.6" stroke-linecap="round"></path><path d="M150 111 L154 107" stroke="#1F1440" stroke-width="2.5" stroke-linecap="round"></path>
+<path d="M129 120 Q136 123 143 120" fill="none" stroke="#1F1440" stroke-width="1.2" stroke-linecap="round"></path>
+</g></sc-if>
+<sc-if value="{{hana.closed}}" hint-placeholder-val="{{ false }}"><g>
+<path d="M93 115 Q104 105 115 115" fill="none" stroke="#1F1440" stroke-width="3.4" stroke-linecap="round"></path>
+<path d="M125 115 Q136 105 147 115" fill="none" stroke="#1F1440" stroke-width="3.4" stroke-linecap="round"></path></g></sc-if>
+<path d="{{hana.browL}}" fill="none" stroke="#2A1E5C" stroke-width="3" stroke-linecap="round"></path>
+<path d="{{hana.browR}}" fill="none" stroke="#2A1E5C" stroke-width="3" stroke-linecap="round"></path>
+<g class="bangs">
+<path d="M80 104 C76 66 98 42 124 42 C152 42 168 64 162 104 L156 86 L150 100 L142 74 L132 98 L124 66 L114 96 L104 72 L96 100 L90 84 Z" fill="#2A1E5C" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M84 96 C78 122 80 146 90 162 L92 136 L88 120 Z" fill="#2A1E5C" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M158 96 C164 122 162 146 152 162 L150 136 L154 120 Z" fill="#2A1E5C" stroke="#1F1440" stroke-width="2.5" stroke-linejoin="round"></path>
+<path d="M100 58 Q120 50 142 56" fill="none" stroke="#6D5BB8" stroke-width="3.5" stroke-linecap="round"></path>
+<path d="M108 64 Q118 60 128 62" fill="none" stroke="#6D5BB8" stroke-width="2" stroke-linecap="round"></path>
+<rect x="140" y="57" width="15" height="5" rx="2" fill="#FFB020" stroke="#1F1440" stroke-width="1.5" transform="rotate(-25 147 60)"></rect>
+</g>
+<rect x="152" y="104" width="9" height="14" rx="4" fill="#7C4DFF" stroke="#1F1440" stroke-width="2"></rect>
+<path d="M156 118 Q158 140 142 146" fill="none" stroke="#1F1440" stroke-width="2" stroke-linecap="round"></path>
+<circle cx="141" cy="146" r="3" fill="#1F1440"></circle>
+<g class="fx-sweat"><path d="M168 78 C172 84 174 88 174 91 A6 6 0 0 1 162 91 C162 88 164 84 168 78 Z" fill="#9AD8FF" stroke="#1F1440" stroke-width="2"></path><path d="M165 89 Q165 86 167 84" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"></path></g>
+</g>
+<g class="fx-spark s1"><path transform="translate(204 74)" d="M0 -11 L2.8 -2.8 L11 0 L2.8 2.8 L0 11 L-2.8 2.8 L-11 0 L-2.8 -2.8 Z" fill="#FFB020" stroke="#1F1440" stroke-width="1.5"></path></g>
+<g class="fx-spark s2"><path transform="translate(38 90)" d="M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z" fill="#FFFFFF" stroke="#1F1440" stroke-width="1.5"></path></g>
+<g class="fx-spark s3"><path transform="translate(212 132)" d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#7C4DFF" stroke="#1F1440" stroke-width="1.5"></path></g>
+</svg></div><div class="rise" style="position: relative; flex: 1; background: #FFFFFF; border: 2px solid #E5DEFF; border-radius: 20px; padding: 18px 22px; box-shadow: 0 4px 0 #E5DEFF; font-size: 19px; font-weight: 800; line-height: 1.4; color: #1F1440">{{tip}}<div aria-hidden="true" style="position: absolute; left: -11px; top: 50%; margin-top: -10px; width: 18px; height: 18px; background: #FFFFFF; border-left: 2px solid #E5DEFF; border-bottom: 2px solid #E5DEFF; transform: rotate(45deg)"></div></div></div><div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px"><h1 style="margin: 0; font-size: 34px; font-weight: 900">Tap the 3 weak spots in this workflow</h1><span style="font-size: 16px; font-weight: 900; color: #6D3FE8">{{selCount}} of 3 selected</span></div><div class="rise" style="animation-delay: .15s; background: #F6F3FF; border: 2px solid #E5DEFF; border-radius: 28px; padding: 36px 28px"><div style="position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 18px"><div aria-hidden="true" style="position: absolute; left: 6%; right: 6%; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px; background: #E5DEFF"></div><div class="packet" aria-hidden="true" style="position: absolute; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: #FFB020; border: 3px solid #1F1440; box-sizing: border-box"></div><button type="button" class="opt {{c0}}" onClick="{{t0}}" aria-pressed="{{p0}}" style="{{s0}}"><div style="width: 60px; height: 60px; border-radius: 50%; background: {{ib0}}; transition: background .3s; display: flex; align-items: center; justify-content: center; color: #FFFFFF"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></div><span style="font-size: 18px; font-weight: 900">Sender</span><span style="font-size: 13px; font-weight: 800; color: #4A4366; background: #F6F3FF; border-radius: 8px; padding: 5px 9px; font-family: ui-monospace, Menlo, monospace">Ops team · SSO</span><span style="{{g0}}">{{l0}}</span></button><button type="button" class="opt {{c1}}" onClick="{{t1}}" aria-pressed="{{p1}}" style="{{s1}}"><div style="width: 60px; height: 60px; border-radius: 50%; background: {{ib1}}; transition: background .3s; display: flex; align-items: center; justify-content: center; color: #FFFFFF"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></div><span style="font-size: 18px; font-weight: 900">Encryption</span><span style="font-size: 13px; font-weight: 800; color: #4A4366; background: #F6F3FF; border-radius: 8px; padding: 5px 9px; font-family: ui-monospace, Menlo, monospace">DES · 56-bit · ECB</span><span style="{{g1}}">{{l1}}</span></button><button type="button" class="opt {{c2}}" onClick="{{t2}}" aria-pressed="{{p2}}" style="{{s2}}"><div style="width: 60px; height: 60px; border-radius: 50%; background: {{ib2}}; transition: background .3s; display: flex; align-items: center; justify-content: center; color: #FFFFFF"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"></circle><path d="m10.8 12.2 8.7-8.7"></path><path d="m16 7 2.5 2.5"></path><path d="m18.5 4.5 2 2"></path></svg></div><span style="font-size: 18px; font-weight: 900">Key sharing</span><span style="font-size: 13px; font-weight: 800; color: #4A4366; background: #F6F3FF; border-radius: 8px; padding: 5px 9px; font-family: ui-monospace, Menlo, monospace">Pasted in same chat</span><span style="{{g2}}">{{l2}}</span></button><button type="button" class="opt {{c3}}" onClick="{{t3}}" aria-pressed="{{p3}}" style="{{s3}}"><div style="width: 60px; height: 60px; border-radius: 50%; background: {{ib3}}; transition: background .3s; display: flex; align-items: center; justify-content: center; color: #FFFFFF"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg></div><span style="font-size: 18px; font-weight: 900">Share link</span><span style="font-size: 13px; font-weight: 800; color: #4A4366; background: #F6F3FF; border-radius: 8px; padding: 5px 9px; font-family: ui-monospace, Menlo, monospace">Anyone · no expiry</span><span style="{{g3}}">{{l3}}</span></button><button type="button" class="opt {{c4}}" onClick="{{t4}}" aria-pressed="{{p4}}" style="{{s4}}"><div style="width: 60px; height: 60px; border-radius: 50%; background: {{ib4}}; transition: background .3s; display: flex; align-items: center; justify-content: center; color: #FFFFFF"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"></path><path d="M10 21v-3h4v3"></path></svg></div><span style="font-size: 18px; font-weight: 900">Recipient</span><span style="font-size: 13px; font-weight: 800; color: #4A4366; background: #F6F3FF; border-radius: 8px; padding: 5px 9px; font-family: ui-monospace, Menlo, monospace">Partner · managed</span><span style="{{g4}}">{{l4}}</span></button></div></div></div></main><sc-if value="{{notChecked}}" hint-placeholder-val="{{ true }}"><footer style="border-top: 2px solid #EDE8FB; padding: 26px 32px 30px"><div style="max-width: 1040px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px"><a href="Configure.dc.html" class="btn3d" style="{{skipStyle}}">Skip</a><button type="button" class="btn3d" onClick="{{check}}" style="{{checkStyle}}">Check</button></div></footer></sc-if><sc-if value="{{checked}}" hint-placeholder-val="{{ false }}"><footer class="sheet" style="background: {{sheetBg}}; padding: 26px 32px 30px"><div style="max-width: 1040px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px"><div style="display: flex; align-items: center; gap: 18px; flex: 1 1 420px"><div class="pop-in" style="flex-shrink: 0; width: 68px; height: 68px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: {{sheetColor}}"><sc-if value="{{good}}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if><sc-if value="{{bad}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></sc-if></div><div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 24px; font-weight: 900; color: {{sheetColor}}">{{sheetTitle}}</span><span style="font-size: 16px; font-weight: 700; line-height: 1.45; color: {{sheetColor}}">{{sheetText}}</span></div></div><a href="Configure.dc.html" class="btn3d" style="{{sheetBtn}}">Continue</a></div></footer></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sel: {}, checked: false, ok: false, prog: 20, hearts: 3 }; }
+  componentDidMount() { this.pt = setTimeout(() => this.setState({ prog: 40 }), 250); }
+  componentWillUnmount() { clearTimeout(this.pt); }
+  renderVals() {
+    const P = 'height: 56px; padding: 0 36px; border-radius: 16px; font: 900 17px Nunito, system-ui, sans-serif; letter-spacing: 0.6px; text-transform: uppercase; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border: 0; box-sizing: border-box; ';
+    const btn = (k) => P + ({
+      primary: 'background: #7C4DFF; color: #FFFFFF; box-shadow: 0 5px 0 #5B2FE0; cursor: pointer;',
+      off: 'background: #E9E5F5; color: #8C84A8; box-shadow: 0 5px 0 #D6D0EA; cursor: not-allowed; pointer-events: none;',
+      good: 'background: #0B8A5F; color: #FFFFFF; box-shadow: 0 5px 0 #076B49; cursor: pointer;',
+      bad: 'background: #D9480F; color: #FFFFFF; box-shadow: 0 5px 0 #A8360A; cursor: pointer;',
+      ghost: 'background: #FFFFFF; color: #5B5277; border: 2px solid #E5DEFF; box-shadow: 0 5px 0 #E5DEFF; cursor: pointer;'
+    })[k];
+    const MOUTH = { happy: 'M47 70 Q60 81 73 70', wow: 'M55 73 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0', sad: 'M49 77 Q60 69 71 77', think: 'M51 74 L69 72' };
+    const sheet = (ok) => ({ sheetBg: ok ? '#DDF7EC' : '#FFE9DC', sheetColor: ok ? '#0B6E50' : '#9A3412', sheetBtn: btn(ok ? 'good' : 'bad'), good: ok, bad: !ok });
+    const NB = { bl: 'M92 97 Q103 91 115 95', br: 'M125 95 Q137 91 148 97' };
+    const EXP = {
+      neutral: Object.assign({}, NB, { m: 'M114 148 Q120 151 126 148', f: 'none', blush: 0.35 }),
+      smile: Object.assign({}, NB, { m: 'M112 147 Q120 154 128 147', f: 'none', blush: 0.55 }),
+      talk: Object.assign({}, NB, { m: 'M113 147 Q120 155 127 147 Z', f: '#B5434F', blush: 0.45 }),
+      think: { bl: 'M92 94 Q103 88 115 93', br: 'M125 97 Q137 95 148 98', m: 'M115 149 L125 148', f: 'none', blush: 0.3 },
+      correct: { bl: 'M92 94 Q103 87 115 92', br: 'M125 92 Q137 87 148 94', m: 'M111 145 Q120 158 129 145 Z', f: '#B5434F', blush: 0.75, closed: true },
+      happy: { bl: 'M92 94 Q103 87 115 92', br: 'M125 92 Q137 87 148 94', m: 'M111 145 Q120 158 129 145 Z', f: '#B5434F', blush: 0.75, closed: true },
+      wrong: { bl: 'M92 96 Q103 95 115 90', br: 'M125 90 Q137 95 148 96', m: 'M113 151 Q120 146 127 151', f: 'none', blush: 0.2 },
+      surprised: { bl: 'M92 92 Q103 85 115 90', br: 'M125 90 Q137 85 148 92', m: 'M117 149 a3 4 0 1 0 6 0 a3 4 0 1 0 -6 0', f: '#B5434F', blush: 0.3 }
+    };
+    const hana = (s) => { const e = EXP[s] || EXP.neutral; return { cls: 'hana ' + s, browL: e.bl, browR: e.br, mouth: e.m, mouthFill: e.f, blush: String(e.blush), open: !e.closed, closed: !!e.closed }; };
+    const base = 'position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 22px 12px; min-height: 210px; border-radius: 22px; color: #1F1440; cursor: pointer; box-sizing: border-box; font-family: Nunito, system-ui, sans-serif; ';
+    const S = {
+      idle: 'background: #FFFFFF; border: 3px solid #E5DEFF; box-shadow: 0 5px 0 #E5DEFF;',
+      sel: 'background: #F1EBFF; border: 3px solid #7C4DFF; box-shadow: 0 5px 0 #7C4DFF;',
+      right: 'background: #DDF7EC; border: 3px solid #0B8A5F; box-shadow: 0 5px 0 #0B8A5F;',
+      wrong: 'background: #FFE9DC; border: 3px solid #D9480F; box-shadow: 0 5px 0 #D9480F;',
+      missed: 'background: #FFFFFF; border: 3px dashed #D9480F; box-shadow: none;'
+    };
+    const pill = (bg, fg) => 'font-size: 12px; font-weight: 900; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 999px; background: ' + bg + '; color: ' + fg + ';';
+    const st = this.state;
+    const RISKY = [false, true, true, true, false];
+    const sel = st.sel;
+    const count = [0, 1, 2, 3, 4].filter((i) => sel[i]).length;
+    const v = {};
+    [0, 1, 2, 3, 4].forEach((i) => {
+      const s = !!sel[i];
+      let k = s ? 'sel' : 'idle', lab = s ? 'Flagged' : '', g = s ? pill('#7C4DFF', '#FFFFFF') : 'display: none;', cls = '';
+      if (st.checked) {
+        if (RISKY[i] && s) { k = 'right'; lab = 'Weak spot'; g = pill('#0B8A5F', '#FFFFFF'); }
+        else if (!RISKY[i] && s) { k = 'wrong'; lab = 'Not an issue'; g = pill('#FFE9DC', '#9A3412'); cls = 'shake'; }
+        else if (RISKY[i] && !s) { k = 'missed'; lab = 'Missed'; g = pill('#FFE9DC', '#9A3412'); cls = 'shake'; }
+      }
+      v['s' + i] = base + S[k];
+      v['ib' + i] = k === 'right' ? '#0B8A5F' : (k === 'wrong' || k === 'missed' ? '#D9480F' : '#7C4DFF');
+      v['l' + i] = lab; v['g' + i] = g; v['c' + i] = cls;
+      v['p' + i] = s ? 'true' : 'false';
+      v['t' + i] = () => { if (st.checked) return; const n = Object.assign({}, sel); n[i] = !n[i]; this.setState({ sel: n }); };
+    });
+    let tip = 'Something here isn’t as secure as it looks…';
+    if (count > 0 && count < 3) tip = 'Good eye! Keep looking.';
+    if (count >= 3) tip = 'Happy with your picks? Hit Check.';
+    if (st.checked) tip = st.ok ? 'Sharp eyes! Next, let’s actually fix it.' : 'Close! Look at what turned orange.';
+    return Object.assign(v, sheet(st.ok), {
+      progW: st.prog + '%', progN: st.prog, hearts: st.hearts, selCount: count, tip,
+      hana: hana(st.checked ? (st.ok ? 'correct' : 'wrong') : (count ? 'smile' : 'think')),
+      checked: st.checked, notChecked: !st.checked,
+      skipStyle: btn('ghost'), checkStyle: btn(count === 3 ? 'primary' : 'off'),
+      check: () => { if (count !== 3) return; const ok = RISKY.every((r, i) => r === !!sel[i]); this.setState({ checked: true, ok, hearts: ok ? st.hearts : st.hearts - 1 }); },
+      sheetTitle: st.ok ? 'Sharp eyes!' : 'Not quite',
+      sheetText: st.ok ? 'Weak cipher, key sent with the file and a public link. You caught all three.' : 'The weak spots were the encryption, the key sharing and the share link.'
+    });
+  }
+}
+</script>
+</body>
+</html>

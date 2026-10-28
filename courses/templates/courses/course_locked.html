@@ -1,0 +1,24 @@
+{% extends "dashboard/base_command.html" %}
+{% load static %}
+
+{% block title %}CyberQuest — Coming Soon{% endblock %}
+{% block context_name %}Learn · The Cyber Archive{% endblock %}
+{% block body_class %}command-child lib-page{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'courses/css/library.css' %}?v=3">
+{% endblock %}
+
+{% block content %}
+<div class="lib">
+  <section class="lib-locked-page" aria-labelledby="locked-title">
+    <span class="soon-lock soon-lock--lg" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    </span>
+    <p class="soon-label">Coming soon</p>
+    <h1 class="lib-title" id="locked-title">{{ course.title }}</h1>
+    <p class="lib-sub">This course is not open yet. It will appear on your shelf when it is ready. For now, keep building your defence skills with the active courses.</p>
+    <a class="stand-btn" href="{% url 'courses:intro' %}">Back to the Cyber Archive</a>
+  </section>
+</div>
+{% endblock %}

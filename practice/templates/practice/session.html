@@ -1,0 +1,87 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ scenario.title }} · CyberQuest Practice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap">
+<link rel="stylesheet" href="{% static 'practice/css/session.css' %}?v=3">
+<style>body{margin:0;background:#FFFFFF}</style>
+</head>
+<body>
+{% include "practice/_hana.html" %}
+
+<div class="cq-session" id="cq-session" data-kind="{{ scenario.kind }}">
+  {# Briefing (story step). Rendered on the server; engine.js takes over on "Start mission". #}
+  <div class="cqs-top cqs-top--brief">
+    <a href="{{ center_url }}" class="cqs-quit" aria-label="Back to Practice Center">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+    </a>
+    <span class="cqs-topic">{{ topic_label }}</span>
+    <div class="cqs-xp-pill">
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#FFB020" stroke="#8A5A00" stroke-width="1.5" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg>
+      <span data-cq-xp>{{ request.user.xp }}</span>&nbsp;XP
+    </div>
+  </div>
+  <main class="cqs-brief-main">
+    <div class="cqs-brief">
+      <div class="cqs-brief-coach">
+        <div class="cqs-brief-hana">
+          <div class="cqs-avatar" style="--size: 200px" data-hana data-expression="{{ brief.end_expression|default:'smile' }}"></div>
+          <span class="cqs-brief-name">Hana Seo · Senior Analyst</span>
+        </div>
+        <div class="cqs-bubble rise"><span data-typewriter>{{ brief.intro }}</span></div>
+      </div>
+      <section class="cqs-card cqs-brief-card rise">
+        <div>
+          <span class="cqs-tag cqs-tag--{{ scenario.kind }}">{{ scenario.get_kind_display|upper }} SESSION</span>
+          <h1 class="cqs-brief-title">{{ scenario.title }}</h1>
+          <p class="cqs-brief-desc">{{ brief.desc }}</p>
+        </div>
+        <div class="cqs-chips">
+          <span class="cqs-chip cqs-chip--{{ scenario.difficulty }}">
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1"></circle></svg>{{ scenario.difficulty|title }}
+          </span>
+          <span class="cqs-chip">
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>~{{ scenario.est_minutes }} min · no timer
+          </span>
+          <span class="cqs-chip cqs-chip--xp">+{{ scenario.xp_reward }} XP</span>
+        </div>
+        <ol class="cqs-track" aria-label="Mission steps" style="list-style:none;margin:0;padding:4px 0 0">
+          {% for label in brief.labels %}
+          <li class="cqs-track-step"><span class="cqs-track-dot{% if forloop.first %} ring-pulse{% endif %}">{{ forloop.counter }}</span>{{ label }}</li>
+          {% endfor %}
+        </ol>
+        {% if locked %}
+        <p class="cqs-locked">This scenario belongs to a course that is Coming Soon. It will open when the course does.</p>
+        {% endif %}
+      </section>
+    </div>
+  </main>
+  <footer class="cqs-footer">
+    <div class="cqs-footer-in">
+      <label class="cqs-agree">
+        <input type="checkbox" data-cq-agree {% if locked %}disabled{% endif %}>
+        <span>This is a fictional training scenario. I’ll only test systems I’m authorised to.</span>
+      </label>
+      <button type="button" class="btn3d" data-cq-start disabled>{% if locked %}Coming Soon{% else %}Start mission{% endif %}</button>
+    </div>
+  </footer>
+</div>
+
+{{ session_config|json_script:"cq-session-config" }}
+<script src="{% static 'practice/js/hana.js' %}?v=1"></script>
+<script src="{% static 'practice/js/engine.js' %}?v=3"></script>
+<script src="{% static 'practice/js/steps/mcq.js' %}?v=2"></script>
+<script src="{% static 'practice/js/steps/hotspot.js' %}?v=2"></script>
+<script src="{% static 'practice/js/steps/match.js' %}?v=1"></script>
+<script src="{% static 'practice/js/steps/concept_cards.js' %}?v=1"></script>
+<script src="{% static 'practice/js/steps/configure.js' %}?v=2"></script>
+<script src="{% static 'practice/js/steps/triage.js' %}?v=1"></script>
+<script src="{% static 'practice/js/steps/order.js' %}?v=1"></script>
+<script src="{% static 'practice/js/steps/branch.js' %}?v=2"></script>
+<script>CQEngine.boot();</script>
+</body>
+</html>

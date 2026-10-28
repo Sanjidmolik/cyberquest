@@ -41,6 +41,15 @@ DOMAINS = [
         "color": "#39ff88",
     },
     {
+        "slug": "steganography",
+        "label": "Steganography",
+        "full_label": "Steganography",
+        "game_key": "steganography",
+        "game_url": "games:steganography",
+        "emoji": "🖼️",
+        "color": "#ff6b9d",
+    },
+    {
         "slug": "osint",
         "label": "OSINT",
         "full_label": "OSINT Investigation",
@@ -48,6 +57,54 @@ DOMAINS = [
         "game_url": "games:osint",
         "emoji": "🕵️",
         "color": "#ffd23f",
+        "coming_soon": True,
+    },
+    # Defence-course topics (scenarios in scenario_defence.py). Each one is
+    # tied to its course's mission so competency uses the same game evidence.
+    {
+        "slug": "safety",
+        "label": "Online Safety",
+        "full_label": "Online Safety",
+        "game_key": "online_safety",
+        "game_url": "games:online_safety",
+        "emoji": "🌐",
+        "color": "#60a5fa",
+    },
+    {
+        "slug": "malware",
+        "label": "Malware Defence",
+        "full_label": "Malware & Ransomware Defence",
+        "game_key": "malware_defense",
+        "game_url": "games:malware_defense",
+        "emoji": "🦠",
+        "color": "#34d399",
+    },
+    {
+        "slug": "device",
+        "label": "Device Protection",
+        "full_label": "Device & Data Protection",
+        "game_key": "device_protection",
+        "game_url": "games:device_protection",
+        "emoji": "📱",
+        "color": "#38bdf8",
+    },
+    {
+        "slug": "privacy",
+        "label": "Privacy Shield",
+        "full_label": "Social Media & Privacy",
+        "game_key": "privacy_defense",
+        "game_url": "games:privacy_defense",
+        "emoji": "👤",
+        "color": "#f472b6",
+    },
+    {
+        "slug": "response",
+        "label": "Incident Response",
+        "full_label": "Attack Response & Recovery",
+        "game_key": "incident_response",
+        "game_url": "games:incident_response",
+        "emoji": "🚨",
+        "color": "#f97316",
     },
 ]
 
@@ -598,9 +655,11 @@ SCENARIOS = {
     },
 }
 
+from .scenario_defence import DEFENCE_SCENARIOS
 from .scenario_pool import EXTRA_SCENARIOS
 
 SCENARIOS.update(EXTRA_SCENARIOS)
+SCENARIOS.update(DEFENCE_SCENARIOS)
 
 _ORIGINAL_META = {
     "phishing_microsoft_disable": (
@@ -680,7 +739,13 @@ DOMAIN_SCENARIO = {
     "password": "password_auth_alert",
     "network": "network_workstation_exfil",
     "cryptography": "crypto_message_audit",
+    "steganography": "stego_image_lsb",
     "osint": "osint_identity_case",
+    "safety": "safety_fake_download",
+    "malware": "malware_av_alert",
+    "device": "device_app_permissions",
+    "privacy": "privacy_impersonator",
+    "response": "response_email_compromise",
 }
 
 

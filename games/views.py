@@ -8,6 +8,8 @@ CyberQuest builds a balanced attempt (difficulty × question_type).
 Otherwise it falls back to whole QuestionSet selection / legacy QUIZ_GAMES.
 """
 
+import random
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -21,7 +23,7 @@ from .registry import game_by_key
 from .quiz_data import QUIZ_GAMES
 from .question_sets import pick_set_for_user, ensure_set_slots
 from .xp import XP_PER_CORRECT_ANSWER, apply_xp_and_level_up
-from courses.progress import has_completed_all_courses
+from courses.progress import course_for_game, is_game_unlocked
 
 # Backward-compat alias — remove once no external code imports the old name.
 _apply_xp_and_level_up = apply_xp_and_level_up
@@ -31,26 +33,41 @@ SESSION_QSET = "active_qset_{}"
 SESSION_QIDS = "active_attempt_qids_{}"
 
 
-def _require_course_completed(request):
-    if not has_completed_all_courses(request.user):
-        messages.error(request, "Please complete the course introduction first.")
-        return redirect("courses:intro")
-    return None
+def _require_course_completed(request, game_key):
+    """A mission opens once the student has finished its course's book. Admins skip this."""
+    if is_game_unlocked(request.user, game_key):
+        return None
+    course = course_for_game(game_key)
+    if course is None:
+        messages.error(request, "This mission unlocks when its course is published. Check back soon.")
+    else:
+        messages.error(request, f"Finish reading the {course.title} course to unlock this mission.")
+    return redirect("courses:intro")
 
 
 def _legacy_game_bundle(game_key):
     game = QUIZ_GAMES.get(game_key)
     if not game:
         return None
+    from .game_config import get_game_question_config
+
+    # A pool larger than one attempt gives a fresh random draw each time.
+    pool = game["questions"]
+    size = get_game_question_config(game_key)["attempt_size"]
+    if len(pool) > size:
+        questions = random.sample(pool, size)
+        selected = [question["id"] for question in questions]
+    else:
+        questions, selected = pool, []
     return {
         "title": game["title"],
         "emoji": game["emoji"],
         "intro": game["intro"],
-        "questions": game["questions"],
+        "questions": questions,
         "question_set": None,
         "set_number": None,
         "set_version": None,
-        "selected_question_ids": [],
+        "selected_question_ids": selected,
         "selection_mode": "legacy",
     }
 
@@ -266,10 +283,10 @@ def _play_context(request, game_key, attempt):
 def quiz_game(request, game_key):
     meta = game_by_key(game_key)
     if meta and meta.get("coming_soon"):
-        messages.info(request, "OSINT is coming soon and cannot be started yet.")
+        messages.info(request, f"{meta['card_name']} is coming soon and cannot be started yet.")
         return redirect("dashboard:home")
 
-    blocked = _require_course_completed(request)
+    blocked = _require_course_completed(request, game_key)
     if blocked:
         return blocked
 

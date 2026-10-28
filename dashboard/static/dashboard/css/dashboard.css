@@ -716,6 +716,11 @@ html { scroll-padding-top: 88px; }
 .mission-rose { border-color: color-mix(in srgb, var(--accent-rose) 45%, transparent); }
 .mission-rose .mission-progress-fill, .mission-rose .mission-btn { background: var(--accent-rose); color: #fff; }
 
+/* Coming Soon missions: locked cards laid out as list items. */
+.missions-soon-row { margin: 0; padding: 0; list-style: none; }
+.missions-soon-row > li { display: grid; min-width: 0; }
+.missions-soon-row .mission-emoji { filter: grayscale(1); opacity: 0.7; }
+
 .two-col-row { display: grid; grid-template-columns: 1fr 1.3fr; gap: 16px; margin-top: 28px; }
 .panel-card {
     background: var(--bg-card); border: 1px solid var(--border-subtle);

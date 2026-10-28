@@ -4,14 +4,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#701fd3">
+<meta name="theme-color" content="#0b1220">
 <script>
 (function () {
   var t = "dark";
   try { var s = localStorage.getItem("cq_home_theme"); if (s === "light" || s === "dark") t = s; } catch (e) {}
   document.documentElement.setAttribute("data-theme", t);
   var m = document.querySelector('meta[name="theme-color"]');
-  if (m) m.setAttribute("content", t === "light" ? "#f7f1ff" : "#701fd3");
+  if (m) m.setAttribute("content", t === "light" ? "#f3f5f9" : "#0b1220");
 })();
 </script>
 <title>Practice Center — CyberQuest</title>
@@ -21,15 +21,15 @@
 <link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">
 <link rel="stylesheet" href="{% static 'shared/css/chrome.css' %}?v=nav3">
 {% include "shared/_loading.html" %}
-<link rel="stylesheet" href="{% static 'practice/css/center.css' %}?v=nav2">
+<link rel="stylesheet" href="{% static 'practice/css/center.css' %}?v=r6">
 </head>
-<body class="cq-shell">
+<body class="cq-shell pc-page">
 <nav class="cq-nav" id="pc-nav">
   {% include "shared/_brand.html" %}
   <ul class="cq-nav-links">
     <li><a class="cq-nav-link" href="{% url 'dashboard:home' %}">Dashboard</a></li>
     <li><a class="cq-nav-link" href="{% url 'courses:intro' %}">Courses</a></li>
-    <li><a class="cq-nav-link active" href="{% url 'practice:center' %}">Practice</a></li>
+    <li><a class="cq-nav-link active" href="{% url 'practice:center' %}" aria-current="page">Practice</a></li>
     <li><a class="cq-nav-link" href="{% url 'practice:cyber_dna' %}">Cyber DNA</a></li>
     <li><a class="cq-nav-link" href="{% url 'practice:history' %}">History</a></li>
   </ul>
@@ -40,85 +40,230 @@
       <span class="theme-label label-day">Day</span>
       <span class="theme-label label-dark">Dark</span>
     </button>
-    <a class="cq-btn cq-btn-sm" href="{% url 'accounts:logout' %}">Logout</a>
+    <a class="pc-nav-icon" href="{% url 'notifications:list' %}" aria-label="Notifications" title="Notifications">
+      <svg class="pc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>
+    </a>
+    <a class="pc-user" href="{% url 'accounts:settings' %}" title="Settings">
+      <span class="pc-user-av" aria-hidden="true">{{ request.user.display_name|slice:":1"|upper }}</span>
+      <span class="pc-user-text"><strong>{{ request.user.display_name }}</strong><small>Level {{ request.user.level|stringformat:"02d" }} · {{ request.user.get_cyber_class_display }}</small></span>
+    </a>
+    <form method="post" action="{% url 'accounts:logout' %}" class="logout-form">{% csrf_token %}<button type="submit" class="cq-btn cq-btn-sm logout-btn">Logout</button></form>
   </div>
 </nav>
 {% include "shared/_toasts.html" %}
 
 <main class="cq-main">
   <div class="cq-container-wide">
-    <p class="cq-section-title">Practice Center</p>
-    <h1 class="cq-heading">Choose a topic, then any scenario</h1>
-    <p class="cq-sub">Four scenarios are available in each topic. Pick one directly — recommendation is guidance, not a lock. 4 scenarios available.</p>
 
-    {% if recommendation %}
-    <section class="pc-rec" aria-label="Your next recommendation">
-      <p class="cq-section-title">Your next recommendation</p>
-      <h2>{{ recommendation.domain.full_label }}</h2>
-      <p>Your current competency: <strong id="pc-comp">{{ recommendation.percent }}%</strong></p>
-      <p id="pc-meta">Level {{ selected_domain.level }} · Recommended {{ recommendation.activity_label }}</p>
-      <p class="pc-why">{{ recommendation.reason }}</p>
-    </section>
-    {% endif %}
+    <!-- ═══ HEADER ═══ -->
+    <header class="pc-head">
+      <div class="pc-head-text">
+        <p class="pc-kicker">Practice Center</p>
+        <h1 class="pc-title">Choose a course, <span class="pc-accent">start a scenario</span></h1>
+        <p class="pc-sub">Practice with hands-on simulations inspired by real-world cyber threats from the CyberQuest comic universe.{% if recommendation %} <span class="pc-rec">Recommended next: <strong>{{ recommendation.domain.full_label }}</strong> — {{ recommendation.reason }}</span>{% endif %}</p>
+      </div>
+      <div class="pc-head-cards">
+        <div class="pc-progress-card">
+          <div class="pc-ring" style="--pct: {{ scenario_percent }}" role="img" aria-label="{{ scenario_percent }}% of scenarios completed">
+            <span class="pc-ring-label">{{ scenario_percent }}%</span>
+          </div>
+          <div class="pc-progress-info">
+            <p class="pc-progress-title">Your Practice Progress</p>
+            <p class="pc-progress-sub">{{ completed_scenarios }} / {{ total_scenarios }} scenarios completed</p>
+            <div class="pc-bar" aria-hidden="true"><span style="width: {{ scenario_percent }}%"></span></div>
+          </div>
+        </div>
+        <dl class="pc-stats">
+          <div><dt>Courses</dt><dd>{{ courses|length }}</dd></div>
+          <div><dt>Scenarios</dt><dd>{{ total_scenarios }}</dd></div>
+          <div><dt>Practice XP</dt><dd>{{ practice_xp }}</dd></div>
+        </dl>
+      </div>
+    </header>
 
-    <div class="pc-topics" role="tablist" aria-label="Practice topics">
-      {% for d in catalog %}
-      <button type="button" class="pc-topic{% if d.slug == selected_domain.slug %} is-active{% endif %}" role="tab" id="topic-{{ d.slug }}" data-domain="{{ d.slug }}" aria-selected="{% if d.slug == selected_domain.slug %}true{% else %}false{% endif %}" aria-controls="cards-{{ d.slug }}">
-        <span>{{ d.emoji }} {{ d.full_label|upper }}</span>
-        <small>{{ d.percent }}% · {{ d.level }}</small>
-      </button>
-      {% endfor %}
-    </div>
-
+    <!-- ═══ 3-PANEL LAYOUT ═══ -->
     <div class="pc-layout">
-      <div class="pc-cards">
-        {% for d in catalog %}
-        <div class="pc-card-list" id="cards-{{ d.slug }}" role="tabpanel" aria-labelledby="topic-{{ d.slug }}" data-domain="{{ d.slug }}" {% if d.slug != selected_domain.slug %}hidden{% endif %}>
-          {% for s in d.scenarios %}
-          <button type="button" class="pc-card{% if d.slug == selected_domain.slug and s.preferred %} is-active{% endif %}" data-domain="{{ d.slug }}" data-key="{{ s.key }}" aria-pressed="{% if d.slug == selected_domain.slug and s.preferred %}true{% else %}false{% endif %}">
-            <span class="pc-card-kicker"><b>{{ s.number }}</b> {{ s.activity_label|upper }}</span>
-            <strong class="pc-card-title">{{ s.title }}</strong>
-            <span class="pc-card-summary">{{ s.summary }}</span>
-            <span class="pc-card-meta">{{ s.difficulty_label|upper }} · ~{{ s.minutes }} min</span>
-            <span class="pc-card-done">{% if s.completed %}COMPLETED · BEST {{ s.best }}%{% endif %}</span>
+
+      <!-- ─── LEFT: course topics ─── -->
+      <aside class="pc-sidebar" aria-label="Course topics">
+        <p class="pc-side-title" id="pc-side-title">Course Topics</p>
+        <div class="pc-topics" role="tablist" aria-labelledby="pc-side-title" aria-orientation="vertical">
+          {% for c in courses %}
+          <button type="button" class="pc-topic{% if c.panel == selected_panel %} is-active{% endif %}"
+                  role="tab" id="tab-{{ c.panel }}" data-panel="{{ c.panel }}"
+                  aria-selected="{% if c.panel == selected_panel %}true{% else %}false{% endif %}"
+                  aria-controls="{{ c.panel }}" {% if c.panel != selected_panel %}tabindex="-1"{% endif %}>
+            <span class="pc-topic-num">{{ c.number }}</span>
+            <span class="pc-topic-icon pc-tone-{{ c.number }}">{% include "practice/_course_icon.html" with icon=c.icon %}</span>
+            <span class="pc-topic-info">
+              <span class="pc-topic-name">{{ c.title }}</span>
+              <span class="pc-topic-code">{{ c.code }}</span>
+              {% if c.topic %}
+              <span class="pc-topic-prog"><span class="pc-bar pc-bar--sm"><span style="width: {{ c.topic.progress }}%"></span></span><b>{{ c.topic.completed_count }}/{{ c.topic.scenario_count }}</b></span>
+              {% else %}
+              <span class="pc-topic-none">No scenarios yet</span>
+              {% endif %}
+            </span>
+            <svg class="pc-chevron" viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>
           </button>
           {% endfor %}
         </div>
+
+        {% if extra_topics %}
+        <p class="pc-side-title pc-side-title--sub" id="pc-more-title">More Practice</p>
+        <div class="pc-topics" role="tablist" aria-labelledby="pc-more-title" aria-orientation="vertical">
+          {% for t in extra_topics %}
+          {% if t.coming_soon %}
+          <div class="pc-topic pc-topic--soon" aria-disabled="true">
+            <span class="pc-topic-icon pc-icon--{{ t.slug }}">{% include "practice/_domain_icon.html" with slug=t.slug %}</span>
+            <span class="pc-topic-info">
+              <span class="pc-topic-name">{{ t.full_label }}</span>
+              <span class="pc-soon-pill">Coming Soon</span>
+            </span>
+          </div>
+          {% else %}
+          <button type="button" class="pc-topic{% if selected_panel == 'topic-'|add:t.slug %} is-active{% endif %}"
+                  role="tab" id="tab-topic-{{ t.slug }}" data-panel="topic-{{ t.slug }}"
+                  aria-selected="{% if selected_panel == 'topic-'|add:t.slug %}true{% else %}false{% endif %}"
+                  aria-controls="topic-{{ t.slug }}" {% if selected_panel != 'topic-'|add:t.slug %}tabindex="-1"{% endif %}>
+            <span class="pc-topic-icon pc-icon--{{ t.slug }}">{% include "practice/_domain_icon.html" with slug=t.slug %}</span>
+            <span class="pc-topic-info">
+              <span class="pc-topic-name">{{ t.full_label }}</span>
+              <span class="pc-topic-prog"><span class="pc-bar pc-bar--sm"><span style="width: {{ t.progress }}%"></span></span><b>{{ t.completed_count }}/{{ t.scenario_count }}</b></span>
+            </span>
+            <svg class="pc-chevron" viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>
+          </button>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+      </aside>
+
+      <!-- ─── CENTER: course banner + scenarios ─── -->
+      <div class="pc-center">
+        {% for c in courses %}
+        <section class="pc-panel" id="{{ c.panel }}" role="tabpanel" aria-labelledby="tab-{{ c.panel }}"
+                 data-panel="{{ c.panel }}" data-domain="{{ c.topic.slug|default:'' }}" {% if c.panel != selected_panel %}hidden{% endif %}>
+          <div class="pc-banner">
+            <img class="pc-banner-cover" src="{{ c.cover }}" alt="" width="120" height="172" loading="lazy">
+            <div class="pc-banner-body">
+              <h2 class="pc-banner-title"><span class="pc-banner-num">{{ c.number }}.</span> {{ c.title }}</h2>
+              <p class="pc-banner-code">{{ c.code }}{% if c.topic %} · Practice topic: {{ c.topic.full_label }}{% endif %}</p>
+              <p class="pc-banner-sum">{{ c.summary }}</p>
+              {% if c.topic %}
+              <div class="pc-banner-prog"><span class="pc-bar"><span style="width: {{ c.topic.progress }}%"></span></span><span>{{ c.topic.completed_count }} of {{ c.topic.scenario_count }} scenarios completed</span></div>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if c.topic %}
+          <h3 class="pc-section-title">Scenarios <span>({{ c.topic.scenario_count }})</span></h3>
+          <div class="pc-grid">
+            {% for s in c.topic.scenarios %}
+            {% include "practice/_scenario_card.html" with d=c.topic panel=c.panel %}
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="pc-empty">
+            <svg class="pc-svg pc-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h8"/></svg>
+            <h3>No practice scenarios for this course yet</h3>
+            <p>Hands-on simulations for this topic are still being built. Read the comic course in the meantime.</p>
+            <a class="pc-empty-link" href="{{ c.course_url }}">Read the course</a>
+          </div>
+          {% endif %}
+        </section>
+        {% endfor %}
+
+        {% for t in extra_topics %}
+        {% if not t.coming_soon %}
+        <section class="pc-panel" id="topic-{{ t.slug }}" role="tabpanel" aria-labelledby="tab-topic-{{ t.slug }}"
+                 data-panel="topic-{{ t.slug }}" data-domain="{{ t.slug }}" {% if selected_panel != 'topic-'|add:t.slug %}hidden{% endif %}>
+          <div class="pc-banner">
+            <img class="pc-banner-cover" src="{{ t.scenarios.0.art }}" alt="" width="120" height="172" loading="lazy">
+            <div class="pc-banner-body">
+              <h2 class="pc-banner-title">{{ t.full_label }}</h2>
+              <p class="pc-banner-code">Practice topic · its course is Coming Soon</p>
+              <p class="pc-banner-sum">These simulations stay open while the {{ t.full_label }} course is being prepared.</p>
+              <div class="pc-banner-prog"><span class="pc-bar"><span style="width: {{ t.progress }}%"></span></span><span>{{ t.completed_count }} of {{ t.scenario_count }} scenarios completed</span></div>
+            </div>
+          </div>
+          <h3 class="pc-section-title">Scenarios <span>({{ t.scenario_count }})</span></h3>
+          <div class="pc-grid">
+            {% for s in t.scenarios %}
+            {% include "practice/_scenario_card.html" with d=t panel="topic-"|add:t.slug %}
+            {% endfor %}
+          </div>
+        </section>
+        {% endif %}
         {% endfor %}
       </div>
 
-      <section class="pc-detail" aria-live="polite">
-        <div class="pc-stage" id="pc-stage" data-domain="{{ selected_domain.slug }}">
-          <div class="pc-floor" id="pc-floor">
-            {% for node in opening.scene.nodes %}
-            {% if not forloop.first %}<span class="pc-link" aria-hidden="true"></span>{% endif %}
-            <div class="pc-node{% if node.id in opening.scene.suspicious %} is-alert{% endif %}"><span>{{ node.label }}</span></div>
-            {% endfor %}
-            <span class="pc-packet" aria-hidden="true"></span>
+      <!-- ─── RIGHT: scenario detail ─── -->
+      <section class="pc-detail" aria-live="polite" aria-labelledby="pc-title">
+        <div class="pc-detail-body" id="pc-detail-body">
+          <div class="pc-detail-top">
+            <span class="pc-detail-ref"><b id="pc-num">{{ opening.number }}</b> <span id="pc-ref">{{ selected_domain.full_label }}</span></span>
+            <span class="pc-time" id="pc-time-chip">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" width="12" height="12"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v3.75l2.5 1.5"/></svg>
+              <span id="pc-time">~{{ opening.minutes }} min</span>
+            </span>
           </div>
+          <h2 class="pc-detail-title" id="pc-title">{{ opening.title }}</h2>
+          <div class="pc-chips">
+            <span class="pc-chip pc-chip--{{ opening.difficulty }}" id="pc-diff-chip">{{ opening.difficulty_label }}</span>
+            <span class="pc-chip" id="pc-type">{{ opening.activity_label }}</span>
+          </div>
+          <p class="pc-detail-desc" id="pc-summary">{{ opening.summary }}</p>
+
+          <div class="pc-stage">
+            <div class="pc-stage-bar">
+              <span class="pc-stage-name">Simulation Preview</span>
+              <span class="pc-chip pc-chip--ghost" id="pc-stage-type">{{ opening.activity_label }}</span>
+            </div>
+            <div class="pc-floor" id="pc-floor">
+              {% for node in opening.scene.nodes %}
+              {% if not forloop.first %}<span class="pc-link" aria-hidden="true"></span>{% endif %}
+              <div class="pc-node{% if node.id in opening.scene.suspicious %} is-alert{% endif %}"><span>{{ node.label }}</span></div>
+              {% endfor %}
+            </div>
+            <p class="pc-stage-key"><span class="pc-key-dot" aria-hidden="true"></span>Highlighted steps are where the risk is.</p>
+          </div>
+
+          <div class="pc-info-grid">
+            <div class="pc-info">
+              <h3 class="pc-info-label"><svg class="pc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></svg>Your Objective</h3>
+              <p id="pc-obj-text">{{ opening.objective }}</p>
+            </div>
+            <div class="pc-info">
+              <h3 class="pc-info-label"><svg class="pc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>Simulated Workspace</h3>
+              <p id="pc-workspace">{{ opening.workspace }}</p>
+              <p class="pc-info-meta"><span id="pc-severity">{% if opening.severity %}Severity: {{ opening.severity|title }}{% endif %}</span></p>
+            </div>
+          </div>
+
+          <div class="pc-tools">
+            <h3 class="pc-info-label"><svg class="pc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6.5a4 4 0 0 0 5 5L12 19a2.1 2.1 0 0 1-3-3l7.5-7.5a4 4 0 0 1-2-2z"/></svg>Investigation Tools (Simulated)</h3>
+            <ul class="pc-tools-grid" id="pc-tools">
+              {% for tool in opening.tools %}<li><svg class="pc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><span>{{ tool }}</span></li>{% endfor %}
+            </ul>
+          </div>
+
+          <p class="pc-state" id="pc-state">{% if opening.completed %}✓ COMPLETED · BEST {{ opening.best }}%{% else %}Not completed yet{% endif %}</p>
+          <a href="{{ opening.url }}" class="pc-start-btn" id="pc-start"><svg class="pc-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>Start scenario</a>
+          <p class="pc-xp-note">Completing a scenario earns XP and raises your <span id="pc-xp-domain">{{ selected_domain.full_label }}</span> competency.</p>
         </div>
-        <p class="pc-domain-status" id="pc-domain-status">{{ selected_domain.full_label }} · {{ selected_domain.percent }}% · {{ selected_domain.level }} · {{ selected_domain.activity_label }}</p>
-        <p class="cq-section-title" id="pc-type">{{ opening.activity_label }}</p>
-        <h2 id="pc-title">{{ opening.title }}</h2>
-        <p id="pc-summary">{{ opening.summary }}</p>
-        <dl class="pc-facts">
-          <div><dt>Type</dt><dd id="pc-activity">{{ opening.activity_label }}</dd></div>
-          <div><dt>Difficulty</dt><dd id="pc-difficulty">{{ opening.difficulty_label }}</dd></div>
-          <div><dt>Estimated time</dt><dd id="pc-time">~{{ opening.minutes }} min</dd></div>
-          <div><dt>Skills</dt><dd id="pc-skill">{{ opening.objective }}</dd></div>
-        </dl>
-        <p class="pc-state" id="pc-state">{% if opening.completed %}COMPLETED · BEST {{ opening.best }}%{% else %}Not completed yet{% endif %}</p>
-        <form method="post" action="{{ selected_domain.start_url }}" id="pc-start">
-          {% csrf_token %}
-          <input type="hidden" name="scenario_key" id="pc-key" value="{{ opening.key }}">
-          <button type="submit" class="cq-btn">START THIS SCENARIO →</button>
-        </form>
+
+        <div class="pc-detail-empty" id="pc-detail-empty" hidden>
+          <svg class="pc-svg pc-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+          <p>Pick a course with scenarios to see the details and start an investigation.</p>
+        </div>
       </section>
-    </div>
-  </div>
+    </div><!-- /pc-layout -->
+  </div><!-- /cq-container-wide -->
 </main>
+
 {{ catalog|json_script:"pc-catalog" }}
-<script src="{% static 'practice/js/center.js' %}"></script>
+<script src="{% static 'practice/js/center.js' %}?v=r4"></script>
 <script src="{% static 'home_page/js/theme.js' %}"></script>
 <script src="{% static 'shared/js/chrome.js' %}?v=nav2"></script>
 </body>

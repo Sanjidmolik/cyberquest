@@ -272,7 +272,7 @@ class CourseManagementTests(TestCase):
         self.client.force_login(self.student)
         page = self.client.get(reverse("courses:intro"))
         self.assertContains(page, course.safe_thumbnail_url())
-        self.assertContains(page, "course-placeholder.svg")
+        self.assertContains(page, "courses/covers/cover_1.svg")  # comic cover when no thumbnail
 
     def test_publish_requires_post_and_stays_on_site(self):
         self.client.force_login(self.superuser)

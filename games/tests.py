@@ -107,7 +107,7 @@ class QuestionSetArchitectureTests(TestCase):
         self.user.save()
         # has_completed_all_courses may check CourseProgress — patch via staff bypass if needed
         from unittest.mock import patch
-        with patch("games.views.has_completed_all_courses", return_value=True):
+        with patch("games.views.is_game_unlocked", return_value=True):
             started = self.client.post(reverse("games:phishing_simulator"), {"action": "start"})
             self.assertEqual(started.status_code, 302)
             res = self.client.get(reverse("games:phishing_simulator"))
@@ -129,16 +129,16 @@ class QuestionSetArchitectureTests(TestCase):
     def test_wrong_answer_feedback_shows_correct(self):
         self.client.login(email="qset@example.com", password="testpass123")
         from unittest.mock import patch
-        with patch("games.views.has_completed_all_courses", return_value=True):
-            self.client.post(reverse("games:cryptography"), {"action": "start"})
-            res = self.client.get(reverse("games:cryptography"))
+        with patch("games.views.is_game_unlocked", return_value=True):
+            self.client.post(reverse("games:network_defense"), {"action": "start"})
+            res = self.client.get(reverse("games:network_defense"))
             questions = res.context["questions"]
             # Answer all wrong (pick a different index)
             post = {}
             for q in questions:
                 wrong = 0 if q["correct_index"] != 0 else 1
                 post[f"question_{q['id']}"] = str(wrong)
-            res = self.client.post(reverse("games:cryptography"), post)
+            res = self.client.post(reverse("games:network_defense"), post)
             self.assertContains(res, "Incorrect")
             self.assertContains(res, "Correct answer:")
             self.assertContains(res, questions[0]["options"][questions[0]["correct_index"]])
@@ -202,30 +202,35 @@ class QuestionSetArchitectureTests(TestCase):
         self.user.save()
         self.assertTrue(is_eligible_for_certificate(self.user))
 
-    def test_mission_order_and_osint_does_not_launch(self):
-        from games.registry import GAMES_REGISTRY, playable_games
+    def test_mission_order_follows_courses_and_coming_soon_missions_do_not_launch(self):
+        from games.registry import active_games, playable_games
 
         self.assertEqual(
-            [game["key"] for game in GAMES_REGISTRY],
+            [game["key"] for game in active_games()],
             [
+                "online_safety",
                 "phishing_simulator",
                 "password_cracker",
+                "malware_defense",
                 "network_defense",
-                "cryptography",
-                "steganography",
-                "osint",
+                "device_protection",
+                "privacy_defense",
+                "incident_response",
             ],
         )
         self.assertEqual(
-            [game["card_name"] for game in GAMES_REGISTRY],
-            ["Phishing", "Password Cracker", "Network Defence", "Cryptography", "Steganography", "OSINT"],
+            [game["card_name"] for game in active_games()],
+            ["Online Safety", "Phishing & Scams", "Account Protection", "Malware Defence",
+             "Wi-Fi & Network", "Device Protection", "Privacy Shield", "Incident Response"],
         )
-        self.assertTrue(GAMES_REGISTRY[-1]["coming_soon"])
-        self.assertNotIn("osint", {game["key"] for game in playable_games()})
+        playable = {game["key"] for game in playable_games()}
         self.client.force_login(self.user)
-        blocked = self.client.get(reverse("games:osint"))
-        self.assertEqual(blocked.status_code, 302)
-        self.assertEqual(blocked.url, reverse("dashboard:home"))
+        for key in ("cryptography", "steganography", "osint"):
+            self.assertNotIn(key, playable)
+        for url_name in ("games:cryptography", "games:steganography", "games:osint"):
+            blocked = self.client.get(reverse(url_name))
+            self.assertEqual(blocked.status_code, 302)
+            self.assertEqual(blocked.url, reverse("dashboard:home"))
 
     def test_seed_pool_iterable(self):
         rows = list(iter_seed_questions())

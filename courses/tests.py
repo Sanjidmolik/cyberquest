@@ -76,3 +76,50 @@ class LearningBookTests(TestCase):
         self.assertTrue(
             CourseProgress.objects.filter(user=self.user, course=self.course).exists()
         )
+
+
+class MissionUnlockTests(TestCase):
+    """Each mission unlocks once its own course is completed; admins can play everything."""
+
+    def setUp(self):
+        self.student = User.objects.create_user(
+            email="unlock@gmail.com", password="securepass1", username="unlock", ethical_agreement=True,
+        )
+        self.phishing = Course.objects.create(code="MOD-01", title="Phishing attack", short_description="x",
+                                              content="Spot fakes.", is_published=True)
+        self.password = Course.objects.create(code="MOD-02", title="Password Cracker", short_description="x",
+                                              content="Use passphrases.", is_published=True)
+
+    def test_finishing_a_course_unlocks_only_its_mission(self):
+        from courses.progress import is_game_unlocked
+
+        self.assertFalse(is_game_unlocked(self.student, "phishing_simulator"))
+        CourseProgress.objects.create(user=self.student, course=self.phishing)
+        self.assertTrue(is_game_unlocked(self.student, "phishing_simulator"))
+        self.assertFalse(is_game_unlocked(self.student, "password_cracker"))
+        self.assertFalse(is_game_unlocked(self.student, "cryptography"))  # no course yet
+
+    def test_locked_mission_redirects_to_learn_and_open_one_loads(self):
+        self.client.force_login(self.student)
+        CourseProgress.objects.create(user=self.student, course=self.phishing)
+        locked = self.client.get(reverse("games:password_cracker"))
+        self.assertRedirects(locked, reverse("courses:intro"), fetch_redirect_response=False)
+        opened = self.client.get(reverse("games:phishing_simulator"))
+        self.assertNotEqual(opened.get("Location"), reverse("courses:intro"))
+
+    def test_admins_can_play_every_mission(self):
+        from courses.progress import is_game_unlocked
+
+        admin = User.objects.create_user(email="boss@gmail.com", password="securepass1", username="boss",
+                                         is_staff=True, is_superuser=True)
+        for key in ("phishing_simulator", "password_cracker", "network_defense", "cryptography", "steganography"):
+            self.assertTrue(is_game_unlocked(admin, key))
+
+    def test_dashboard_cards_lock_per_mission(self):
+        from dashboard.utils import get_dashboard_context
+
+        CourseProgress.objects.create(user=self.student, course=self.phishing)
+        cards = {m["key"]: m for m in get_dashboard_context(self.student)["active_missions"]}
+        self.assertFalse(cards["phishing_simulator"]["locked"])
+        self.assertTrue(cards["password_cracker"]["locked"])
+        self.assertNotIn("osint", cards)  # coming soon: its own row, not an active mission

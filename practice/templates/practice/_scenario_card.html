@@ -1,0 +1,21 @@
+{% comment %}One scenario card. Needs: s (scenario), d (practice topic), panel (owning panel id), opening (selected scenario).
+It opens the scenario in the interactive engine (/practice/<slug>/); hover or focus previews it on the right.{% endcomment %}
+<a href="{{ s.url }}"
+   class="pc-card{% if s.key == opening.key %} is-active{% endif %}"
+   data-domain="{{ d.slug }}" data-key="{{ s.key }}" data-panel="{{ panel }}">
+  <span class="pc-card-art pc-card-art--{{ s.art_alt }}"><img src="{{ s.art }}" alt="" loading="lazy" width="96" height="128"></span>
+  <span class="pc-card-body">
+    <span class="pc-card-top">
+      <span class="pc-card-num">{{ s.number }}</span>
+      <span class="pc-time"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" width="11" height="11"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v3.75l2.5 1.5"/></svg>~{{ s.minutes }} min</span>
+    </span>
+    <strong class="pc-card-title">{{ s.title }}</strong>
+    <span class="pc-chips">
+      <span class="pc-chip pc-chip--{{ s.difficulty }}">{{ s.difficulty_label }}</span>
+      <span class="pc-chip">{{ s.activity_label }}</span>
+    </span>
+    <span class="pc-card-summary">{{ s.summary }}</span>
+    {% if s.completed %}<span class="pc-done">✓ COMPLETED · BEST {{ s.best }}%</span>{% endif %}
+  </span>
+  <svg class="pc-card-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+</a>

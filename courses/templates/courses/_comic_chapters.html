@@ -1,0 +1,32 @@
+{% comment %}
+Comic chapter body for the flip-book reader. Every top-level element is one
+block that reader.js packs onto pages; `.cq-break` forces a new page.
+{% endcomment %}
+{% for chapter in chapters %}
+{% if not forloop.first %}<div class="cq-break"></div>{% endif %}
+<h2 class="cq-chapter"><span class="cq-chapter-num">Chapter {{ forloop.counter }}</span> {{ chapter.title }}</h2>
+{% for panel in chapter.panels.all %}
+{% if panel.kind == "narration" %}
+<div class="cq-panel cq-narration" style="--panel-bg: {{ panel.background_color }}"><p>{{ panel.speech_bubble }}</p></div>
+{% elif panel.kind == "activity" %}
+<div class="cq-panel cq-activity"><span class="cq-speaker">{{ panel.caption }}</span><p>{{ panel.speech_bubble }}</p></div>
+{% else %}
+<div class="cq-panel cq-speech cq-{{ panel.bubble_align }}" style="--panel-bg: {{ panel.background_color }}"><span class="cq-speaker">{{ panel.caption }}</span><p class="cq-bubble">{{ panel.speech_bubble }}</p></div>
+{% endif %}
+{% endfor %}
+{% with questions=chapter.questions.all %}
+{% if questions %}
+<div class="cq-break"></div>
+<h3 class="cq-check-title">Knowledge check · {{ chapter.title }}</h3>
+<p class="cq-check-help">Pick an answer in your head, then turn the page to check it.</p>
+{% for q in questions %}
+<div class="cq-quiz"><p class="cq-q"><strong>Q{{ forloop.counter }}.</strong> {{ q.prompt }}</p><ol class="cq-options" type="A">{% for option in q.option_list %}<li>{{ option }}</li>{% endfor %}</ol></div>
+{% endfor %}
+<div class="cq-break"></div>
+<h3 class="cq-check-title">Answers · {{ chapter.title }}</h3>
+{% for q in questions %}
+<div class="cq-answer"><p><strong>Q{{ forloop.counter }}: {{ q.correct_option }}</strong></p><p>{{ q.explanation }}</p></div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+{% endfor %}

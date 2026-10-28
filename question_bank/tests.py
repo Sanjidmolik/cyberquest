@@ -395,7 +395,7 @@ class ApprovalAndGameplayTests(TestCase):
         client = Client()
         client.login(email="student@example.com", password="pass12345")
         from unittest.mock import patch as patch_fn
-        with patch_fn("games.views.has_completed_all_courses", return_value=True):
+        with patch_fn("games.views.is_game_unlocked", return_value=True):
             client.post(reverse("games:phishing_simulator"), {"action": "start"})
             res = client.get(reverse("games:phishing_simulator"))
             self.assertEqual(res.status_code, 200)

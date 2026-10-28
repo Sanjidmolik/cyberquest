@@ -329,9 +329,9 @@ QUIZ_GAMES["phishing_simulator"] = {
 }
 
 QUIZ_GAMES["password_cracker"] = {
-    "title": "Password Cracker Challenge",
+    "title": "Account Protection Challenge",
     "emoji": "🔑",
-    "intro": "For each password, decide how it would hold up against a real attacker.",
+    "intro": "For each fictional password, decide how well it would protect an account.",
     "questions": [
         {
             "id": 1, "prompt": "Password: 123456",
@@ -360,3 +360,9 @@ QUIZ_GAMES["password_cracker"] = {
         },
     ],
 }
+
+
+# Defence-curriculum missions (one per course) live in their own module.
+from .defence_missions import DEFENCE_MISSIONS  # noqa: E402
+
+QUIZ_GAMES.update(DEFENCE_MISSIONS)

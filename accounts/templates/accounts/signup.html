@@ -1,92 +1,228 @@
-{% extends "shared/base.html" %}
-{% load static %}
+{% load static %}<!DOCTYPE html>
+<html lang="en" data-theme="day">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#701fd3">
+    <title>CyberQuest — Sign Up</title>
+    <script>
+        /* Apply the saved Day / Night choice before the page paints (same rule as the login page). */
+        (function () {
+            var home = "dark";
+            try {
+                var s = localStorage.getItem("cq_home_theme");
+                if (s === "light" || s === "dark") home = s;
+                else {
+                    var legacy = localStorage.getItem("cq_login_theme");
+                    if (legacy === "day") home = "light";
+                    else if (legacy === "night") home = "dark";
+                }
+            } catch (e) {}
+            document.documentElement.setAttribute("data-theme", home === "light" ? "day" : "night");
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'accounts/css/login_v2.css' %}">
+    <link rel="stylesheet" href="{% static 'accounts/css/signup.css' %}?v=1">
+    <link rel="stylesheet" href="{% static 'shared/css/chrome.css' %}?v=nav3">
+    {% include "shared/_loading.html" %}
+    <link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><circle cx="12" cy="16" r="1"/><rect x="3" y="10" width="18" height="12" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    <symbol id="i-spin" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m6 9 3 3-3 3M12 15h6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-bug" viewBox="0 0 24 24"><rect x="7" y="8" width="10" height="13" rx="5"/><path d="M12 8V5M9 5l1.5 3M15 5l-1.5 3M3 13h4M17 13h4M4 19l3.5-2M20 19l-3.5-2M4 7l3.5 2M20 7l-3.5 2"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+    <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></symbol>
+</svg>
 
-{% block title %}CyberQuest — Sign Up{% endblock %}
+<main class="lq-page sq-page">
+    <div class="lq-glows" aria-hidden="true"><div class="lq-glow lq-glow-1"></div><div class="lq-glow lq-glow-2"></div></div>
 
-{% block content %}
-<div class="cq-container" style="max-width:560px;">
-  <div class="cq-page-card">
-    <h1 class="cq-heading">Join CyberQuest</h1>
-    <p class="cq-sub">Create your account to start training.</p>
-    <p class="cq-body"><a href="{% url 'accounts:google_login' %}">Sign up with Google</a></p>
+    <button type="button" id="theme-toggle" class="lq-theme-btn lq-3d" aria-label="Switch to night mode">
+        <svg class="lq-icon lq-ico-moon"><use href="#i-moon"/></svg>
+        <svg class="lq-icon lq-ico-sun"><use href="#i-sun"/></svg>
+        <span class="lq-theme-text">Night</span>
+    </button>
 
-    {% if messages %}
-      {% for message in messages %}
-        {% if "XP earned" not in message.message and "Level up!" not in message.message and "badge unlocked" not in message.message %}
-        <p class="cq-msg cq-msg-{{ message.tags }}">{{ message }}</p>
-        {% endif %}
-      {% endfor %}
-    {% endif %}
+    <section class="lq-card" aria-labelledby="signup-title">
 
-    <form method="post" novalidate>
-      {% csrf_token %}
-
-      <div class="cq-field">
-        <label for="{{ form.username.id_for_label }}">Username</label>
-        {{ form.username }}
-        {% if form.username.help_text %}<p class="cq-body" style="font-size:0.85rem;margin:0.35rem 0 0;">{{ form.username.help_text }}</p>{% endif %}
-        {% if form.username.errors %}<p class="cq-msg cq-msg-error">{{ form.username.errors.0 }}</p>{% endif %}
-      </div>
-
-      <div class="cq-field">
-        <label for="{{ form.email.id_for_label }}">Email</label>
-        {{ form.email }}
-        {% if form.email.errors %}<p class="cq-msg cq-msg-error">{{ form.email.errors.0 }}</p>{% endif %}
-      </div>
-
-      <div class="cq-field">
-        <label for="{{ form.password.id_for_label }}">Password</label>
-        {{ form.password }}
-        <p class="cq-body" id="password-hint" style="font-size:0.85rem;margin:0.35rem 0 0;">At least 8 characters, including one special character.</p>
-        {% for error in form.password.errors %}<p class="cq-msg cq-msg-error">{{ error }}</p>{% endfor %}
-      </div>
-
-      <div class="cq-field">
-        <label for="{{ form.confirm_password.id_for_label }}">Confirm Password</label>
-        {{ form.confirm_password }}
-        {% if form.confirm_password.errors %}<p class="cq-msg cq-msg-error">{{ form.confirm_password.errors.0 }}</p>{% endif %}
-      </div>
-
-      <div class="cq-field">
-        <label for="{{ form.date_of_birth.id_for_label }}">Date of Birth</label>
-        {{ form.date_of_birth }}
-        {% if form.date_of_birth.errors %}<p class="cq-msg cq-msg-error">{{ form.date_of_birth.errors.0 }}</p>{% endif %}
-      </div>
-
-      <div class="cq-field">
-        <label>Choose Your Cyber Class</label>
-        <div class="cq-choice-grid">
-          {% for radio in form.cyber_class %}
-            <label class="cq-choice-card">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
-          {% endfor %}
+        <div class="lq-aside">
+            {% include "shared/_brand.html" with brand_class="lq-brand" logo_class="cq-logo-lockup--lg" %}
+            <div class="lq-aside-copy">
+                <p class="lq-eyebrow lq-text-3d">Join the crew</p>
+                <h2 class="lq-text-3d">Start your cyber defence journey.</h2>
+                <p class="lq-text-3d-soft">Create a free account to read comic courses, play timed missions and practise real-world defence.</p>
+                <ul class="sq-perks lq-text-3d-soft">
+                    <li><svg class="lq-icon" aria-hidden="true"><use href="#i-book"/></svg> Eight comic courses on staying safe online</li>
+                    <li><svg class="lq-icon" aria-hidden="true"><use href="#i-target"/></svg> A mission to unlock with every course</li>
+                    <li><svg class="lq-icon" aria-hidden="true"><use href="#i-award"/></svg> Earn XP, badges and a certificate</li>
+                </ul>
+            </div>
+            <div class="lq-secure lq-text-3d-soft"><svg class="lq-icon"><use href="#i-shield"/></svg> Secure access, always.</div>
         </div>
-        {% if form.cyber_class.errors %}<p class="cq-msg cq-msg-error">{{ form.cyber_class.errors.0 }}</p>{% endif %}
-      </div>
 
-      <div class="cq-field">
-        <label>Skill Level</label>
-        <div class="cq-choice-row">
-          {% for radio in form.skill_level %}
-            <label class="cq-choice-pill">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
-          {% endfor %}
+        <div class="lq-main">
+            {% include "shared/_brand.html" with brand_class="lq-mbrand" %}
+
+            <header class="lq-head">
+                <p class="lq-hello lq-text-3d">Welcome, recruit</p>
+                <h1 id="signup-title" class="lq-text-3d">Join CyberQuest</h1>
+                <p class="lq-sub lq-muted lq-text-3d-soft">Create your account to start training.</p>
+            </header>
+
+            <a href="{% url 'accounts:google_login' %}" class="lq-btn lq-btn-google lq-3d"><span class="lq-g">G</span>Sign up with Google</a>
+
+            <div class="lq-or lq-muted">or sign up with email</div>
+
+            <form method="post" id="signup-form" class="lq-form" novalidate>
+                {% csrf_token %}
+
+                {% if messages or form.non_field_errors %}
+                <div class="lq-messages" role="status" aria-live="polite">
+                    {% for message in messages %}
+                    {% if "XP earned" not in message.message and "Level up!" not in message.message and "badge unlocked" not in message.message %}
+                    <p class="lq-msg lq-msg-{{ message.tags }}"><svg class="lq-icon"><use href="#{% if message.tags == 'success' or message.tags == 'info' %}i-check{% else %}i-alert{% endif %}"/></svg>{{ message }}</p>
+                    {% endif %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                    <p class="lq-msg lq-msg-error"><svg class="lq-icon"><use href="#i-alert"/></svg>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="sq-row">
+                    <div class="lq-field">
+                        <label for="id_username">Username</label>
+                        <div class="lq-input-wrap">
+                            <svg class="lq-icon lq-input-icon" aria-hidden="true"><use href="#i-user"/></svg>
+                            <input id="id_username" name="{{ form.username.html_name }}" type="text" maxlength="50" class="lq-input{% if form.username.errors %} is-invalid{% endif %}" autocomplete="username" placeholder="Pick a username" value="{{ form.username.value|default_if_none:'' }}"{% if form.username.errors %} aria-invalid="true" aria-describedby="username-error"{% endif %} autofocus>
+                        </div>
+                        {% if form.username.errors %}<p class="lq-field-error" id="username-error">{{ form.username.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <div class="lq-field">
+                        <label for="id_date_of_birth">Date of birth</label>
+                        <div class="lq-input-wrap">
+                            <svg class="lq-icon lq-input-icon" aria-hidden="true"><use href="#i-calendar"/></svg>
+                            <input id="id_date_of_birth" name="{{ form.date_of_birth.html_name }}" type="date" class="lq-input sq-date{% if form.date_of_birth.errors %} is-invalid{% endif %}" autocomplete="bday" value="{{ form.date_of_birth.value|default_if_none:'' }}"{% if form.date_of_birth.errors %} aria-invalid="true" aria-describedby="dob-error"{% endif %}>
+                        </div>
+                        {% if form.date_of_birth.errors %}<p class="lq-field-error" id="dob-error">{{ form.date_of_birth.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div class="lq-field">
+                    <label for="id_email">Email address</label>
+                    <div class="lq-input-wrap">
+                        <svg class="lq-icon lq-input-icon" aria-hidden="true"><use href="#i-mail"/></svg>
+                        <input id="id_email" name="{{ form.email.html_name }}" type="email" class="lq-input{% if form.email.errors %} is-invalid{% endif %}" autocomplete="email" placeholder="you@example.com" value="{{ form.email.value|default_if_none:'' }}" aria-describedby="email-note{% if form.email.errors %} email-error{% endif %}"{% if form.email.errors %} aria-invalid="true"{% endif %}>
+                    </div>
+                    {% if form.email.errors %}<p class="lq-field-error" id="email-error">{{ form.email.errors.0 }}</p>{% endif %}
+                    <p class="lq-note" id="email-note"><strong>Note:</strong> Only Gmail, Hotmail, Outlook, or .edu emails are accepted.</p>
+                </div>
+
+                <div class="sq-row">
+                    <div class="lq-field">
+                        <label for="id_password">Password</label>
+                        <div class="lq-input-wrap">
+                            <svg class="lq-icon lq-input-icon" aria-hidden="true"><use href="#i-lock"/></svg>
+                            <input id="id_password" name="{{ form.password.html_name }}" type="password" class="lq-input lq-input-pw{% if form.password.errors %} is-invalid{% endif %}" autocomplete="new-password" placeholder="Create a password" aria-describedby="password-hint{% if form.password.errors %} password-error{% endif %}"{% if form.password.errors %} aria-invalid="true"{% endif %}>
+                            <button type="button" class="lq-eye" data-eye-for="id_password" aria-label="Show password" aria-pressed="false">
+                                <svg class="lq-icon lq-ico-show"><use href="#i-eye"/></svg>
+                                <svg class="lq-icon lq-ico-hide"><use href="#i-eye-off"/></svg>
+                            </button>
+                        </div>
+                        {% if form.password.errors %}<div id="password-error">{% for error in form.password.errors %}<p class="lq-field-error">{{ error }}</p>{% endfor %}</div>{% endif %}
+                    </div>
+
+                    <div class="lq-field">
+                        <label for="id_confirm_password">Confirm password</label>
+                        <div class="lq-input-wrap">
+                            <svg class="lq-icon lq-input-icon" aria-hidden="true"><use href="#i-lock"/></svg>
+                            <input id="id_confirm_password" name="{{ form.confirm_password.html_name }}" type="password" class="lq-input lq-input-pw{% if form.confirm_password.errors %} is-invalid{% endif %}" autocomplete="new-password" placeholder="Type it again" aria-describedby="confirm-status{% if form.confirm_password.errors %} confirm-error{% endif %}"{% if form.confirm_password.errors %} aria-invalid="true"{% endif %}>
+                            <button type="button" class="lq-eye" data-eye-for="id_confirm_password" aria-label="Show password" aria-pressed="false">
+                                <svg class="lq-icon lq-ico-show"><use href="#i-eye"/></svg>
+                                <svg class="lq-icon lq-ico-hide"><use href="#i-eye-off"/></svg>
+                            </button>
+                        </div>
+                        {% if form.confirm_password.errors %}<p class="lq-field-error" id="confirm-error">{{ form.confirm_password.errors.0 }}</p>{% endif %}
+                        <p class="sq-hint" id="confirm-status" aria-live="polite"></p>
+                    </div>
+                </div>
+                <p class="sq-hint" id="password-hint">At least 8 characters, including one special character.</p>
+
+                <fieldset class="sq-fieldset">
+                    <legend>Choose your cyber class</legend>
+                    <div class="sq-classes">
+                        {% for radio in form.cyber_class %}
+                        <label class="sq-class" for="{{ radio.id_for_label }}">
+                            <input type="radio" name="{{ form.cyber_class.html_name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}"{% if radio.data.selected %} checked{% endif %}>
+                            <span class="sq-class-body">
+                                <svg class="lq-icon sq-class-icon" aria-hidden="true"><use href="#{% if radio.data.value == 'ethical_hacker' %}i-terminal{% elif radio.data.value == 'blue_team' %}i-shield{% elif radio.data.value == 'osint' %}i-search{% elif radio.data.value == 'malware_analyst' %}i-bug{% else %}i-star{% endif %}"/></svg>
+                                <span>{{ radio.choice_label }}</span>
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.cyber_class.errors %}<p class="lq-field-error">{{ form.cyber_class.errors.0 }}</p>{% endif %}
+                </fieldset>
+
+                <fieldset class="sq-fieldset">
+                    <legend>Skill level</legend>
+                    <div class="sq-pills">
+                        {% for radio in form.skill_level %}
+                        <label class="sq-pill" for="{{ radio.id_for_label }}">
+                            <input type="radio" name="{{ form.skill_level.html_name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}"{% if radio.data.selected %} checked{% endif %}>
+                            <span>{{ radio.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.skill_level.errors %}<p class="lq-field-error">{{ form.skill_level.errors.0 }}</p>{% endif %}
+                </fieldset>
+
+                <div class="sq-agree">
+                    <label class="sq-check" for="id_ethical_agreement">
+                        <input type="checkbox" name="{{ form.ethical_agreement.html_name }}" id="id_ethical_agreement"{% if form.ethical_agreement.value %} checked{% endif %}{% if form.ethical_agreement.errors %} aria-invalid="true" aria-describedby="agree-error"{% endif %}>
+                        <span>{{ form.ethical_agreement.label }}</span>
+                    </label>
+                    {% if form.ethical_agreement.errors %}<p class="lq-field-error" id="agree-error">{{ form.ethical_agreement.errors.0 }}</p>{% endif %}
+                    <p class="sq-legal lq-muted">By creating an account you agree to the <a href="{% url 'pages:terms' %}" target="_blank" rel="noopener">Terms of Service</a> and confirm you have read the <a href="{% url 'pages:privacy' %}" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+                </div>
+
+                <p id="signup-feedback" class="lq-msg lq-msg-error" role="alert" hidden><svg class="lq-icon"><use href="#i-alert"/></svg><span id="signup-feedback-text"></span></p>
+
+                <button type="submit" id="signup-submit" class="lq-btn lq-btn-primary lq-3d">
+                    <svg class="lq-icon lq-spin"><use href="#i-spin"/></svg>
+                    <span class="lq-btn-text">Create Account</span>
+                    <svg class="lq-icon lq-arrow"><use href="#i-arrow"/></svg>
+                </button>
+            </form>
+
+            <p class="lq-foot lq-muted">Already have an account? <a href="{% url 'accounts:login' %}" class="lq-create">Log in</a></p>
+            <p class="lq-small-links lq-muted"><a href="{% url 'pages:about' %}">About</a><a href="{% url 'pages:contact' %}">Contact</a></p>
         </div>
-        {% if form.skill_level.errors %}<p class="cq-msg cq-msg-error">{{ form.skill_level.errors.0 }}</p>{% endif %}
-      </div>
+    </section>
+</main>
 
-      <div class="cq-field cq-check-row">
-        {{ form.ethical_agreement }}
-        <label for="{{ form.ethical_agreement.id_for_label }}">{{ form.ethical_agreement.label }}</label>
-      </div>
-      {% if form.ethical_agreement.errors %}<p class="cq-msg cq-msg-error">{{ form.ethical_agreement.errors.0 }}</p>{% endif %}
-
-      <p class="cq-body cq-legal-consent" style="font-size:0.85rem;margin:0.25rem 0 0.9rem;">By creating an account you agree to the <a href="{% url 'pages:terms' %}" target="_blank" rel="noopener">Terms of Service</a> and confirm you have read the <a href="{% url 'pages:privacy' %}" target="_blank" rel="noopener">Privacy Policy</a>.</p>
-
-      <button type="submit" class="cq-btn" style="width:100%;">Create Account</button>
-    </form>
-
-    <p class="cq-body" style="margin:1.25rem 0 0;text-align:center;">
-      Already have an account? <a href="{% url 'accounts:login' %}" style="color:var(--lilac);font-weight:700;">Log in</a>
-    </p>
-  </div>
-</div>
-{% endblock %}
+<script src="{% static 'accounts/js/signup.js' %}?v=1"></script>
+<script src="{% static 'shared/js/chrome.js' %}?v=nav2"></script>
+</body>
+</html>

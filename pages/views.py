@@ -81,19 +81,18 @@ def search_view(request):
     by keyword. Two different data sources, one combined results page.
     """
     from courses.models import Course
-    from games.registry import GAMES_REGISTRY
+    from games.registry import active_games
 
     query = request.GET.get("q", "").strip()
     course_results = []
     game_results = []
 
     if query:
-        course_results = Course.objects.filter(
+        course_results = Course.objects.active().filter(
             Q(title__icontains=query) | Q(short_description__icontains=query),
-            is_published=True,
         )
         game_results = [
-            g for g in GAMES_REGISTRY
+            g for g in active_games()
             if query.lower() in g["name"].lower() or query.lower() in g["description"].lower()
         ]
 

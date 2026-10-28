@@ -307,6 +307,28 @@ class LogoutMethodTests(TestCase):
         # Session should be cleared
         self.assertNotIn("_auth_user_id", self.client.session)
 
+    def test_homepage_logout_uses_post_form(self):
+        """home.html must render a POST form for logout, not a GET anchor."""
+        response = self.client.get(reverse("pages:home"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        logout_url = reverse("accounts:logout")
+        # There must be a form POSTing to logout
+        self.assertIn(f'action="{logout_url}"', content)
+        self.assertIn('method="post"', content.lower())
+        # There must NOT be a plain anchor linking to logout
+        self.assertNotIn(f'href="{logout_url}"', content)
+
+    def test_practice_center_logout_uses_post_form(self):
+        """practice/center.html must render a POST form for logout, not a GET anchor."""
+        response = self.client.get(reverse("practice:center"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        logout_url = reverse("accounts:logout")
+        self.assertIn(f'action="{logout_url}"', content)
+        self.assertIn('method="post"', content.lower())
+        self.assertNotIn(f'href="{logout_url}"', content)
+
 
 class RecoveryCodeEntropyTests(TestCase):
     """P1-02: recovery codes must be 128-bit (32 hex chars)."""

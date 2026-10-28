@@ -1,0 +1,127 @@
+{
+  "slug": "crypto-04-incident",
+  "topic": "MOD-04",
+  "kind": "incident",
+  "title": "Certificate and TLS problem",
+  "difficulty": "advanced",
+  "est_minutes": 18,
+  "time_limit_sec": null,
+  "xp_reward": 120,
+  "content": {
+    "steps": [
+      {
+        "type": "story",
+        "desc": "Patients see a certificate warning on the clinic portal, and staff are telling them to click through. Work out what is wrong and fix it safely.",
+        "intro": "Heads up, this one is a live incident. The clinic’s patient portal is throwing certificate warnings. Take it step by step and work the problem.",
+        "labels": ["Triage", "Evidence", "Act", "Respond"],
+        "end_expression": "think"
+      },
+      {
+        "type": "triage",
+        "title": "Triage: how bad is this?",
+        "live_tag": "INCIDENT · LIVE",
+        "alerts": [
+          {"ini": "FD", "bg": "#3F55C9", "from": "Front desk", "time": "08:41", "msg": "Patients say the portal shows “Your connection is not private”."},
+          {"ini": "MN", "bg": "#D9480F", "from": "Monitoring", "time": "08:42", "msg": "TLS certificate for portal.clinic.example expired 2 days ago."},
+          {"ini": "PM", "bg": "#7C4DFF", "from": "Practice manager", "time": "08:44", "msg": "I told everyone to click “Advanced → Proceed” so they can still log in."},
+          {"ini": "PT", "bg": "#0B8A5F", "from": "Patient email", "time": "08:46", "msg": "Is it safe to type my health details? My browser keeps warning me."}
+        ],
+        "levels": [
+          {"label": "Low", "desc": "Cosmetic, no data at risk", "dot": "#3DD9A4"},
+          {"label": "Medium", "desc": "Annoying, limited exposure", "dot": "#FFD23F"},
+          {"label": "High", "desc": "Sensitive data at real risk right now", "dot": "#FF8A3D"},
+          {"label": "Critical", "desc": "Confirmed breach in progress", "dot": "#D9480F"}
+        ],
+        "correct": 2,
+        "tips": {
+          "start": "Read every alert before you decide. Severity is about impact, not panic.",
+          "all_in": "All alerts are in. What severity is this?",
+          "ready": "Locked in? Hit Check.",
+          "good": "Exactly. Now let’s find out why.",
+          "bad": "Careful. Read the impact again."
+        },
+        "feedback": {
+          "good": {"title": "Good call: High", "text": "No breach is confirmed, but patients are typing health data past a warning. That needs action now."},
+          "bad": {"title": "Not quite: it’s High", "text": "Patient data is at real risk right now, but there’s no confirmed breach yet. That makes it High."}
+        }
+      },
+      {
+        "type": "hotspot",
+        "layout": "fields",
+        "title": "Inspect the evidence. Tap the 3 clues.",
+        "banner": "Not secure · portal.clinic.example · certificate error",
+        "select": 3,
+        "items": [
+          {"label": "ISSUED TO", "value": "portal.clinic.example"},
+          {"label": "ISSUED BY", "value": "Example Trust CA"},
+          {"label": "VALID FROM", "value": "26 Oct 2025"},
+          {"label": "VALID UNTIL", "value": "26 Oct 2026 (2 days ago)"},
+          {"label": "AUTO-RENEWAL", "value": "Disabled"},
+          {"label": "PUBLIC KEY", "value": "RSA 2048-bit"},
+          {"label": "STAFF NOTE ON FRONT DESK", "value": "“Tell patients: click Advanced → Proceed”"}
+        ],
+        "correct": [3, 4, 6],
+        "tips": {
+          "start": "Certificates tell a story. Which details explain the warning, and why it keeps getting worse?",
+          "progress": "Good. Keep reading line by line.",
+          "ready": "Got three? Check them.",
+          "good": "That’s the whole story. Now decide what to do.",
+          "bad": "Look at the dashed ones. Those were the clues."
+        },
+        "feedback": {
+          "good": {"title": "Case cracked!", "text": "Expired certificate, auto-renewal off, and staff training patients to ignore warnings."},
+          "bad": {"title": "Not quite", "text": "The clues were the expiry date, disabled auto-renewal and the staff note."}
+        }
+      },
+      {
+        "type": "mcq",
+        "eyebrow": "ACT NOW · ONE CHOICE",
+        "options": [
+          "Keep telling patients to click through until the certificate is renewed.",
+          "Stop the click-through advice, post a maintenance notice, and renew the certificate.",
+          "Switch the portal to plain HTTP so the warning disappears.",
+          "Leave it until after opening hours. It’s only a warning."
+        ],
+        "correct": 1,
+        "tips": {
+          "start": "You know what’s wrong. What’s the first thing you do?",
+          "ready": "Sure about that one? Hit Check.",
+          "good": "Exactly. Stop the harm, then fix the cause.",
+          "bad": "Not that one. Think about who is at risk right now."
+        },
+        "feedback": {
+          "good": {"title": "Contained!", "text": "Stop the harm first, then fix the cause. Patients stop sending data past a broken lock."},
+          "bad": {"title": "Not quite", "text": "Contain first: stop the click-through advice, post a notice, then renew the certificate."}
+        }
+      },
+      {
+        "type": "order",
+        "title": "Put the response plan in order",
+        "items": [
+          {"id": "renew", "text": "Install a renewed, valid certificate"},
+          {"id": "auto", "text": "Turn on auto-renewal and expiry alerts"},
+          {"id": "stop", "text": "Stop the “click through” advice"},
+          {"id": "verify", "text": "Confirm the portal loads with no warning"},
+          {"id": "notice", "text": "Post a maintenance notice on the portal"}
+        ],
+        "correct": ["stop", "notice", "renew", "verify", "auto"],
+        "tips": {
+          "start": "Contain first, then fix, then verify, then prevent. Tap steps in the order you’d do them.",
+          "progress": "Keep going. Tap a placed step to undo it.",
+          "ready": "Plan ready? Check it.",
+          "good": "Textbook incident response!",
+          "bad": "Close. The orange steps are in the wrong spot."
+        },
+        "feedback": {
+          "good": {"title": "Incident closed!", "text": "Contain, fix, verify, prevent. The portal is safe for patients again."},
+          "bad": {"title": "Not quite", "text": "Right order: stop the advice, post a notice, renew, verify, then turn on auto-renewal."}
+        }
+      }
+    ],
+    "debrief": {
+      "headline": "Incident resolved!",
+      "sub": "The portal is back on a valid certificate and patients are no longer told to ignore warnings.",
+      "learned": ["Triage by real impact", "Read certificate details", "Contain first, then fix"]
+    }
+  }
+}

@@ -925,4 +925,355 @@ EXTRA_SCENARIOS = {
             "read_metadata": "meta", "inspect_host": "host", "compare_brand_assets": "brand", "timeline": "pdf",
         }),
     },
+
+    # ---------- STEGANOGRAPHY: Hidden-Data Analysis Console ----------
+    "stego_image_lsb": {
+        "key": "stego_image_lsb",
+        "domain": "steganography",
+        "activity_type": "simulation",
+        "difficulty": "beginner",
+        "environment": "Hidden-Data Analysis Console",
+        "workspace_type": "stego",
+        "incident_code": "CQ-SG-001",
+        "severity": "MEDIUM",
+        "title": "Suspicious image sent to external address",
+        "objective": "Detect LSB-hidden data in a shared image and decide whether to quarantine before further exfiltration.",
+        "briefing": {
+            "employee": "MAILGUARD-01",
+            "department": "Data-Loss Prevention",
+            "subject": "Outbound image with anomalous byte pattern",
+            "time": "11:34 AM",
+            "summary": (
+                "An outbound e-mail flagged by the DLP gateway contains a PNG attachment. "
+                "The byte-entropy score is unusually high for a simple screenshot. "
+                "Analyse the image, collect indicators, then choose the right containment action."
+            ),
+        },
+        "workspace": {
+            "filename": "screenshot_quarterly.png",
+            "file_size": "2.1 MB",
+            "sender": "intern01@acme-fictional.example",
+            "recipient": "external-drop@relay-fictional.example",
+            "entropy_score": "7.94 / 8.0 (high)",
+            "note": "Normal lossless screenshots score 4–6; near-8 suggests embedded payload.",
+        },
+        "required_evidence": ["inspect_metadata", "check_lsb_pattern", "review_sender_history"],
+        "missing_evidence_penalty": -10,
+        "investigations": {
+            "inspect_metadata": _inv(
+                "Inspect Metadata", 10, "File Metadata",
+                [
+                    {"label": "Format", "value": "PNG (lossless)"},
+                    {"label": "Created", "value": "Today 11:28 AM"},
+                    {"label": "Author tag", "value": "Removed / blank"},
+                    {"label": "GPS / EXIF", "value": "Stripped"},
+                ],
+                "Metadata was deliberately stripped — a common step before covert embedding.",
+            ),
+            "check_lsb_pattern": _inv(
+                "Check LSB Pattern", 10, "LSB Analysis",
+                [
+                    {"label": "Method (simulated)", "value": "Least-Significant-Bit substitution"},
+                    {"label": "Affected channels", "value": "R, G, B — all three"},
+                    {"label": "Estimated payload", "value": "~260 KB hidden in pixel LSBs"},
+                ],
+                "Modifying LSBs of every channel can hide ~12% of the image size as data with no visible change.",
+            ),
+            "review_sender_history": _inv(
+                "Review Sender History", 10, "Sender Profile",
+                [
+                    {"label": "Account age", "value": "3 weeks (new hire)"},
+                    {"label": "Previous outbound volume", "value": "Low — internal messages only"},
+                    {"label": "This week", "value": "4 external image sends to the same relay address"},
+                ],
+                "A pattern of repeated external image sends from a new account is a strong signal.",
+            ),
+            "analyse_entropy": _inv(
+                "Analyse Entropy", 8, "Entropy Details",
+                [
+                    {"label": "Image entropy", "value": "7.94 — near-maximum"},
+                    {"label": "Control image (clean screenshot)", "value": "4.8 (typical)"},
+                ],
+                "Near-maximum entropy on a flat-tone screenshot means the pixel bytes are not random noise — they carry structured data.",
+            ),
+            "check_recipient": _inv(
+                "Check Recipient Domain", 7, "Recipient Domain",
+                [
+                    {"label": "Domain", "value": "relay-fictional.example"},
+                    {"label": "Age", "value": "Registered 10 days ago"},
+                    {"label": "MX records", "value": "Points to a free forwarding service"},
+                ],
+                "A newly registered relay domain is a common staging point for covert exfiltration.",
+            ),
+        },
+        "decisions": {
+            "quarantine_and_escalate": _dec(
+                "Quarantine Image & Escalate", "correct", 40,
+                "Covert channel neutralised",
+                "The image was quarantined and the account flagged. The hidden payload cannot reach the relay.",
+                "Exfiltration stopped",
+            ),
+            "allow_send": _dec(
+                "Allow — Looks Like a Screenshot", "unsafe", -30,
+                "Payload delivered",
+                "The image reached the relay. Any hidden payload is now outside your perimeter.",
+                "Exfiltration succeeded",
+            ),
+            "delete_only": _dec(
+                "Delete Without Escalating", "poor", 5,
+                "Incomplete response",
+                "Deleting this message stops one send but leaves the account active for the next attempt.",
+                "No account review",
+            ),
+            "escalate_only": _dec(
+                "Escalate Without Quarantine", "poor", 10,
+                "Delay risk",
+                "Ticket opened but the image was not held. It may be resent before the ticket is reviewed.",
+                "Containment delayed",
+            ),
+        },
+        "scene": _scene([
+            _n("sender", "intern01", 10, 22, 12),
+            _n("image", "PNG (high entropy)", 40, 20, 22),
+            _n("relay", "External relay", 72, 24, 16),
+            _n("dlp", "DLP gateway", 42, 66, 14),
+        ], ["image", "relay"], {
+            "inspect_metadata": "image",
+            "check_lsb_pattern": "image",
+            "review_sender_history": "sender",
+            "analyse_entropy": "dlp",
+            "check_recipient": "relay",
+        }),
+    },
+
+    "stego_audio_covert": {
+        "key": "stego_audio_covert",
+        "domain": "steganography",
+        "activity_type": "simulation",
+        "difficulty": "intermediate",
+        "environment": "Hidden-Data Analysis Console",
+        "workspace_type": "stego",
+        "incident_code": "CQ-SG-002",
+        "severity": "HIGH",
+        "title": "Covert channel in shared audio file",
+        "objective": "Identify echo-hiding signals in a WAV upload and assess whether data was covertly extracted.",
+        "briefing": {
+            "employee": "Shared-drive audit",
+            "department": "Security Operations",
+            "subject": "Internal WAV recording with anomalous frequency bins",
+            "time": "03:50 PM",
+            "summary": (
+                "A weekly team recording was shared on the internal drive. "
+                "Automated tonal analysis flagged unusual energy in the 18–20 kHz range — "
+                "above normal speech. Investigate whether the file carries a covert payload."
+            ),
+        },
+        "workspace": {
+            "filename": "weekly_standup_w42.wav",
+            "file_size": "18.4 MB",
+            "duration": "22 min 06 sec",
+            "sample_rate": "44 100 Hz",
+            "uploader": "contractor_kk@acme-fictional.example",
+            "note": "Normal speech recordings use 0–8 kHz. Energy above 16 kHz is suspicious.",
+        },
+        "required_evidence": ["spectral_analysis", "compare_baseline", "check_uploader"],
+        "missing_evidence_penalty": -10,
+        "investigations": {
+            "spectral_analysis": _inv(
+                "Spectral Analysis", 10, "Frequency Profile",
+                [
+                    {"label": "Speech band (0–8 kHz)", "value": "Normal energy"},
+                    {"label": "18–20 kHz band", "value": "Consistent low-level energy throughout"},
+                    {"label": "Technique (simulated)", "value": "Echo-hiding / near-ultrasonic encoding"},
+                ],
+                "Echo-hiding encodes bits as echo delays imperceptible to human hearing, often leaking energy into ultrasonic bands.",
+            ),
+            "compare_baseline": _inv(
+                "Compare to a Baseline Recording", 10, "Baseline Comparison",
+                [
+                    {"label": "Last week's recording", "value": "0 energy above 16 kHz"},
+                    {"label": "This week", "value": "Sustained 18–20 kHz signal"},
+                ],
+                "A clean reference recording shows zero energy in this band — the anomaly is specific to this file.",
+            ),
+            "check_uploader": _inv(
+                "Check Uploader Profile", 10, "Uploader Profile",
+                [
+                    {"label": "Account type", "value": "Contractor (limited access)"},
+                    {"label": "Access level", "value": "Read-only on most shares — this share allows upload"},
+                    {"label": "Recent activity", "value": "Uploaded 3 audio files in 2 days"},
+                ],
+                "A contractor with read-only access in most areas uploading several audio files quickly is unusual.",
+            ),
+            "check_drive_permissions": _inv(
+                "Check Drive Permissions", 8, "Share Permissions",
+                [
+                    {"label": "Share", "value": "team-recordings (internal only, no external link)"},
+                    {"label": "Upload permission", "value": "All authenticated users — misconfiguration"},
+                ],
+                "Upload permission was left open to all authenticated users, including contractors.",
+            ),
+            "payload_estimate": _inv(
+                "Estimate Payload Capacity", 7, "Capacity Estimate",
+                [
+                    {"label": "Echo-hiding capacity (simulated)", "value": "~1 bit per echo frame"},
+                    {"label": "Estimated hidden data", "value": "Up to 80 KB over 22 minutes"},
+                ],
+                "80 KB is enough for a compressed document or credential dump.",
+            ),
+        },
+        "decisions": {
+            "quarantine_and_review_permissions": _dec(
+                "Quarantine & Fix Share Permissions", "correct", 40,
+                "Channel closed",
+                "The file is held for forensics and the share is restricted to authorised uploaders only.",
+                "Covert channel closed",
+            ),
+            "delete_file": _dec(
+                "Delete the File Only", "poor", 10,
+                "Incomplete fix",
+                "Deleting removes this file but leaves the share open for another upload.",
+                "Root cause unaddressed",
+            ),
+            "dismiss_background_noise": _dec(
+                "Dismiss as Background Noise", "unsafe", -30,
+                "Covert channel remains open",
+                "The anomaly continues unchallenged and the contractor can upload more files.",
+                "No action",
+            ),
+            "block_all_audio": _dec(
+                "Block All Audio Uploads", "poor", 5,
+                "Overly broad",
+                "Blocking all audio prevents legitimate recordings without addressing the permission issue.",
+                "Disproportionate control",
+            ),
+        },
+        "scene": _scene([
+            _n("uploader", "contractor_kk", 10, 24, 12),
+            _n("wav", "WAV (echo-hidden)", 42, 20, 22),
+            _n("drive", "Internal drive", 68, 28, 16),
+            _n("dlp", "Tonal analyser", 44, 68, 14),
+        ], ["wav", "uploader"], {
+            "spectral_analysis": "wav",
+            "compare_baseline": "dlp",
+            "check_uploader": "uploader",
+            "check_drive_permissions": "drive",
+            "payload_estimate": "wav",
+        }),
+    },
+
+    "stego_doc_watermark": {
+        "key": "stego_doc_watermark",
+        "domain": "steganography",
+        "activity_type": "incident",
+        "difficulty": "advanced",
+        "environment": "Hidden-Data Analysis Console",
+        "workspace_type": "stego",
+        "incident_code": "CQ-SG-003",
+        "severity": "HIGH",
+        "title": "Leaked document — trace the insider via watermark",
+        "objective": "Recover a hidden printer watermark from a photographed document and determine which copy was leaked.",
+        "briefing": {
+            "employee": "Legal counsel",
+            "department": "Cobalt Ferry Legal",
+            "subject": "Confidential contract photographed and shared publicly",
+            "time": "09:05 AM",
+            "summary": (
+                "A photograph of a confidential contract appeared on a public forum. "
+                "Each copy was printed with an invisible watermark unique to the recipient. "
+                "Recover the watermark from the photograph and match it to the distribution list."
+            ),
+        },
+        "workspace": {
+            "filename": "contract_photo_leaked.jpg",
+            "file_size": "3.8 MB",
+            "watermark_type": "Printer steganography (yellow-dot matrix)",
+            "copies_distributed": "5 (legal, finance, CEO, board rep, external counsel)",
+            "note": "Many colour laser printers encode the serial number and print time as a near-invisible yellow-dot grid.",
+        },
+        "required_evidence": ["recover_dots", "decode_serial", "match_distribution"],
+        "missing_evidence_penalty": -10,
+        "investigations": {
+            "recover_dots": _inv(
+                "Recover Yellow Dots", 10, "Dot Pattern",
+                [
+                    {"label": "Method (simulated)", "value": "Blue-channel isolation + threshold filter"},
+                    {"label": "Pattern found", "value": "5 × 8 dot matrix — consistent with MIC encoding"},
+                ],
+                "Most colour laser printers embed a Machine Identification Code (MIC) as yellow dots, visible only under blue light or image processing.",
+            ),
+            "decode_serial": _inv(
+                "Decode Printer Serial", 10, "Serial Decode",
+                [
+                    {"label": "Printer serial (decoded)", "value": "CFY-PRN-0042 (fictional)"},
+                    {"label": "Location", "value": "Finance department, floor 3"},
+                    {"label": "Print time", "value": "Yesterday 22:47"},
+                ],
+                "The serial identifies the specific printer. The 22:47 timestamp is outside business hours.",
+            ),
+            "match_distribution": _inv(
+                "Match to Distribution List", 10, "Distribution Match",
+                [
+                    {"label": "Finance copy", "value": "Assigned to: Recipient 3 (fictional)"},
+                    {"label": "Delivery", "value": "Printed from Finance printer — matches MIC"},
+                ],
+                "Only the Finance recipient's copy would be printed on that floor's printer.",
+            ),
+            "check_access_log": _inv(
+                "Check Printer Access Log", 8, "Access Log",
+                [
+                    {"label": "22:47 badge entry", "value": "Finance floor badge swipe — one person"},
+                    {"label": "Known after-hours users", "value": "None scheduled"},
+                ],
+                "Badge and print logs converge on one user account.",
+            ),
+            "verify_photo_metadata": _inv(
+                "Verify Photo Metadata", 7, "Photo Metadata",
+                [
+                    {"label": "Forum upload time", "value": "Today 01:15 AM"},
+                    {"label": "Camera model tag", "value": "Stripped"},
+                    {"label": "GPS", "value": "Not present"},
+                ],
+                "Metadata was stripped before upload, but the dot evidence is in the pixel content, not the metadata.",
+            ),
+        },
+        "decisions": {
+            "report_finance_recipient": _dec(
+                "Report: Finance Recipient Copied Was Leaked", "correct", 40,
+                "Source identified",
+                "Printer serial, floor location and badge log all point to the Finance recipient's copy.",
+                "Supported finding",
+            ),
+            "accuse_without_evidence": _dec(
+                "Name the Person Without the Full Chain", "unsafe", -20,
+                "Premature attribution",
+                "Dot pattern identifies the copy; the access log adds the account. Both are needed before naming anyone.",
+                "Incomplete chain",
+            ),
+            "dismiss_dots_as_artifact": _dec(
+                "Dismiss Dots as JPEG Artifact", "unsafe", -30,
+                "Evidence ignored",
+                "The dot matrix is structured, not random. Dismissing it leaves the insider unidentified.",
+                "Opportunity lost",
+            ),
+            "escalate_to_legal": _dec(
+                "Escalate Full Finding to Legal", "correct", 35,
+                "Proper escalation",
+                "You documented the technical chain and handed it to the right team for action.",
+                "Correct process followed",
+            ),
+        },
+        "scene": _scene([
+            _n("photo", "Leaked photo", 10, 22, 14),
+            _n("dots", "Yellow-dot MIC", 40, 18, 22),
+            _n("printer", "Finance printer", 70, 26, 16),
+            _n("log", "Badge log", 68, 68, 10),
+        ], ["photo", "dots"], {
+            "recover_dots": "dots",
+            "decode_serial": "printer",
+            "match_distribution": "printer",
+            "check_access_log": "log",
+            "verify_photo_metadata": "photo",
+        }),
+    },
 }

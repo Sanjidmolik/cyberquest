@@ -34,6 +34,11 @@ body.cq-mission-page .cq-nav.scrolled {
 .cq-mission[data-theme="network"] { --accent: #3b7de0; --scene: #101a30; --scene-2: #1a2c52; }
 .cq-mission[data-theme="crypto"] { --accent: #8d5cf6; --scene: #1b1230; --scene-2: #312056; }
 .cq-mission[data-theme="stego"] { --accent: #ef8b2a; --scene: #2a1a12; --scene-2: #4a2e18; }
+.cq-mission[data-theme="safety"] { --accent: #14a3a3; --scene: #0f2426; --scene-2: #183d40; }
+.cq-mission[data-theme="malware"] { --accent: #e0702b; --scene: #2a1710; --scene-2: #47281a; }
+.cq-mission[data-theme="device"] { --accent: #2f8fd8; --scene: #0f1f2e; --scene-2: #1a3550; }
+.cq-mission[data-theme="privacy"] { --accent: #d6458f; --scene: #2a1222; --scene-2: #47203a; }
+.cq-mission[data-theme="response"] { --accent: #d93a3a; --scene: #2a1010; --scene-2: #481b1b; }
 
 .cq-board {
   display: grid;

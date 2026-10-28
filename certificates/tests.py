@@ -56,18 +56,17 @@ class EligibilityTests(TestCase):
         self.assertEqual(status["games_completed"], 0)
         self.assertIn("Complete all CyberQuest challenges", status["message"])
 
-    def test_four_of_five_not_eligible(self):
-        for key in REQUIRED[:4]:
+    def test_missing_missions_not_eligible(self):
+        for key in REQUIRED[:-1]:
             GameAttempt.objects.create(user=self.user, game_key=key, score=5, total_questions=5)
         status = get_eligibility_status(self.user)
-        self.assertEqual(status["games_completed"], 4)
+        self.assertEqual(status["games_completed"], len(REQUIRED) - 1)
         self.assertFalse(status["eligible"])
         self.assertIn("Complete all CyberQuest challenges", status["message"])
 
-    def test_five_games_at_79_not_eligible(self):
-        # 4/5 = 80% would pass; use 3/5 = 60% for clear fail, then adjust overall.
-        # Overall of five games at 79%: score 4/5 = 80 rounds — use mixed scores.
-        scores = [4, 4, 4, 4, 3]  # 80,80,80,80,60 → avg 76
+    def test_all_games_below_80_overall_not_eligible(self):
+        # Every mission played, but one at 60% pulls the average below 80.
+        scores = [4] * (len(REQUIRED) - 1) + [3]  # 80 x7, 60 → avg 77.5
         for key, score in zip(REQUIRED, scores):
             GameAttempt.objects.create(user=self.user, game_key=key, score=score, total_questions=5)
         status = get_eligibility_status(self.user)
@@ -76,14 +75,14 @@ class EligibilityTests(TestCase):
         self.assertFalse(status["eligible"])
         self.assertIn("at least 80%", status["message"])
 
-    def test_five_games_exactly_80_eligible(self):
+    def test_all_games_exactly_80_eligible(self):
         _complete_games(self.user, percent=80)
         status = get_eligibility_status(self.user)
         self.assertEqual(status["overall_score"], 80)
         self.assertTrue(status["eligible"])
         self.assertIn("Congratulations", status["message"])
 
-    def test_five_games_at_95_eligible(self):
+    def test_all_games_at_95_eligible(self):
         _complete_games(self.user, percent=100)
         # Override one to get ~95 average still eligible; all 100 → 100
         status = get_eligibility_status(self.user)

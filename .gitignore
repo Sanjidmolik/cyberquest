@@ -69,5 +69,8 @@ media/certificate_templates/*
 !media/certificate_templates/b.pdf
 !media/certificate_templates/bg.jpg
 !media/certificate_templates/design.png
-!media/certificate_templates/new.png_out.html
+!media/certificate_templates/new.png
+
+# Local scratch output (rendered pages may hold personal data)
+_out.html
 courses_backup.json

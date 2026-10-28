@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="{% static 'shared/css/chrome.css' %}?v=nav3">
 {% include "shared/_loading.html" %}
 <link rel="stylesheet" href="{% static 'shared/css/brand-logo.css' %}">
-<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}">
+<link rel="stylesheet" href="{% static 'practice/css/practice.css' %}?v=soc6">
 </head>
 <body class="practice-body">
 {% include "shared/_nav.html" %}
@@ -101,6 +101,63 @@
             <p>{{ session.improvements }}</p>
         </section>
     </div>
+
+    <section class="panel-card replay-card" aria-label="Replay or continue">
+        <p class="panel-title">KEEP PRACTISING · NO TIMER</p>
+        <p>Replay as often as you like and try a different decision to see what happens.</p>
+        <div class="replay-actions">
+            <form method="post" action="{{ start_url }}">
+                {% csrf_token %}
+                <input type="hidden" name="scenario_key" value="{{ scenario.key }}">
+                <button type="submit" class="practice-btn">↻ Replay this scenario</button>
+            </form>
+            {% if next_scenario %}
+            <form method="post" action="{{ start_url }}">
+                {% csrf_token %}
+                <input type="hidden" name="scenario_key" value="{{ next_scenario.key }}">
+                <button type="submit" class="practice-btn ghost">Next in {{ domain.full_label }}: {{ next_scenario.title }} →</button>
+            </form>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if takeaways %}
+    <section class="panel-card takeaways-card">
+        <p class="panel-title">KEY TAKEAWAYS</p>
+        <ul class="takeaway-list">
+            {% for t in takeaways %}<li>{{ t }}</li>{% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    {% if option_review %}
+    <section class="panel-card options-review">
+        <p class="panel-title">EVERY OPTION, EXPLAINED</p>
+        <ul class="option-list">
+            {% for o in option_review %}
+            <li class="option-row quality-{{ o.quality }}{% if o.chosen %} is-chosen{% endif %}">
+                <p class="option-head">
+                    <span class="option-badge">{% if o.quality == "correct" %}Best response{% elif o.quality == "unsafe" %}Unsafe{% else %}Incomplete{% endif %}</span>
+                    <strong>{{ o.label }}</strong>
+                    {% if o.chosen %}<span class="option-you">Your choice</span>{% endif %}
+                </p>
+                <p><em>{{ o.title }}.</em> {{ o.explanation }}</p>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    {% if evidence_notes %}
+    <section class="panel-card evidence-review">
+        <p class="panel-title">WHAT EACH PIECE OF EVIDENCE SHOWED</p>
+        <ul class="evidence-notes">
+            {% for e in evidence_notes %}
+            <li class="{% if e.found %}ok{% else %}miss{% endif %}"><strong>{% if e.found %}✓{% else %}○{% endif %} {{ e.label }}</strong> — {{ e.note }}{% if not e.found %} <span class="muted">(you didn't open this one)</span>{% endif %}</li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
 
     {% if recommendation %}
     <section class="panel-card next-practice-card">

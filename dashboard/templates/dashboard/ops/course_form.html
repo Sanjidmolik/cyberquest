@@ -74,6 +74,12 @@
   {% if form.is_published.help_text %}<small>{{ form.is_published.help_text }}</small>{% endif %}
   {{ form.is_published.errors }}
 
+  <label class="ops-check" for="{{ form.is_coming_soon.id_for_label }}">
+    {{ form.is_coming_soon }} Coming Soon (locked)
+  </label>
+  {% if form.is_coming_soon.help_text %}<small>{{ form.is_coming_soon.help_text }}</small>{% endif %}
+  {{ form.is_coming_soon.errors }}
+
   <p>
     <button type="submit">{% if course %}Save course{% else %}Create course{% endif %}</button>
   </p>

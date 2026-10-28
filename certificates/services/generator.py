@@ -256,6 +256,77 @@ def pdf_bytes_to_png(pdf_bytes: bytes, zoom: float = 2.0) -> bytes:
         doc.close()
 
 
+# Score ring printed on CyberQuest_Certificate_of_Achievement.pdf, measured in
+# PDF points from the top-left. The template draws it as a full circle.
+SCORE_RING = {"cx": 420.75, "cy": 364.5, "r": 25.125, "width": 2.25}
+RING_INNER_EDGE = (24 / 255, 13 / 255, 45 / 255)  # dark disk just inside the ring
+RING_GLOW_EDGE = (59 / 255, 36 / 255, 113 / 255)  # glow just outside the ring
+RING_TRACK = (76 / 255, 52 / 255, 148 / 255)      # #4C3494; #3A2668 vanished into the glow
+RING_PROGRESS = (124 / 255, 77 / 255, 255 / 255)  # #7C4DFF, the template's ring colour
+RING_LABEL = (164 / 255, 140 / 255, 255 / 255)    # #A48CFF
+
+
+def _score_ring_clip():
+    ring = SCORE_RING
+    return pymupdf.Rect(ring["cx"] - ring["r"], ring["cy"] - ring["r"], ring["cx"] + ring["r"], ring["cy"] + ring["r"])
+
+
+def _measure_font(fontname: str):
+    """pymupdf.Font matching a name returned by _pick_fonts, for text widths."""
+    paths = _font_paths()
+    files = {
+        "cqdisp": paths["display"] if paths["display"].is_file() else paths["display_regular"],
+        "cqbold": paths["bold"],
+        "cqreg": paths["regular"],
+    }
+    path = files.get(fontname)
+    if path is not None and path.is_file():
+        return pymupdf.Font(fontfile=str(path))
+    return pymupdf.Font("helv")
+
+
+def _draw_centered_text(page, cx, baseline, text, fontname, size, color, spacing=0.0):
+    """Draw text centred on cx. Optional letter spacing is drawn glyph by glyph."""
+    font = _measure_font(fontname)
+    widths = [font.text_length(char, fontsize=size) for char in text]
+    total = sum(widths) + spacing * max(0, len(text) - 1)
+    x = cx - total / 2
+    if not spacing:
+        page.insert_text((x, baseline), text, fontname=fontname, fontsize=size, color=color)
+        return
+    for char, width in zip(text, widths):
+        page.insert_text((x, baseline), char, fontname=fontname, fontsize=size, color=color)
+        x += width + spacing
+
+
+def _draw_score_ring(page, score: int, fontname: str):
+    """Progress ring: a dim track, then an arc for score% clockwise from the top."""
+    ring = SCORE_RING
+    cx, cy, r, w = ring["cx"], ring["cy"], ring["r"], ring["width"]
+    center = pymupdf.Point(cx, cy)
+    score = max(0, min(100, int(score)))
+
+    shape = page.new_shape()
+    # Paint over the template's full ring, matching the colours on either side of it.
+    shape.draw_circle(center, r - w / 3)
+    shape.finish(color=RING_INNER_EDGE, width=w * 0.75, fill=None)
+    shape.draw_circle(center, r + w / 3)
+    shape.finish(color=RING_GLOW_EDGE, width=w * 0.75, fill=None)
+    shape.draw_circle(center, r)
+    shape.finish(color=RING_TRACK, width=w, fill=None)
+    if score >= 100:
+        shape.draw_circle(center, r)
+        shape.finish(color=RING_PROGRESS, width=w, fill=None)
+    elif score > 0:
+        # PyMuPDF's y axis points down, so a negative angle runs clockwise on the page.
+        shape.draw_sector(center, pymupdf.Point(cx, cy - r), -score * 3.6, fullSector=False)
+        shape.finish(color=RING_PROGRESS, width=w, fill=None, lineCap=1, closePath=False)
+    shape.commit(overlay=True)
+
+    _draw_centered_text(page, cx, cy + 1.5, f"{score}%", fontname, 13, (1, 1, 1))
+    _draw_centered_text(page, cx, cy + 10.5, "SCORE", fontname, 5.2, RING_LABEL, spacing=1.0)
+
+
 def _fill_achievement_template(template_path: str, payload: dict, qr_png: bytes, field_config: dict | None = None) -> bytes:
     """
     Stamp the permanent dark certificate. Coordinates are PDF points from the
@@ -268,21 +339,20 @@ def _fill_achievement_template(template_path: str, payload: dict, qr_png: bytes,
         if doc.page_count < 1:
             raise ValueError("Certificate template PDF has no pages.")
         page = doc[0]
-        score_cover = (34 / 255, 18 / 255, 62 / 255)
-        hits = page.search_for("__%")
+        # Remove the printed "__%" and "SCORE" text only: no fill, so nothing
+        # is painted over the ring, and no vector art is touched.
+        hits = page.search_for("__%") + page.search_for("SCORE", clip=_score_ring_clip())
         for rect in hits:
-            pad = pymupdf.Rect(rect.x0 - 2, rect.y0 - 1, rect.x1 + 6, rect.y1 + 1)
-            page.add_redact_annot(pad, fill=score_cover)
+            page.add_redact_annot(rect, fill=False)
         if hits:
-            page.apply_redactions(images=0)
-        else:
-            page.draw_circle(pymupdf.Point(421, 360), 16, color=None, fill=score_cover)
+            page.apply_redactions(images=0, graphics=0, text=0)
 
         fonts = _pick_fonts(page)
         cfg = _merge_field_config(ACHIEVEMENT_FIELD_CONFIG, field_config)
+        _draw_score_ring(page, payload["score"], fonts["display"])
         _draw_configured_fields(
             page, cfg, payload, qr_png, fonts,
-            keys={"name", "score", "date", "certificate_id"},
+            keys={"name", "date", "certificate_id"},
         )
         if (payload.get("certificate_id") or "").strip() and (payload.get("verify_url") or "").strip() and qr_png:
             spec = cfg["qr"]
@@ -795,7 +865,7 @@ def generate_certificate_pdf(
 
     payload = {
         "recipient_name": recipient_name.strip(),
-        "score": int(score),
+        "score": int(round(score)),
         "certificate_id": certificate_id,
         "issued_date_display": issued_date_display,
         "verify_url": verify_url,

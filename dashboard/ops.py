@@ -80,7 +80,8 @@ def student_directory(query="", status="", level="", activity=""):
     qs = students().annotate(
         course_done=Count(
             "course_progress",
-            filter=Q(course_progress__course__is_published=True),
+            filter=Q(course_progress__course__is_published=True,
+                     course_progress__course__is_coming_soon=False),
             distinct=True,
         ),
     )
@@ -250,14 +251,14 @@ def _xp_snapshot(user):
 
 
 def student_learning(user):
-    published = list(Course.objects.filter(is_published=True).order_by("order", "code"))
+    published = list(Course.objects.active().order_by("order", "code"))
     completed = {
         row.course_id: row.completed_at
-        for row in CourseProgress.objects.filter(user=user, course__is_published=True)
+        for row in CourseProgress.objects.filter(user=user, course__in=published)
     }
     readings = {
         row.course_id: row
-        for row in ReadingProgress.objects.filter(user=user, course__is_published=True)
+        for row in ReadingProgress.objects.filter(user=user, course__in=published)
     }
     courses = []
     percents = []
@@ -598,8 +599,10 @@ def overview_kpis():
         UserActivityDay.objects.filter(day__gte=start, user__is_staff=False, user__is_superuser=False)
         .values("user").distinct().count()
     )
-    published = Course.objects.filter(is_published=True).count()
-    completions = CourseProgress.objects.filter(course__is_published=True, user__is_staff=False).count()
+    published = Course.objects.active().count()
+    completions = CourseProgress.objects.filter(
+        course__in=Course.objects.active(), user__is_staff=False
+    ).count()
     possible = published * total_students
     completion_rate = round(completions / possible * 100) if possible else 0
 
@@ -903,9 +906,9 @@ def analytics_report(period=""):
     chart_start = start or (today - timedelta(days=89))
     chart_start_dt = timezone.make_aware(datetime.combine(chart_start, time.min))
     student_n = students().count()
-    published = Course.objects.filter(is_published=True)
+    published = Course.objects.active()
     published_n = published.count()
-    completion_qs = CourseProgress.objects.filter(course__is_published=True, user__in=students())
+    completion_qs = CourseProgress.objects.filter(course__in=published, user__in=students())
     completion_n = completion_qs.count()
     possible = published_n * student_n
     completion_rate = round(completion_n / possible * 100) if possible else None
@@ -1182,6 +1185,8 @@ def manage_course_rows(query="", status=""):
         done = by_id.get(course.id, 0)
         if course.uses_pdf():
             material = "PDF"
+        elif course.has_chapters:
+            material = "Comic chapters"
         elif (course.content or "").strip():
             material = "Text"
         else:
@@ -1207,7 +1212,7 @@ def course_summary():
 
 
 def course_rows():
-    published_ids = Course.objects.filter(is_published=True)
+    published_ids = Course.objects.active()
     progress = (
         CourseProgress.objects.filter(course__in=published_ids)
         .values("course_id")
@@ -1215,7 +1220,7 @@ def course_rows():
     )
     by_id = {row["course_id"]: row for row in progress}
     reading = (
-        Course.objects.filter(is_published=True)
+        Course.objects.active()
         .annotate(readers=Count("reading_progress", distinct=True))
     )
     student_n = students().count() or 1

@@ -1,8 +1,12 @@
 {% extends "dashboard/base_command.html" %}
+{% load static %}
 
 {% block title %}CyberQuest — Command Center{% endblock %}
 {% block body_class %}{% endblock %}
-{% block shell_class %}{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=2">
+{% endblock %}
 
 {% block top_chrome %}
 <header class="topnav">
@@ -12,7 +16,7 @@
     </div>
 
     <form class="topnav-search" action="{% url 'pages:search' %}" method="get">
-        <input type="text" name="q" placeholder="Search missions, courses...">
+        <input type="text" name="q" placeholder="Search missions, courses..." aria-label="Search missions and courses">
         <span class="search-icon">🔍</span>
     </form>
 
@@ -23,11 +27,11 @@
             <span class="theme-label label-day">Day</span>
             <span class="theme-label label-dark">Dark</span>
         </button>
-        <a href="{% url 'notifications:list' %}" class="icon-btn" title="Notifications">
+        <a href="{% url 'notifications:list' %}" class="icon-btn" title="Notifications" aria-label="Notifications{% if unread_notification_count %}, {{ unread_notification_count }} unread{% endif %}">
             🔔
             {% if unread_notification_count %}<span class="badge-dot">{{ unread_notification_count }}</span>{% endif %}
         </a>
-        <a href="{% url 'achievements:list' %}" class="icon-btn" title="Achievements">🏆</a>
+        <a href="{% url 'achievements:list' %}" class="icon-btn" title="Achievements" aria-label="Achievements">🏆</a>
         <div class="topnav-divider"></div>
         <a href="{% url 'accounts:settings' %}" class="user-chip" title="Settings">
             {% if profile_picture %}
@@ -45,216 +49,148 @@
 {% endblock %}
 
 {% block content %}
-        <section class="dash-section" id="overview">
-        <div class="page-header">
-            <div>
-                <h1>Good to see you, <span class="accent-green">{{ display_name }}</span>!</h1>
-                <p class="page-subtitle">Ready to level up your cybersecurity skills today?</p>
-            </div>
-            {% if my_rank %}
-            <div class="rank-card">
-                <span class="rank-icon">🥇</span>
-                <div>
-                    <p class="rank-label">RANK</p>
-                    <p class="rank-value">#{{ my_rank }}</p>
-                </div>
-            </div>
-            {% endif %}
+<div class="cq-dash">
+
+    {# HERO + LEVEL. Optional art: add static/dashboard/img/hero-library.webp and set #}
+    {# style="--hero-img: url(...)" on this section. Until then the gradient shows.    #}
+    <section class="cq-hero dash-section" id="overview" aria-labelledby="cq-hero-name">
+        <div class="cq-hero__intro">
+            <p class="cq-hero__hello">Good to see you,</p>
+            <h1 class="cq-hero__name" id="cq-hero-name">{{ profile.name }}!</h1>
+            <p class="cq-hero__sub">Keep learning, keep practicing, and build a safer digital world.</p>
+            <blockquote class="cq-quote">“{{ quote }}”</blockquote>
         </div>
 
-        <section class="profile-level-card">
-            <div class="profile-block">
-                <div class="avatar-ring" style="--ring-percent: {{ xp_progress_percent }};">
-                    {% if profile_picture %}
-                        <img src="{% url 'accounts:profile_photo' request.user.pk %}" class="avatar-img" alt="">
-                    {% else %}
-                        <span class="avatar-img avatar-fallback">{{ display_name|slice:":1"|upper }}</span>
-                    {% endif %}
-                </div>
-                <div class="profile-info">
-                    <p class="profile-name">{{ display_name }}</p>
-                    <span class="profile-badge">{{ cyber_class_label }}</span>
-                    <div class="profile-stats-row">
-                        <div><strong>{{ level|stringformat:"02d" }}</strong><span>LEVEL</span></div>
-                        <div><strong>{{ xp }}</strong><span>XP</span></div>
-                        <div><strong>{{ total_badges_earned }}</strong><span>BADGES</span></div>
-                    </div>
+        <div class="cq-level">
+            <div class="cq-level__top">
+                <svg width="72" height="80" viewBox="0 0 72 80" aria-hidden="true"><polygon points="36,2 70,20 70,60 36,78 2,60 2,20" fill="#6d28d9" stroke="#c4b5fd" stroke-width="3"/><polygon points="36,14 60,27 60,53 36,66 12,53 12,27" fill="#8b5cf6"/><path d="M36 24l5 11 12 1-9 8 3 12-11-7-11 7 3-12-9-8 12-1z" fill="#fff"/></svg>
+                <div class="cq-level__info">
+                    <div class="cq-level__title">LEVEL {{ profile.level|stringformat:"02d" }}</div>
+                    <div class="cq-level__rank">{{ profile.rank_title }}{% if profile.rank %} · Rank #{{ profile.rank }}{% endif %}</div>
+                    <div class="cq-bar" role="progressbar" aria-label="Progress to the next level" aria-valuenow="{{ profile.xp_pct }}" aria-valuemin="0" aria-valuemax="100"><span style="width: {{ profile.xp_pct }}%"></span></div>
+                    <div class="cq-level__xp">{{ profile.xp }} XP <span>/ {{ profile.xp_next }} XP · {{ profile.xp_remaining }} to go</span></div>
                 </div>
             </div>
-
-            <div class="level-progress-block">
-                <p class="lp-title">LEVEL PROGRESS</p>
-                <p class="lp-level">Level {{ level|stringformat:"02d" }}</p>
-                <p class="lp-xp">{{ xp }} XP <span class="lp-xp-muted">/ {{ level|add:"0" }}00 XP</span></p>
-                <div class="progress-track">
-                    <div class="progress-fill" style="--pct: {{ xp_progress_percent }};"></div>
-                </div>
-                <p class="lp-remaining">{{ xp_remaining }} XP until Level {{ level|add:"1"|stringformat:"02d" }}</p>
-
-                <div class="mini-stats-row">
-                    <div class="mini-stat">
-                        <span class="mini-stat-icon">🎯</span>
-                        <strong>{{ missions_completed }}/{{ total_missions }}</strong>
-                        <span>Missions Played</span>
-                    </div>
-                    <div class="mini-stat">
-                        <span class="mini-stat-icon">🔥</span>
-                        <strong>{{ current_streak }}</strong>
-                        <span>Day Streak</span>
-                    </div>
-                    <div class="mini-stat">
-                        <span class="mini-stat-icon">📊</span>
-                        <strong>{{ average_score }}%</strong>
-                        <span>Average Score</span>
-                    </div>
-                    <div class="mini-stat">
-                        <span class="mini-stat-icon">🛡️</span>
-                        <strong>{{ skills_mastered }}/{{ total_missions }}</strong>
-                        <span>Skills Mastered</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-        </section>
-
-        <section class="dash-section" id="active-missions">
-        <div class="section-heading">
-            <h2>ACTIVE MISSIONS</h2>
-            {% if missions_locked %}
-                <span class="locked-note">🔒 Complete all courses to unlock</span>
-            {% endif %}
-        </div>
-
-        <div class="missions-row">
-            {% for m in active_missions %}
-            {% if m.coming_soon %}
-            <article class="mission-card mission-{{ m.color }} mission-soon"
-               style="--i: {{ forloop.counter0 }};"
-               aria-disabled="true"
-               tabindex="-1">
-                <div class="mission-card-grid"></div>
-                <span class="mission-number">{{ m.number }}</span>
-                <span class="mission-soon-badge">Coming Soon</span>
-                <span class="mission-emoji">{{ m.emoji }}</span>
-                <p class="mission-title">{{ m.name }}</p>
-                <span class="mission-btn mission-btn-soon">COMING SOON</span>
-            </article>
-            {% else %}
-            <a href="{% if not missions_locked %}{% url m.url_name %}{% else %}#{% endif %}"
-               class="mission-card mission-{{ m.color }} {% if missions_locked %}mission-locked{% elif m.attempted %}mission-played{% endif %}"
-               style="--i: {{ forloop.counter0 }};">
-                <div class="mission-card-grid"></div>
-                <span class="mission-number">{{ m.number }}</span>
-                <span class="mission-emoji">{{ m.emoji }}</span>
-                <p class="mission-title">{{ m.name }}</p>
-
-                {% if missions_locked %}
-                    <div class="mission-progress-track"><div class="mission-progress-fill" style="--pct: 0;"></div></div>
-                    <span class="mission-btn mission-btn-locked">🔒 LOCKED</span>
-                {% else %}
-                    <div class="mission-progress-track"><div class="mission-progress-fill" style="--pct: {{ m.progress }};"></div></div>
-                    <span class="mission-pct">{{ m.progress }}%</span>
-                    <span class="mission-btn">{% if m.attempted %}REPLAY{% else %}START{% endif %}</span>
-                {% endif %}
-            </a>
-            {% endif %}
-            {% endfor %}
-        </div>
-        </section>
-
-        <section class="dash-section" id="skill-matrix">
-        <div class="section-heading">
-            <h2>PROGRESS</h2>
-        </div>
-        <div class="two-col-row">
-            <section class="panel-card">
-                <p class="panel-title">RECENT ACTIVITY</p>
-                {% for item in recent_activity %}
-                <div class="activity-row">
-                    <span class="activity-icon">{% if item.kind == 'badge' %}🎖️{% else %}✅{% endif %}</span>
-                    <span class="activity-text">{{ item.text }}</span>
-                    {% if item.xp %}<span class="activity-xp">+{{ item.xp }} XP</span>{% endif %}
-                </div>
-                {% empty %}
-                <p class="empty-note">No activity yet — play a mission to get started!</p>
+            <div class="cq-level__stats">
+                {% for s in stats %}
+                <div class="cq-stat"><b>{{ s.value }}</b><small>{{ s.label }}</small></div>
                 {% endfor %}
-            </section>
-
-            <section class="panel-card skill-matrix-card">
-                <div class="panel-title-row">
-                    <p class="panel-title">SKILL MATRIX</p>
-                </div>
-                <div class="skill-matrix-body">
-                    <div class="skill-bars">
-                        {% for s in skill_matrix %}
-                        <div class="skill-bar-row">
-                            <span class="skill-bar-label">{{ s.label }}</span>
-                            {% if s.coming_soon %}
-                            <div class="skill-bar-track" aria-hidden="true"></div>
-                            <span class="skill-bar-pct">Soon</span>
-                            {% else %}
-                            <div class="skill-bar-track">
-                                <div class="skill-bar-fill skill-{{ s.color }}" style="--pct: {{ s.percent }};"></div>
-                            </div>
-                            <span class="skill-bar-pct">{{ s.percent }}%</span>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-
-                    <svg class="radar-chart" viewBox="0 0 220 220">
-                        {% for ring in radar_grid_rings %}
-                        <polygon points="{{ ring }}" class="radar-grid-ring"></polygon>
-                        {% endfor %}
-                        <polygon points="{{ radar_data_points }}" class="radar-data-shape"></polygon>
-                        {% for skill, point in radar_label_points %}
-                        <circle cx="{{ point.0 }}" cy="{{ point.1 }}" r="2" class="radar-point"></circle>
-                        {% endfor %}
-                    </svg>
-                </div>
-            </section>
+            </div>
         </div>
-        </section>
-{% endblock %}
+    </section>
 
-{% block right_panel_wrap %}
-    <aside class="right-panel">
-        <section class="panel-card">
-            <div class="panel-title-row">
-                <p class="panel-title">NOTIFICATIONS</p>
-                <a href="{% url 'notifications:list' %}" class="view-all-link">View All</a>
+    {# ACTIVE MISSIONS: bookshelf. Eight missions in course order, then Coming Soon. #}
+    <section class="cq-panel cq-shelf dash-section" id="active-missions" aria-labelledby="cq-missions-title">
+        <div class="cq-panel__head">
+            <h2 class="cq-title cq-title--lg" id="cq-missions-title">ACTIVE MISSIONS</h2>
+            {% if missions_locked %}<span class="cq-note">🔒 Finish a course to unlock its mission</span>{% endif %}
+            <a href="{% url 'courses:intro' %}" class="cq-link">Course library</a>
+        </div>
+        <div class="cq-shelf__scroll">
+            <ul class="cq-shelf__row">
+                {% for book in books %}
+                <li class="cq-book-slot" style="--top: {{ book.cover_top }}; --bottom: {{ book.cover_bottom }}; --accent: {{ book.accent }};">
+                    <div class="cq-book">
+                        <div class="cq-book__body{% if book.locked %} is-locked{% endif %}">
+                            <span class="cq-book__pages" aria-hidden="true"></span>
+                            <div class="cq-book__cover">
+                                <span class="cq-book__num">{{ book.code }}</span>
+                                <span class="cq-book__title">{{ book.title }}</span>
+                                {% include "dashboard/partials/mission_icon.html" with icon=book.icon %}
+                                {% if book.locked %}<span class="cq-book__soon">Coming soon</span>{% elif book.course_locked %}<span class="cq-book__soon">🔒 Locked</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cq-plank" aria-hidden="true"></div>
+                    <div class="cq-plaque">
+                        <div class="cq-plaque__progress">
+                            <span>{{ book.percent_label }}</span>
+                            <div class="cq-bar cq-bar--accent"><span style="width: {{ book.percent }}%"></span></div>
+                        </div>
+                        {% if book.locked %}
+                            <button type="button" class="cq-btn" disabled>Coming soon<span class="cq-sr">: {{ book.title }}</span></button>
+                        {% else %}
+                            <a href="{{ book.url }}" class="cq-btn cq-btn--{{ book.status }}">{{ book.cta }}<span class="cq-sr"> for {{ book.title }}</span></a>
+                        {% endif %}
+                        <p>{{ book.description }}</p>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </section>
+
+    {# PROGRESS: activity, skill matrix, badges, leaderboard #}
+    <section class="cq-grid dash-section" id="skill-matrix" aria-label="Progress">
+
+        <div class="cq-panel">
+            <div class="cq-panel__head"><h2 class="cq-title">RECENT ACTIVITY</h2></div>
+            <ol class="cq-list">
+                {% for a in activity %}
+                <li class="cq-activity">
+                    <span class="cq-activity__icon cq-activity__icon--{{ a.kind }}" aria-hidden="true">{% if a.kind == "done" %}✓{% else %}★{% endif %}</span>
+                    <span class="cq-activity__text">{{ a.text }}{% if a.xp %} · +{{ a.xp }} XP{% endif %}</span>
+                    <span class="cq-activity__when">{% if a.when %}{{ a.when|timesince }} ago{% endif %}</span>
+                </li>
+                {% empty %}
+                <li class="cq-activity">Start a mission to see your activity here.</li>
+                {% endfor %}
+            </ol>
+        </div>
+
+        <div class="cq-panel">
+            <div class="cq-panel__head"><h2 class="cq-title">SKILL MATRIX</h2><a href="{% url 'certificates:page' %}" class="cq-link">View details</a></div>
+            <div class="cq-skills">
+                <ul class="cq-skills__list">
+                    {% for s in skills %}
+                    <li><span>{{ s.name }}</span><span class="cq-bar cq-bar--sm"><span style="width: {{ s.percent }}%"></span></span><b>{{ s.percent }}%</b></li>
+                    {% endfor %}
+                </ul>
+                <svg class="cq-radar" width="130" height="130" viewBox="0 0 220 220" role="img" aria-label="Skill radar chart">
+                    {% for ring in radar.rings %}<polygon points="{{ ring }}" class="cq-radar__ring{% if forloop.first %} cq-radar__ring--outer{% endif %}" fill="none"/>{% endfor %}
+                    <polygon points="{{ radar.values }}" fill="rgba(139,92,246,0.6)" stroke="#c4b5fd" stroke-width="3" stroke-linejoin="round"/>
+                </svg>
             </div>
-            {% for n in notifications %}
-            <div class="notif-row">
-                <span class="notif-icon">🔔</span>
-                <div>
-                    <p class="notif-text">{{ n.message }}</p>
-                    <span class="notif-time">{{ n.created_at|timesince }} ago</span>
+        </div>
+
+        <div class="cq-panel">
+            <div class="cq-panel__head"><h2 class="cq-title">BADGES</h2><a href="{% url 'achievements:list' %}" class="cq-link">View all {{ profile.badge_count }}</a></div>
+            {% if badges %}
+            <div class="cq-badges">
+                {% for b in badges %}
+                <div class="cq-badge{% if b.locked %} is-locked{% endif %}">
+                    <span class="cq-badge__frame">
+                        <svg width="54" height="60" viewBox="0 0 72 80" aria-hidden="true">
+                            <polygon points="36,2 70,20 70,60 36,78 2,60 2,20" fill="{{ b.color }}" stroke="rgba(255,255,255,0.6)" stroke-width="3"/>
+                            {% if b.locked %}<rect x="24" y="38" width="24" height="20" rx="3" fill="none" stroke="#c9bbf0" stroke-width="4"/><path d="M29 38v-5a7 7 0 0 1 14 0v5" fill="none" stroke="#c9bbf0" stroke-width="4"/>{% endif %}
+                        </svg>
+                        {% if not b.locked %}<span class="cq-badge__icon" aria-hidden="true">{{ b.icon }}</span>{% endif %}
+                    </span>
+                    <span>{{ b.name }}{% if b.locked %}<span class="cq-sr"> (not earned yet)</span>{% endif %}</span>
                 </div>
+                {% endfor %}
             </div>
-            {% empty %}
-            <p class="empty-note">Nothing yet.</p>
-            {% endfor %}
-        </section>
+            {% else %}
+            <p class="cq-empty">No badges yet.</p>
+            {% endif %}
+        </div>
 
-        <section class="panel-card">
-            <div class="panel-title-row">
-                <p class="panel-title">LEADERBOARD</p>
-                <span class="view-all-link muted">All-Time</span>
-            </div>
-            {% for u in top_users %}
-            <div class="leaderboard-row {% if u.pk == request.user.pk %}leaderboard-row-me{% endif %}">
-                <span class="lb-rank">{{ forloop.counter }}</span>
-                {% if u.profile_picture %}
-                    <img src="{% url 'accounts:profile_photo' u.pk %}" class="lb-avatar" alt="">
-                {% else %}
-                    <span class="lb-avatar lb-avatar-fallback">{{ u.username|slice:":1"|upper }}</span>
-                {% endif %}
-                <span class="lb-name">{{ u.username }}</span>
-                <span class="lb-xp">{{ u.xp }} XP</span>
-            </div>
-            {% endfor %}
-            <a href="{% url 'leaderboard:list' %}" class="view-full-btn">VIEW FULL LEADERBOARD</a>
-        </section>
-    </aside>
+        <div class="cq-panel">
+            <div class="cq-panel__head"><h2 class="cq-title">LEADERBOARD</h2><a href="{% url 'leaderboard:list' %}" class="cq-link">View all</a></div>
+            <ol class="cq-list cq-board">
+                {% for p in leaderboard %}
+                <li class="{% if p.is_me %}is-me{% endif %}"{% if p.is_me %} aria-current="true"{% endif %}>
+                    <span class="cq-board__rank">{{ p.rank }}</span>
+                    {% if p.avatar_url %}<img src="{{ p.avatar_url }}" alt="" class="cq-board__av">{% else %}<span class="cq-board__av" aria-hidden="true">{{ p.initial }}</span>{% endif %}
+                    <span class="cq-board__name">{{ p.name }}</span>
+                    <span class="cq-board__xp">{{ p.xp }} XP</span>
+                </li>
+                {% empty %}
+                <li>No players yet.</li>
+                {% endfor %}
+            </ol>
+        </div>
+
+    </section>
+</div>
 {% endblock %}

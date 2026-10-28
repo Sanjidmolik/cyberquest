@@ -23,6 +23,7 @@ class CourseManageForm(forms.ModelForm):
             "pdf_file",
             "order",
             "is_published",
+            "is_coming_soon",
         ]
         labels = {
             "code": "Course code",
@@ -33,6 +34,7 @@ class CourseManageForm(forms.ModelForm):
             "pdf_file": "Learning PDF",
             "order": "Display order",
             "is_published": "Published",
+            "is_coming_soon": "Coming Soon (locked)",
         }
         help_texts = {
             "code": "A short name students can recognize, such as MOD-01.",
@@ -42,6 +44,8 @@ class CourseManageForm(forms.ModelForm):
             "pdf_file": "Optional PDF, up to 25 MB. Students page through the file in the reader.",
             "order": "Lower numbers appear first for students.",
             "is_published": "Published courses are visible to students. A draft stays hidden.",
+            "is_coming_soon": "Shows a locked card on the Coming Soon shelf. Students cannot open it, "
+                              "and it does not count toward progress or unlock its mission.",
         }
         error_messages = {
             "code": {"unique": "A course with this code already exists."},

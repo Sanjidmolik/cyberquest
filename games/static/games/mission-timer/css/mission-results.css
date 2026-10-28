@@ -17,6 +17,11 @@
 .cq-result[data-theme="network"] { --accent: #2f6fe0; --scene: #122848; }
 .cq-result[data-theme="crypto"] { --accent: #8b4fd6; --scene: #2a1848; }
 .cq-result[data-theme="stego"] { --accent: #ef8b2a; --scene: #3a2414; }
+.cq-result[data-theme="safety"] { --accent: #14a3a3; --scene: #12302f; }
+.cq-result[data-theme="malware"] { --accent: #e0702b; --scene: #3a2114; }
+.cq-result[data-theme="device"] { --accent: #2f8fd8; --scene: #122a42; }
+.cq-result[data-theme="privacy"] { --accent: #d6458f; --scene: #3a1630; }
+.cq-result[data-theme="response"] { --accent: #d93a3a; --scene: #3a1414; }
 
 .cq-result-sheet {
   background:

@@ -12,27 +12,27 @@ leaderboard), it's substituted with the closest real metric instead of
 being faked -- see the comments below.
 """
 
-import math
 import random
 from django.contrib.auth import get_user_model
 
 from games.models import GameAttempt
-from games.registry import GAMES_REGISTRY, playable_games
+from games.registry import GAMES_REGISTRY, active_games, coming_soon_games, playable_games
 from achievements.models import UserBadge
 from notifications.models import Notification
-from courses.progress import has_completed_all_courses
+from courses.progress import unlocked_game_keys
 
 UserModel = get_user_model()
 
-# Assign each real game a color, matching the design brief's per-mission
-# color system as closely as the 6 games we actually have allow.
+# Mission card colours, cycling through the six accent colours in course order.
 GAME_THEME_COLORS = {
-    "phishing_simulator": "green",
-    "password_cracker": "cyan",
-    "network_defense": "purple",
-    "cryptography": "amber",
-    "osint": "teal",
-    "steganography": "rose",
+    "online_safety": "green",
+    "phishing_simulator": "cyan",
+    "password_cracker": "purple",
+    "malware_defense": "amber",
+    "network_defense": "teal",
+    "device_protection": "rose",
+    "privacy_defense": "green",
+    "incident_response": "cyan",
 }
 
 CYBER_TIPS = [
@@ -80,13 +80,12 @@ def get_dashboard_context(user):
     # "Skills Mastered" = playable games where the best attempt was 80%+ correct.
     skills_mastered = sum(1 for pct in played_scores.values() if pct >= 80)
 
-    # Games unlock TOGETHER once all courses are done (not one-by-one), so
-    # "locked" is a single platform-wide state here, not a per-game one --
-    # this reflects how the real course-gating actually works.
-    missions_locked = not has_completed_all_courses(user)
+    # Each mission unlocks on its own once its course is completed (admins: all).
+    unlocked_keys = unlocked_game_keys(user)
+    missions_locked = not (unlocked_keys & playable_keys)
 
     active_missions = []
-    for index, game in enumerate(GAMES_REGISTRY, start=1):
+    for index, game in enumerate(active_games(), start=1):
         progress = best_by_game.get(game["key"], 0)
         coming_soon = bool(game.get("coming_soon"))
         active_missions.append({
@@ -99,6 +98,7 @@ def get_dashboard_context(user):
             "color": GAME_THEME_COLORS.get(game["key"], "green"),
             "attempted": (not coming_soon) and game["key"] in best_by_game,
             "coming_soon": coming_soon,
+            "locked": (not coming_soon) and game["key"] not in unlocked_keys,
         })
 
     # ---- Skill matrix (same best-attempt data, relabeled for the panel) ----
@@ -107,7 +107,7 @@ def get_dashboard_context(user):
          "percent": 0 if game.get("coming_soon") else best_by_game.get(game["key"], 0),
          "color": GAME_THEME_COLORS.get(game["key"], "green"),
          "coming_soon": bool(game.get("coming_soon"))}
-        for game in GAMES_REGISTRY
+        for game in active_games()
     ]
 
     # ---- Recent activity: real game attempts + real badge unlocks, merged by time ----
@@ -157,6 +157,10 @@ def get_dashboard_context(user):
         "skills_mastered": skills_mastered,
         "missions_locked": missions_locked,
         "active_missions": active_missions,
+        "coming_soon_missions": [
+            {"name": game.get("card_name") or game["name"], "emoji": game["emoji"]}
+            for game in coming_soon_games()
+        ],
         "skill_matrix": skill_matrix,
         "recent_activity": recent_activity,
         "notifications": notifications,
@@ -166,35 +170,3 @@ def get_dashboard_context(user):
         "top_users": top_users,
         "cyber_tip": random.choice(CYBER_TIPS),
     }
-
-
-def build_radar_points(percentages, size=220, max_radius=85):
-    """
-    Compute the SVG polygon 'points' string for a radar/spider chart with
-    len(percentages) axes, evenly spaced around a circle starting at the
-    top. Returns (data_polygon_points, axis_label_positions, grid_rings).
-    """
-    center = size / 2
-    n = len(percentages)
-    angle_step = (2 * math.pi) / n
-
-    def point_at(pct, index):
-        angle = -math.pi / 2 + index * angle_step  # start at top, go clockwise
-        radius = (pct / 100) * max_radius
-        x = center + radius * math.cos(angle)
-        y = center + radius * math.sin(angle)
-        return x, y
-
-    data_points = " ".join(f"{x:.1f},{y:.1f}" for x, y in
-                            (point_at(pct, i) for i, pct in enumerate(percentages)))
-
-    # Label anchor points sit slightly beyond the outer ring (100%)
-    label_points = [point_at(112, i) for i in range(n)]
-
-    # Concentric reference rings at 25/50/75/100%
-    grid_rings = [
-        " ".join(f"{x:.1f},{y:.1f}" for x, y in (point_at(ring_pct, i) for i in range(n)))
-        for ring_pct in (25, 50, 75, 100)
-    ]
-
-    return data_points, label_points, grid_rings

@@ -4,4 +4,5 @@ app_name = "dashboard"
 urlpatterns = [
     path("", views.dashboard_home, name="home"),
     path("analytics/", views.admin_analytics, name="analytics"),
+    path("career/", views.career_compass, name="career"),
 ]

@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from .models import GameAttempt
 from .quiz_data import QUIZ_GAMES
-from .registry import playable_games
+from .registry import active_games, playable_games
 
 METHOD_MANUAL = "manual"
 METHOD_TIMEOUT = "timeout"
@@ -36,8 +36,8 @@ MISSION_THEMES = {
     "password_cracker": {
         "slug": "password",
         "number": "MISSION 2",
-        "title": "PASSWORD CRACKER",
-        "tip": "A stronger password mixes length with uppercase, lowercase, numbers, and symbols.",
+        "title": "ACCOUNT PROTECTION",
+        "tip": "Long, unique passphrases plus MFA keep accounts safe even when one site leaks.",
         "art_alt": "Comic scene of a learner with a lock and a shield",
         "lines": {
             "mastered": ("GREAT EFFORT!", "You worked through the password ideas in this mission."),
@@ -50,13 +50,88 @@ MISSION_THEMES = {
     "network_defense": {
         "slug": "network",
         "number": "MISSION 3",
-        "title": "NETWORK DEFENCE",
+        "title": "WI-FI & NETWORK",
         "tip": "Look for unusual traffic, unknown addresses, and abnormal behavior in the logs.",
         "art_alt": "Comic scene of a learner watching a firewall and network map",
         "lines": {
             "mastered": ("WELL DONE!", "You read the network clues in this mission."),
             "partial": ("GOOD DEFENCE", "Review the traffic you misread, then try again."),
             "zero": ("BACK TO THE LOGS", "The review shows which traffic needed attention."),
+            "timeout": ("TIME'S UP!", "Time's up. Unanswered questions are marked incorrect."),
+            "repeat": ("ALREADY FINISHED", "This attempt was already completed. No new XP was awarded."),
+        },
+    },
+    "online_safety": {
+        "slug": "safety",
+        "art": "stego",
+        "number": "MISSION",
+        "title": "ONLINE SAFETY",
+        "tip": "Check the address bar, trust browser warnings, and pause before you click.",
+        "art_alt": "Comic scene of a learner inspecting details with a magnifying glass",
+        "lines": {
+            "mastered": ("SAFE SURFER!", "You made the safe call in every online moment."),
+            "partial": ("GOOD INSTINCTS", "Review the moments you missed before the next patrol."),
+            "zero": ("PAUSE AND CHECK", "The review shows the safe move for each moment."),
+            "timeout": ("TIME'S UP!", "Time's up. Unanswered questions are marked incorrect."),
+            "repeat": ("ALREADY FINISHED", "This attempt was already completed. No new XP was awarded."),
+        },
+    },
+    "malware_defense": {
+        "slug": "malware",
+        "art": "network",
+        "number": "MISSION",
+        "title": "MALWARE DEFENCE",
+        "tip": "Install only from official sources, keep protection on, and keep a disconnected backup.",
+        "art_alt": "Comic scene of a learner at screens showing a warning sign",
+        "lines": {
+            "mastered": ("THREAT CONTAINED!", "You kept the device and files safe."),
+            "partial": ("SOLID DEFENCE", "Review the threats that slipped through."),
+            "zero": ("REGROUP", "The review shows how to contain each threat."),
+            "timeout": ("TIME'S UP!", "Time's up. Unanswered questions are marked incorrect."),
+            "repeat": ("ALREADY FINISHED", "This attempt was already completed. No new XP was awarded."),
+        },
+    },
+    "device_protection": {
+        "slug": "device",
+        "art": "password",
+        "number": "MISSION",
+        "title": "DEVICE PROTECTION",
+        "tip": "Lock it, encrypt it, update it, and back it up with the 3-2-1 rule.",
+        "art_alt": "Comic scene of a padlock and a shield beside a laptop",
+        "lines": {
+            "mastered": ("LOCKED DOWN!", "Every device in this mission is secure."),
+            "partial": ("NEARLY SECURE", "Review the settings you missed."),
+            "zero": ("CHECK THE SETTINGS", "The review shows the strongest protection for each device."),
+            "timeout": ("TIME'S UP!", "Time's up. Unanswered questions are marked incorrect."),
+            "repeat": ("ALREADY FINISHED", "This attempt was already completed. No new XP was awarded."),
+        },
+    },
+    "privacy_defense": {
+        "slug": "privacy",
+        "art": "stego",
+        "number": "MISSION",
+        "title": "PRIVACY SHIELD",
+        "tip": "Share on purpose: hide contact details, post trips later, and never share codes.",
+        "art_alt": "Comic scene of a learner checking photos with a magnifying glass",
+        "lines": {
+            "mastered": ("PRIVACY PRO!", "Your identity stayed protected."),
+            "partial": ("GOOD SHIELD", "Review the privacy choices you missed."),
+            "zero": ("RAISE THE SHIELD", "The review shows the private choice for each case."),
+            "timeout": ("TIME'S UP!", "Time's up. Unanswered questions are marked incorrect."),
+            "repeat": ("ALREADY FINISHED", "This attempt was already completed. No new XP was awarded."),
+        },
+    },
+    "incident_response": {
+        "slug": "response",
+        "art": "network",
+        "number": "MISSION",
+        "title": "INCIDENT RESPONSE",
+        "tip": "Contain, secure email first, keep evidence, report officially, restore clean.",
+        "art_alt": "Comic scene of a defender watching alerts on several screens",
+        "lines": {
+            "mastered": ("INCIDENT CLOSED!", "You contained and recovered like a pro."),
+            "partial": ("GOOD RESPONSE", "Review the steps you missed."),
+            "zero": ("STAY CALM", "The review shows the right response order."),
             "timeout": ("TIME'S UP!", "Time's up. Unanswered questions are marked incorrect."),
             "repeat": ("ALREADY FINISHED", "This attempt was already completed. No new XP was awarded."),
         },
@@ -91,12 +166,24 @@ MISSION_THEMES = {
     },
 }
 
+# Mission numbers follow the dashboard order, and art defaults to the slug.
+for _number, _game in enumerate(active_games(), start=1):
+    if _game["key"] in MISSION_THEMES:
+        MISSION_THEMES[_game["key"]]["number"] = f"MISSION {_number}"
+for _theme in MISSION_THEMES.values():
+    _theme.setdefault("art", _theme["slug"])
+
 GAME_URL_NAMES = {
     "phishing_simulator": "games:phishing_simulator",
     "password_cracker": "games:password_cracker",
     "network_defense": "games:network_defense",
     "cryptography": "games:cryptography",
     "steganography": "games:steganography",
+    "online_safety": "games:online_safety",
+    "malware_defense": "games:malware_defense",
+    "device_protection": "games:device_protection",
+    "privacy_defense": "games:privacy_defense",
+    "incident_response": "games:incident_response",
 }
 
 
@@ -126,6 +213,7 @@ def timed_game_keys() -> frozenset:
 def theme_for(game_key: str) -> dict:
     return MISSION_THEMES.get(game_key) or {
         "slug": "phishing",
+        "art": "phishing",
         "number": "MISSION",
         "title": game_key.replace("_", " ").upper(),
         "tip": "",

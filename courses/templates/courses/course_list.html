@@ -1,49 +1,159 @@
 {% extends "dashboard/base_command.html" %}
 {% load static %}
 
-{% block title %}CyberQuest — Courses{% endblock %}
-{% block context_name %}Learn{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">{% endblock %}
+{% block title %}CyberQuest — The Cyber Archive{% endblock %}
+{% block context_name %}Learn · The Cyber Archive{% endblock %}
+{% block body_class %}command-child lib-page{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'courses/css/library.css' %}?v=3">
+{% endblock %}
 
 {% block content %}
-<div class="cq-container command-page-inner" style="max-width:750px;">
-  <div class="cq-page-card">
-    <h1 class="cq-heading">Training Courses</h1>
-    <p class="cq-sub">
-      Complete all {{ total_count }} courses before games unlock ({{ done_count }} of {{ total_count }} done).
-    </p>
+<div class="lib" id="lib">
+  <header class="lib-head">
+    <div class="lib-head-copy">
+      <p class="lib-kicker">// Training courses</p>
+      <h1 class="lib-title">The Cyber Archive</h1>
+      <p class="lib-sub">Eight comic books on cyber defence, in learning order. Read each one cover to cover to finish it and unlock any linked mission.</p>
+    </div>
+    <div class="lib-meter">
+      <p class="lib-meter-label"><span>Archive progress</span> <strong>{{ done_count }} / {{ total_count }} completed</strong></p>
+      <div class="lib-meter-track" role="progressbar" aria-label="Books completed" aria-valuemin="0" aria-valuemax="{{ total_count }}" aria-valuenow="{{ done_count }}">
+        <span style="width:{% widthratio done_count total_count|default:1 100 %}%"></span>
+      </div>
+    </div>
+  </header>
 
-    {% for course in courses %}
-      <a href="{% url 'courses:detail' course.code %}" class="course-card {% if course.is_done %}course-done{% endif %}" style="margin-bottom:0.85rem;">
-        <div class="course-card-layout">
-          {% if course.safe_thumbnail_url %}
-            <img class="course-thumb" src="{{ course.safe_thumbnail_url }}" alt="">
-          {% else %}
-            <img class="course-thumb" src="{% static 'courses/img/course-placeholder.svg' %}" alt="">
-          {% endif %}
-          <div class="course-card-copy">
-            <strong>[{{ course.code }}] {{ course.title }}</strong>
-            <p class="cq-body small" style="margin:0.35rem 0 0;">{{ course.short_description }}</p>
+  {% if courses %}
+  <div class="lib-tabs" role="tablist" aria-label="Filter books">
+    <button class="lib-tab" type="button" role="tab" id="lib-tab-all" aria-selected="true" aria-controls="lib-shelf" data-filter="all">All books</button>
+    <button class="lib-tab" type="button" role="tab" id="lib-tab-unread" aria-selected="false" aria-controls="lib-shelf" data-filter="unread" tabindex="-1">Not started</button>
+    <button class="lib-tab" type="button" role="tab" id="lib-tab-done" aria-selected="false" aria-controls="lib-shelf" data-filter="done" tabindex="-1">Completed</button>
+  </div>
+  {% endif %}
+
+  <div class="lib-grid">
+    <section class="lib-shelf" id="lib-shelf" role="tabpanel" aria-labelledby="lib-tab-all">
+      <span class="lib-light" aria-hidden="true"></span>
+      <span class="lib-floor" aria-hidden="true"></span>
+
+      {% for course in courses %}
+      {% if forloop.counter0|divisibleby:3 %}<div class="lib-row"><span class="lib-plank" aria-hidden="true"></span>{% endif %}
+        {% cycle '1' '2' '3' '4' '5' '6' as tone silent %}
+        <div class="lib-slot" data-status="{% if course.is_done %}done{% else %}unread{% endif %}">
+          <button class="book tone-{{ tone }}" type="button"
+                  aria-pressed="false"
+                  aria-label="{{ course.title }}, {{ course.code }}, {% if course.is_done %}completed{% else %}not started{% endif %}"
+                  data-tone="{{ tone }}"
+                  data-vol="VOL.{{ forloop.counter|stringformat:'02d' }}"
+                  data-code="{{ course.code }}"
+                  data-title="{{ course.title }}"
+                  data-summary="{{ course.short_description }}"
+                  data-format="{% if course.has_chapters %}{{ course.chapters.count }} comic chapters{% elif course.uses_pdf %}PDF e-book{% else %}Lesson{% endif %}"
+                  data-unlocks="{{ course.mission_label }}"
+                  data-done="{% if course.is_done %}1{% else %}0{% endif %}"
+                  data-url="{% url 'courses:detail' course.code %}"
+                  data-cover="{% if course.safe_thumbnail_url %}{{ course.safe_thumbnail_url }}{% else %}{% static 'courses/covers/cover_'|add:tone|add:'.svg' %}{% endif %}">
+            <span class="book-3d">
+              <span class="book-spine"></span>
+              <span class="book-front">
+                <img src="{% if course.safe_thumbnail_url %}{{ course.safe_thumbnail_url }}{% else %}{% static 'courses/covers/cover_'|add:tone|add:'.svg' %}{% endif %}" alt="" width="150" height="216">
+                <span class="book-strip"><span>VOL.{{ forloop.counter|stringformat:'02d' }}</span><span class="book-tag">{% if course.is_done %}DONE{% else %}NEW{% endif %}</span></span>
+                <span class="book-fade"><span class="book-code">{{ course.code }}</span><span class="book-name">{{ course.title }}</span></span>
+              </span>
+            </span>
+          </button>
+          <div class="plaque" aria-hidden="true">
+            <span class="plaque-row"><span>{{ course.code }}</span><strong>{% if course.is_done %}100%{% else %}0%{% endif %}</strong></span>
+            <span class="plaque-bar"><span style="width:{% if course.is_done %}100{% else %}0{% endif %}%"></span></span>
           </div>
-          <span class="status-tag {% if course.is_done %}status-done{% else %}status-unread{% endif %}" style="font-size:0.75rem;letter-spacing:1px;white-space:nowrap;">
-            {% if course.is_done %}✔ DONE{% else %}UNREAD{% endif %}
+        </div>
+      {% if forloop.counter|divisibleby:3 or forloop.last %}</div>{% endif %}
+      {% empty %}
+      <p class="lib-empty">No courses published yet.</p>
+      {% endfor %}
+      <p class="lib-empty" id="lib-empty" hidden>No books match this filter.</p>
+    </section>
+
+    {% if courses %}
+    <aside class="stand" id="lib-stand" aria-label="Reading stand" aria-live="polite">
+      <p class="lib-kicker">// Reading stand</p>
+      <div class="stand-display">
+        <div class="book book--lg" id="stand-book" aria-hidden="true">
+          <span class="book-3d">
+            <span class="book-spine"></span>
+            <span class="book-front">
+              <img id="stand-cover" src="" alt="" width="190" height="274">
+              <span class="book-strip"><span id="stand-vol"></span></span>
+              <span class="book-fade"><span class="book-name" id="stand-cover-title"></span></span>
+            </span>
           </span>
         </div>
-      </a>
-    {% empty %}
-      <p class="cq-body">No courses published yet.</p>
-    {% endfor %}
+      </div>
 
-    <form method="post" style="margin-top:1.5rem;">
-      {% csrf_token %}
-      {% if all_done %}
-        <button type="submit" class="cq-btn" style="width:100%;">Continue to Dashboard →</button>
-      {% else %}
-        <button type="button" class="cq-btn cq-btn-ghost cq-continue-btn" style="width:100%;opacity:0.4;cursor:not-allowed;" disabled>
-          Complete all courses first ({{ done_count }}/{{ total_count }})
-        </button>
-      {% endif %}
-    </form>
+      <p class="stand-meta" id="stand-meta"></p>
+      <h2 class="stand-title" id="stand-title"></h2>
+      <p class="stand-summary" id="stand-summary"></p>
+
+      <div class="stand-status">
+        <p class="stand-status-row"><span id="stand-status"></span><strong id="stand-percent"></strong></p>
+        <div class="stand-bar"><span id="stand-bar"></span></div>
+      </div>
+
+      <a class="stand-btn" id="stand-open" href="#">
+        <span id="stand-open-label">Open book</span>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+
+      <p class="stand-unlock">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.6-1.7"/></svg>
+        <span id="stand-unlock-text">Finish the book to complete this course</span>
+      </p>
+    </aside>
+    {% endif %}
   </div>
+
+  {% if coming_soon %}
+  <section class="soon" aria-labelledby="soon-title">
+    <header class="soon-head">
+      <p class="lib-kicker">// Locked shelf</p>
+      <h2 class="soon-title" id="soon-title">Coming Soon</h2>
+      <p class="lib-sub">These books are not open yet. They will unlock in a future update.</p>
+    </header>
+    <ul class="soon-grid" role="list">
+      {% for course in coming_soon %}
+      {% cycle '4' '5' '6' as soontone silent %}
+      <li class="soon-card" aria-disabled="true">
+        <span class="soon-cover">
+          <img src="{% if course.safe_thumbnail_url %}{{ course.safe_thumbnail_url }}{% else %}{% static 'courses/covers/cover_'|add:soontone|add:'.svg' %}{% endif %}" alt="" width="96" height="138" loading="lazy">
+          <span class="soon-lock" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          </span>
+        </span>
+        <span class="soon-copy">
+          <span class="soon-label">Coming soon</span>
+          <strong class="soon-name">{{ course.title }}</strong>
+          <span class="soon-desc">{{ course.short_description }}</span>
+          <span class="soon-state"><span class="visually-hidden">{{ course.title }} is </span>Locked</span>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <form method="post" class="lib-continue">
+    {% csrf_token %}
+    {% if all_done %}
+      <button type="submit" class="lib-continue-btn">Continue to Dashboard <span aria-hidden="true">→</span></button>
+    {% else %}
+      <button type="button" class="lib-continue-btn" disabled>
+        Complete all courses first ({{ done_count }}/{{ total_count }})
+      </button>
+    {% endif %}
+  </form>
 </div>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'courses/js/library.js' %}?v=3"></script>{% endblock %}

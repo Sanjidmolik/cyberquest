@@ -18,8 +18,8 @@ class MissionTimerTests(TestCase):
             email="timer@example.com", password="pass12345", username="timeruser",
         )
         self.client.login(email="timer@example.com", password="pass12345")
-        self.url = reverse("games:steganography")
-        self.patcher = patch("games.views.has_completed_all_courses", return_value=True)
+        self.url = reverse("games:online_safety")
+        self.patcher = patch("games.views.is_game_unlocked", return_value=True)
         self.patcher.start()
 
     def tearDown(self):
@@ -43,7 +43,7 @@ class MissionTimerTests(TestCase):
 
     def test_start_sets_a_sixty_second_deadline_and_refresh_reuses_it(self):
         self._start()
-        attempt = GameAttempt.objects.get(user=self.user, game_key="steganography")
+        attempt = GameAttempt.objects.get(user=self.user, game_key="online_safety")
         self.assertEqual(attempt.status, GameAttempt.STATUS_IN_PROGRESS)
         delta = (attempt.deadline_at - attempt.started_at).total_seconds()
         self.assertEqual(int(delta), 60)

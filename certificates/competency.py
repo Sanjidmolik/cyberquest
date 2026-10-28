@@ -2,21 +2,25 @@
 certificates/competency.py
 ------------------------------
 ONE JOB: build the "Cyber Competency Profile" data for a certificate --
-5 named skill categories mapped to real game scores, plus an overall
+8 named skill categories (one per curriculum mission) mapped to real game scores, plus an overall
 score and level label. Uses games.stats (the SAME function the
 dashboard's Skill Matrix uses) so the numbers never disagree.
 """
 
 from games.stats import get_best_attempt_percentages
 
-# The five playable missions, in catalog order. OSINT is coming soon and
-# is not part of certificate eligibility.
+# The eight curriculum missions, in course order. A certificate needs every
+# one of them played. Retired missions (Cryptography, Steganography, OSINT)
+# are not part of eligibility; their past scores are kept but not counted.
 CATEGORY_MAP = [
-    {"label": "Phishing", "slug": "phishing", "game_key": "phishing_simulator", "color": "#ff2ec4"},
-    {"label": "Password Security", "slug": "password", "game_key": "password_cracker", "color": "#ff9800"},
-    {"label": "Network Defense", "slug": "network", "game_key": "network_defense", "color": "#3aa0ff"},
-    {"label": "Cryptography", "slug": "cryptography", "game_key": "cryptography", "color": "#39ff88"},
-    {"label": "Steganography", "slug": "steganography", "game_key": "steganography", "color": "#ff4d8d"},
+    {"label": "Online Safety", "slug": "safety", "game_key": "online_safety", "color": "#14a3a3"},
+    {"label": "Phishing & Scams", "slug": "phishing", "game_key": "phishing_simulator", "color": "#ff2ec4"},
+    {"label": "Account Protection", "slug": "password", "game_key": "password_cracker", "color": "#ff9800"},
+    {"label": "Malware Defence", "slug": "malware", "game_key": "malware_defense", "color": "#e0702b"},
+    {"label": "Wi-Fi & Network", "slug": "network", "game_key": "network_defense", "color": "#3aa0ff"},
+    {"label": "Device Protection", "slug": "device", "game_key": "device_protection", "color": "#2f8fd8"},
+    {"label": "Privacy Shield", "slug": "privacy", "game_key": "privacy_defense", "color": "#d6458f"},
+    {"label": "Incident Response", "slug": "response", "game_key": "incident_response", "color": "#d93a3a"},
 ]
 
 

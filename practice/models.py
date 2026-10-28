@@ -10,7 +10,13 @@ class PracticeSession(models.Model):
         ("password", "Password Security"),
         ("network", "Network Defense"),
         ("cryptography", "Cryptography"),
+        ("steganography", "Steganography"),
         ("osint", "OSINT Investigation"),
+        ("safety", "Online Safety"),
+        ("malware", "Malware & Ransomware Defence"),
+        ("device", "Device & Data Protection"),
+        ("privacy", "Social Media & Privacy"),
+        ("response", "Attack Response & Recovery"),
     ]
     ACTIVITY_CHOICES = [
         ("game", "Game"),
@@ -59,3 +65,63 @@ class PracticeSession(models.Model):
         if not self.max_score:
             return 0
         return max(0, min(100, round(self.score / self.max_score * 100)))
+
+
+# ---- Interactive practice sessions (step engine) ----
+# Scenario content lives in practice/scenario_content/*.json and is loaded with
+# `manage.py load_scenarios`. Answers stay on the server: see practice/graders.py.
+
+class Scenario(models.Model):
+    KIND = [("simulation", "Simulation"), ("incident", "Incident"), ("choice", "Choice")]
+
+    slug = models.SlugField(unique=True)
+    # The course this scenario practises. CyberQuest has no separate module model,
+    # so the topic is the Course itself (matched by Course.code when loading).
+    topic = models.ForeignKey("courses.Course", on_delete=models.CASCADE, related_name="practice_scenarios")
+    kind = models.CharField(max_length=12, choices=KIND)
+    title = models.CharField(max_length=160)
+    difficulty = models.CharField(max_length=12)
+    est_minutes = models.PositiveSmallIntegerField()
+    # Kept for the data format, but Practice is self-paced: the engine never shows a countdown.
+    time_limit_sec = models.PositiveIntegerField(null=True, blank=True)
+    xp_reward = models.PositiveIntegerField()
+    content = models.JSONField()  # steps including answers; never sent to the browser as-is
+    version = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ["topic__order", "slug"]
+
+    def __str__(self):
+        return self.slug
+
+
+class Attempt(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="practice_attempts")
+    scenario = models.ForeignKey(Scenario, on_delete=models.CASCADE, related_name="attempts")
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    hearts = models.PositiveSmallIntegerField(default=3)
+    score = models.IntegerField(default=0)
+    state = models.JSONField(default=dict, blank=True)  # branch meters, current scene, results
+    outcome = models.CharField(max_length=20, blank=True)
+    xp_awarded = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-started_at"]
+        indexes = [models.Index(fields=["user", "scenario"])]
+
+    def __str__(self):
+        return f"{self.user_id} {self.scenario_id} {self.outcome or 'in progress'}"
+
+
+class StepAnswer(models.Model):
+    attempt = models.ForeignKey(Attempt, on_delete=models.CASCADE, related_name="answers")
+    step_index = models.PositiveSmallIntegerField()
+    answer = models.JSONField()
+    correct = models.BooleanField(null=True)
+    time_ms = models.PositiveIntegerField(default=0)
+    confidence = models.CharField(max_length=12, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["attempt", "step_index", "pk"]

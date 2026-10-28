@@ -1,19 +1,31 @@
 from django.contrib import admin
-from .models import Course, CourseProgress, ReadingProgress
+from .models import (
+    Chapter, ChapterQuestion, ComicPanel, Course, CourseProgress, ReadingProgress,
+)
+
+
+class ChapterInline(admin.TabularInline):
+    model = Chapter
+    extra = 0
+    fields = ("order", "title")
+    show_change_link = True
 
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("code", "title", "order", "is_published", "content_source")
-    list_editable = ("order", "is_published")
+    list_display = ("code", "title", "order", "is_published", "is_coming_soon", "content_source")
+    list_editable = ("order", "is_published", "is_coming_soon")
+    list_filter = ("is_published", "is_coming_soon")
     ordering = ("order",)
     search_fields = ("code", "title")
+    inlines = [ChapterInline]
     fieldsets = (
-        (None, {"fields": ("code", "title", "short_description", "thumbnail", "order", "is_published")}),
+        (None, {"fields": ("code", "title", "short_description", "summary", "thumbnail", "order",
+                           "is_published", "is_coming_soon")}),
         ("Content — choose ONE", {
             "fields": ("pdf_file", "content"),
-            "description": "Upload a PDF e-book OR type plain text below. "
-                            "If a PDF is uploaded, it takes priority and the plain text is ignored.",
+            "description": "Upload a PDF e-book, add comic chapters below, OR type plain text. "
+                            "A PDF wins over chapters, and chapters win over plain text.",
         }),
     )
 
@@ -29,7 +41,29 @@ class CourseAdmin(admin.ModelAdmin):
 
     @admin.display(description="Content type")
     def content_source(self, obj):
-        return "📕 PDF e-book" if obj.uses_pdf() else "📝 Plain text"
+        if obj.uses_pdf():
+            return "📕 PDF e-book"
+        return "💬 Comic chapters" if obj.has_chapters else "📝 Plain text"
+
+
+class ComicPanelInline(admin.TabularInline):
+    model = ComicPanel
+    extra = 0
+    fields = ("order", "caption", "speech_bubble", "background_color", "bubble_align")
+
+
+class ChapterQuestionInline(admin.StackedInline):
+    model = ChapterQuestion
+    extra = 0
+    fields = ("order", "prompt", "options", "correct_index", "explanation")
+
+
+@admin.register(Chapter)
+class ChapterAdmin(admin.ModelAdmin):
+    list_display = ("course", "order", "title")
+    list_filter = ("course",)
+    ordering = ("course__order", "order")
+    inlines = [ComicPanelInline, ChapterQuestionInline]
 
 
 @admin.register(CourseProgress)

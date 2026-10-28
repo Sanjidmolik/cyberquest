@@ -142,6 +142,13 @@
         }
 
         blocks.forEach(function (block) {
+            /* Comic chapters mark where a new page must start (chapter openers,
+               quiz answers), so an answer is never on the same page as its question. */
+            if (block.classList.contains("cq-break")) {
+                if (current) pages.push(current);
+                current = "";
+                return;
+            }
             const candidate = current + block.outerHTML;
             if (fits(candidate)) {
                 current = candidate;

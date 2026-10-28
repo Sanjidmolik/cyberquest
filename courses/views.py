@@ -1,7 +1,8 @@
 """
 courses/views.py
 -------------------
-course_list()      -- shows all published courses with per-user completion status.
+course_list()      -- shows the active courses (in curriculum order) with per-user
+                       completion status, plus a locked Coming Soon shelf.
 course_detail()    -- the actual book-style reader. Content comes from
                        EITHER an admin-uploaded PDF or plain text (see
                        models.py) -- this view just tells the template
@@ -24,16 +25,17 @@ import json
 from django.db.models import Q
 from django.urls import reverse
 
-from games.registry import GAMES_REGISTRY
 from .models import Course, CourseProgress, ReadingProgress
 from .progress import (
     completed_course_count,
     has_completed_all_courses,
+    missions_by_course_id,
     server_total_pages,
 )
 
-# Existing games the learning book can hand off to. Matching is by the course
-# title or code already stored in the database, not by new lesson text.
+# /learning/<topic>/ aliases onto the course reader. Matching is by the course
+# title or code stored in the database. (The reader's "Start Practice" mission
+# comes from courses.progress.missions_by_course_id instead.)
 LEARNING_TOPICS = {
     "phishing": ("phishing", "games:phishing_simulator", "Phishing Simulator"),
     "password-cracker": ("password", "games:password_cracker", "Password Cracker"),
@@ -43,17 +45,29 @@ LEARNING_TOPICS = {
 }
 
 
-def practice_link_for_course(course):
-    haystack = f"{course.code} {course.title}".lower()
-    for _slug, (hint, url_name, label) in LEARNING_TOPICS.items():
-        if hint in haystack:
-            return reverse(url_name), label
-    for game in GAMES_REGISTRY:
-        if game.get("coming_soon") or not game.get("url_name"):
-            continue
-        if game["key"].split("_")[0] in haystack:
-            return reverse(game["url_name"]), game["name"]
-    return "", ""
+def practice_link_for_course(course, missions=None):
+    """(url, name) of the mission this course unlocks, or ("", "")."""
+    if missions is None:
+        missions = missions_by_course_id()
+    game = missions.get(course.id)
+    if game is None or not game.get("url_name"):
+        return "", ""
+    return reverse(game["url_name"]), game["name"]
+
+
+def _locked_response(request, course, as_json=False):
+    """403 for a Coming Soon course. Enforced here, not only by disabled buttons."""
+    if as_json:
+        return JsonResponse({"error": "This course is coming soon and cannot be opened yet."}, status=403)
+    return render(request, "courses/course_locked.html", {"course": course}, status=403)
+
+
+def _open_course(request, code, as_json=False):
+    """(course, None) when this user may open it, else (None, response)."""
+    course = get_object_or_404(Course, code=code, is_published=True)
+    if not course.is_open_to(request.user):
+        return None, _locked_response(request, course, as_json=as_json)
+    return course, None
 
 
 def _reader_context(request, course):
@@ -68,6 +82,9 @@ def _reader_context(request, course):
         "already_done": already_done,
         "resume_page_index": reading_state.last_page_index,
         "uses_pdf": course.uses_pdf(),
+        "chapters": (
+            course.chapters.prefetch_related("panels", "questions") if course.has_chapters else None
+        ),
         "practice_url": practice_url,
         "practice_label": practice_label,
     }
@@ -78,9 +95,12 @@ def course_list(request):
     completed_codes = set(
         CourseProgress.objects.filter(user=request.user).values_list("course__code", flat=True)
     )
-    courses = Course.objects.filter(is_published=True)
+    courses = list(Course.objects.active().order_by("order", "code"))
+    missions = missions_by_course_id()
     for course in courses:
         course.is_done = course.code in completed_codes
+        course.mission_label = practice_link_for_course(course, missions)[1]
+    coming_soon = list(Course.objects.coming_soon().order_by("order", "code"))
 
     done_count, total_count = completed_course_count(request.user)
     all_done = has_completed_all_courses(request.user)
@@ -89,7 +109,7 @@ def course_list(request):
         return redirect("dashboard:home")
 
     return render(request, "courses/course_list.html", {
-        "courses": courses, "done_count": done_count,
+        "courses": courses, "coming_soon": coming_soon, "done_count": done_count,
         "total_count": total_count, "all_done": all_done,
     })
 
@@ -110,13 +130,9 @@ def course_detail(request, code):
     course without at least having every page pass in front of them,
     which is a much better experience than staring at a countdown.
     """
-    course = get_object_or_404(Course, code=code, is_published=True)
-    already_done = CourseProgress.objects.filter(user=request.user, course=course).exists()
-
-    reading_state, _ = ReadingProgress.objects.get_or_create(
-        user=request.user, course=course, defaults={"last_page_index": 0}
-    )
-
+    course, denied = _open_course(request, code)
+    if denied:
+        return denied
     return render(request, "courses/course_reader.html", _reader_context(request, course))
 
 
@@ -135,6 +151,8 @@ def learning_course(request, topic):
     )
     if course is None:
         return render(request, "courses/course_reader.html", {"load_error": True, "course": None}, status=404)
+    if not course.is_open_to(request.user):
+        return _locked_response(request, course)
     return render(request, "courses/course_reader.html", _reader_context(request, course))
 
 
@@ -142,7 +160,9 @@ def learning_course(request, topic):
 @require_POST
 def save_reading_progress(request, code):
     """Called by reader.js after every page flip. Fire-and-forget -- never blocks reading."""
-    course = get_object_or_404(Course, code=code, is_published=True)
+    course, denied = _open_course(request, code, as_json=True)
+    if denied:
+        return denied
     total = server_total_pages(course)
     try:
         page_index = int(json.loads(request.body).get("page_index", 0))
@@ -178,7 +198,9 @@ def mark_course_complete(request, code):
     Page totals come from the stored course/PDF on the server — client
     ``total_pages`` is ignored.
     """
-    course = get_object_or_404(Course, code=code, is_published=True)
+    course, denied = _open_course(request, code, as_json=True)
+    if denied:
+        return denied
     total_pages = server_total_pages(course)
 
     try:
@@ -238,6 +260,9 @@ def _serve_course_field(request, code, field_name):
     course = _course_for_media(request.user, code)
     if course is None:
         raise Http404("Course not found.")
+    # The cover may show on a locked card; the book itself may not be read.
+    if field_name != "thumbnail" and not course.is_open_to(request.user):
+        return _locked_response(request, course)
     from cyberquest.media_access import serve_stored_file
 
     response = serve_stored_file(getattr(course, field_name))

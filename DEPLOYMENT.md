@@ -89,7 +89,7 @@ and whether a payment method is required before relying on it.
 
 | Step | Command | Where |
 |---|---|---|
-| Build | `./build.sh` (install, `npm install`, `collectstatic`, `check --deploy`, `migrate`) | Render build command |
+| Build | `./build.sh` (install, `npm install`, `collectstatic`, `check --deploy`, `migrate`, `sync_curriculum`, `load_scenarios`, `convert_scenarios`) | Render build command |
 | Start | `gunicorn cyberquest.wsgi:application -c deploy/gunicorn.conf.py` | Render start command |
 | Health check | `/healthz/` | Render → Settings → Health Check Path |
 | Retention cleanup | `python manage.py purge_expired_data` (daily) | Render cron job, or the service shell |

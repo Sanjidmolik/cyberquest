@@ -231,6 +231,56 @@ body.theme-dark .cq-sheet h1 {
 .cq-practice { margin-top: 24px; }
 .cq-measurer { position: absolute; visibility: hidden; left: -9999px; top: 0; }
 
+/* ---------- Comic chapters (defence curriculum) ----------
+   Panels keep a light paper colour in every theme, so their ink stays dark. */
+.cq-chapter {
+    margin: 4px 0 12px;
+    font-family: Bangers, "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
+    font-weight: 400;
+    font-size: 1.55rem;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    color: var(--sheet-head);
+}
+.cq-chapter-num { display: block; font-size: 0.75em; color: var(--sheet-label); }
+.cq-panel {
+    position: relative;
+    margin: 0 0 12px;
+    padding: 10px 14px;
+    border: 2px solid #1b0548;
+    border-radius: 12px;
+    background: var(--panel-bg, #FFE7A8);
+    color: #1b0548;
+    box-shadow: 3px 3px 0 #1b0548;
+    line-height: 1.5;
+}
+.cq-panel p { margin: 0; }
+.cq-narration { border-radius: 4px; font-style: italic; }
+.cq-speaker {
+    display: block;
+    font-weight: 700;
+    font-size: 0.8em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.cq-speech.cq-right { margin-left: 12%; text-align: right; }
+.cq-speech.cq-left { margin-right: 12%; }
+.cq-activity { background: #DFF7E6; border-style: dashed; }
+.cq-activity .cq-speaker { color: #14613a; }
+.cq-check-title {
+    margin: 4px 0 6px;
+    font-family: Bangers, "Comic Sans MS", cursive, sans-serif;
+    font-weight: 400;
+    font-size: 1.3rem;
+    letter-spacing: 0.04em;
+    color: var(--sheet-head);
+}
+.cq-check-help { margin: 0 0 10px; font-size: 0.9em; color: var(--sheet-foot); }
+.cq-quiz, .cq-answer { margin: 0 0 12px; }
+.cq-quiz p, .cq-answer p { margin: 0 0 4px; }
+.cq-options { margin: 0; padding-left: 1.6em; }
+.cq-answer { padding-left: 10px; border-left: 4px solid var(--sheet-label); }
+
 /* ---------- PDF pages: the picture fills the whole page ---------- */
 .cq-pdf-sheet {
     padding: 0;

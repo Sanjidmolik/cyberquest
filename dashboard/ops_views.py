@@ -109,7 +109,7 @@ def students(request):
         level = ""
     q = request.GET.get("q", "").strip()
     page = _page(request, student_directory(q, status, level, activity))
-    published = Course.objects.filter(is_published=True).count()
+    published = Course.objects.active().count()
     for learner in page.object_list:
         learner.progress_percent = round(learner.course_done / published * 100) if published else 0
     ctx = _shell(request, "students", "Students")

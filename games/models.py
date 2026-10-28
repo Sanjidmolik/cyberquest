@@ -45,6 +45,11 @@ class GameAttempt(models.Model):
         ("cryptography", "Cryptography Challenge"),
         ("osint", "OSINT Investigation"),
         ("steganography", "Steganography Hunt"),
+        ("online_safety", "Online Safety Patrol"),
+        ("malware_defense", "Malware Defence Drill"),
+        ("device_protection", "Device Lockdown"),
+        ("privacy_defense", "Privacy Shield"),
+        ("incident_response", "Incident Response Drill"),
     ]
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="game_attempts")
     game_key = models.CharField(max_length=50, choices=GAME_CHOICES, db_index=True)

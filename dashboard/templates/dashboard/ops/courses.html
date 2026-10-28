@@ -47,7 +47,9 @@
         <br><small>{{ row.course.code }}</small>
       </td>
       <td>
-        {% if row.course.is_published %}
+        {% if row.course.is_published and row.course.is_coming_soon %}
+        <span class="ops-badge ops-s-draft">Coming Soon</span>
+        {% elif row.course.is_published %}
         <span class="ops-badge ops-s-published">Published</span>
         {% else %}
         <span class="ops-badge ops-s-draft">Draft</span>

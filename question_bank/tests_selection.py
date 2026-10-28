@@ -224,7 +224,7 @@ class BalancedGameplayTests(TestCase):
         self.client.login(email="play@example.com", password="pass12345")
 
     def test_refresh_keeps_same_question_ids(self):
-        with patch("games.views.has_completed_all_courses", return_value=True):
+        with patch("games.views.is_game_unlocked", return_value=True):
             started = self.client.post(reverse("games:phishing_simulator"), {"action": "start"})
             self.assertEqual(started.status_code, 302)
             r1 = self.client.get(reverse("games:phishing_simulator"))
@@ -235,7 +235,7 @@ class BalancedGameplayTests(TestCase):
             self.assertEqual(ids1, ids2)
 
     def test_scoring_unchanged(self):
-        with patch("games.views.has_completed_all_courses", return_value=True):
+        with patch("games.views.is_game_unlocked", return_value=True):
             self.client.post(reverse("games:phishing_simulator"), {"action": "start"})
             res = self.client.get(reverse("games:phishing_simulator"))
             questions = res.context["questions"]

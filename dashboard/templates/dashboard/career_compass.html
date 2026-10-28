@@ -1,0 +1,457 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#701fd3">
+<script>
+(function () {
+  var t = "dark";
+  try { var s = localStorage.getItem("cq_home_theme"); if (s === "light" || s === "dark") t = s; } catch (e) {}
+  document.documentElement.setAttribute("data-theme", t);
+  var m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute("content", t === "light" ? "#f7f1ff" : "#701fd3");
+})();
+</script>
+<title>Career Compass — CyberQuest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'shared/css/theme.css' %}">
+<link rel="stylesheet" href="{% static 'shared/css/chrome.css' %}?v=nav3">
+{% include "shared/_loading.html" %}
+<style>
+/* ── Career Compass page styles ── */
+.cc-main {
+  padding: 2rem 1rem 4rem;
+  max-width: 820px;
+  margin: 0 auto;
+}
+.cc-intro {
+  margin-bottom: 2rem;
+}
+.cc-intro h1 { margin-bottom: .4rem; }
+
+/* Form */
+.cc-form { display: flex; flex-direction: column; gap: 1.4rem; }
+.cc-field { display: flex; flex-direction: column; gap: .35rem; }
+.cc-label {
+  font-size: .8rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: "JetBrains Mono", monospace;
+}
+.cc-input, .cc-textarea, .cc-select {
+  background: var(--surface-2, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .6rem .85rem;
+  color: var(--fg);
+  font-family: inherit;
+  font-size: .95rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color .18s;
+}
+.cc-input:focus, .cc-textarea:focus, .cc-select:focus {
+  outline: none;
+  border-color: var(--lilac, #b57dec);
+}
+.cc-textarea { min-height: 80px; resize: vertical; }
+
+/* Skill rows */
+.skill-list { display: flex; flex-direction: column; gap: .6rem; }
+.skill-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: .5rem;
+  align-items: center;
+}
+.skill-row .cc-input { min-width: 0; }
+.skill-row .cc-select { width: 130px; }
+.remove-skill {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: .4rem .6rem;
+  font-size: .85rem;
+  white-space: nowrap;
+}
+.remove-skill:hover { border-color: #ff4d4f; color: #ff4d4f; }
+.add-skill-btn {
+  margin-top: .4rem;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--lilac, #b57dec);
+  cursor: pointer;
+  padding: .5rem 1rem;
+  font-size: .88rem;
+  text-align: left;
+  width: 100%;
+}
+.add-skill-btn:hover { border-color: var(--lilac, #b57dec); background: rgba(181,125,236,.07); }
+
+/* Errors */
+.cc-errors {
+  background: rgba(255,77,79,.1);
+  border: 1px solid rgba(255,77,79,.35);
+  border-radius: 10px;
+  padding: .8rem 1rem;
+  color: #ff4d4f;
+  list-style: none;
+  margin: 0;
+}
+.cc-errors li::before { content: "⚠ "; }
+
+/* Results */
+.cc-result {
+  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.cc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.4rem 1.6rem;
+}
+.cc-card-title {
+  font-size: .72rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: "JetBrains Mono", monospace;
+  margin-bottom: .6rem;
+}
+.cc-role-name {
+  font-size: 1.6rem;
+  font-family: Bangers, cursive;
+  letter-spacing: .04em;
+  color: var(--lilac, #b57dec);
+  line-height: 1.1;
+  margin-bottom: .4rem;
+}
+.cc-role-desc { color: var(--muted); margin-bottom: .8rem; }
+.cc-meta-row { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+.cc-chip {
+  background: var(--surface-2, rgba(255,255,255,.06));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: .25rem .75rem;
+  font-size: .82rem;
+  white-space: nowrap;
+}
+
+/* Skill gap table */
+.gap-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.gap-table th {
+  text-align: left;
+  font-size: .72rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: .4rem .5rem;
+  border-bottom: 1px solid var(--border);
+}
+.gap-table td { padding: .5rem .5rem; border-bottom: 1px solid var(--border); }
+.gap-table tr:last-child td { border-bottom: none; }
+.gap-bar { background: var(--surface-2, rgba(255,255,255,.06)); border-radius: 6px; height: 8px; width: 100%; overflow: hidden; }
+.gap-bar-fill { height: 100%; background: var(--lilac, #b57dec); border-radius: 6px; }
+.gap-ok { color: #39ff88; }
+
+/* Roadmap */
+.roadmap-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .9rem; }
+.roadmap-step {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: .7rem 1rem;
+  align-items: start;
+  padding: .9rem 1rem;
+  background: var(--surface-2, rgba(255,255,255,.04));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--lilac, #b57dec);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.step-body { min-width: 0; }
+.step-phase {
+  font-size: .8rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .2rem;
+  font-family: "JetBrains Mono", monospace;
+}
+.step-action { font-size: .92rem; line-height: 1.55; }
+.step-weeks {
+  white-space: nowrap;
+  font-size: .78rem;
+  color: var(--muted);
+  padding-top: 4px;
+}
+
+/* Submit button */
+.cc-submit {
+  align-self: flex-start;
+  margin-top: .5rem;
+}
+
+@media (max-width: 480px) {
+  .skill-row { grid-template-columns: 1fr; }
+  .skill-row .cc-select { width: 100%; }
+  .roadmap-step { grid-template-columns: auto 1fr; }
+  .step-weeks { grid-column: 2; padding-top: 0; }
+}
+</style>
+</head>
+<body class="cq-shell">
+
+<nav class="cq-nav" id="cc-nav">
+  {% include "shared/_brand.html" %}
+  <ul class="cq-nav-links">
+    <li><a class="cq-nav-link" href="{% url 'dashboard:home' %}">Dashboard</a></li>
+    <li><a class="cq-nav-link" href="{% url 'courses:intro' %}">Courses</a></li>
+    <li><a class="cq-nav-link" href="{% url 'practice:center' %}">Practice</a></li>
+    <li><a class="cq-nav-link active" href="{% url 'dashboard:career' %}">Career Compass</a></li>
+  </ul>
+  <ul class="cq-nav-auth">
+    <li><form method="post" action="{% url 'accounts:logout' %}" class="logout-form">{% csrf_token %}<button type="submit" class="cq-btn cq-btn-sm logout-btn">Logout</button></form></li>
+  </ul>
+  <div class="cq-nav-tools">
+    <button class="cq-theme-toggle" id="themeToggle" type="button" aria-label="Switch to day mode" title="Switch to day mode">
+      <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.3M12 19.2v2.3M2.5 12h2.3M19.2 12h2.3M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>
+      <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5 8.6 8.6 0 1 0 20.5 14.2z"/></svg>
+      <span class="cq-theme-label">Day</span>
+    </button>
+    <button class="cq-nav-toggle" id="cq-nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+{% include "shared/_toasts.html" %}
+
+<main class="cq-main">
+  <div class="cc-main">
+
+    <div class="cc-intro">
+      <p class="cq-section-title">Career Compass</p>
+      <h1 class="cq-heading">Find your cybersecurity career path</h1>
+      <p class="cq-sub">Tell us about your background. We'll recommend a career role, show your skill gaps, and give you a step-by-step roadmap — no account needed, no paid APIs, just honest guidance.</p>
+    </div>
+
+    {% if errors %}
+    <ul class="cc-errors" role="alert">
+      {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post" action="{% url 'dashboard:career' %}" class="cc-form" id="career-form">
+      {% csrf_token %}
+
+      <div class="cc-field">
+        <label class="cc-label" for="id_subject">University subject / degree</label>
+        <input class="cc-input" type="text" id="id_subject" name="subject"
+               placeholder="e.g. Computer Science, Networking, Mathematics"
+               value="{{ existing.subject|default:'' }}" required>
+      </div>
+
+      <div class="cc-field">
+        <label class="cc-label">Skills &amp; levels</label>
+        <p style="font-size:.82rem;color:var(--muted);margin:.2rem 0 .6rem">Add each skill you already have and your current level.</p>
+        <div class="skill-list" id="skill-list">
+          {% if existing and existing.skills %}
+            {% for s in existing.skills %}
+            <div class="skill-row">
+              <input class="cc-input" type="text" name="skill_{{ forloop.counter0 }}" value="{{ s.skill }}" placeholder="e.g. Python, Networking" required>
+              <select class="cc-select" name="level_{{ forloop.counter0 }}">
+                <option value="beginner"{% if s.level == "beginner" %} selected{% endif %}>Beginner</option>
+                <option value="intermediate"{% if s.level == "intermediate" %} selected{% endif %}>Intermediate</option>
+                <option value="advanced"{% if s.level == "advanced" %} selected{% endif %}>Advanced</option>
+                <option value="expert"{% if s.level == "expert" %} selected{% endif %}>Expert</option>
+              </select>
+              <button type="button" class="remove-skill" aria-label="Remove skill">✕</button>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="skill-row">
+              <input class="cc-input" type="text" name="skill_0" placeholder="e.g. Python, Networking" required>
+              <select class="cc-select" name="level_0">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+                <option value="expert">Expert</option>
+              </select>
+              <button type="button" class="remove-skill" aria-label="Remove skill">✕</button>
+            </div>
+          {% endif %}
+        </div>
+        <button type="button" class="add-skill-btn" id="add-skill">+ Add another skill</button>
+      </div>
+
+      <div class="cc-field">
+        <label class="cc-label" for="id_interests">Interests in cybersecurity</label>
+        <textarea class="cc-textarea" id="id_interests" name="interests"
+                  placeholder="e.g. ethical hacking, incident response, malware analysis, open-source intelligence">{{ existing.interests|default:'' }}</textarea>
+      </div>
+
+      <div class="cc-field">
+        <label class="cc-label" for="id_experience">Relevant experience</label>
+        <textarea class="cc-textarea" id="id_experience" name="experience"
+                  placeholder="e.g. completed a CTF, worked in IT support, built a home lab, studied for Security+">{{ existing.experience|default:'' }}</textarea>
+      </div>
+
+      <div class="cc-field" style="max-width:240px">
+        <label class="cc-label" for="id_study_hours">Available study hours per week</label>
+        <input class="cc-input" type="number" id="id_study_hours" name="study_hours"
+               min="1" max="80" value="{{ existing.study_hours|default:'5' }}">
+      </div>
+
+      <button type="submit" class="cq-btn cc-submit">Generate my roadmap →</button>
+    </form>
+
+    {% if result %}
+    <div class="cc-result" id="cc-result">
+
+      <div class="cc-card">
+        <p class="cc-card-title">Recommended career role</p>
+        <p class="cc-role-name">{{ result.career_role }}</p>
+        <p class="cc-role-desc">{{ result.description }}</p>
+        <div class="cc-meta-row">
+          <span class="cc-chip">💰 {{ result.avg_salary }}</span>
+          {% for cert in result.certifications %}
+          <span class="cc-chip">🎓 {{ cert }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="cc-card">
+        <p class="cc-card-title">Skill gap analysis</p>
+        {% if result.skill_gaps %}
+        <table class="gap-table">
+          <thead>
+            <tr>
+              <th>Skill</th>
+              <th>Your level</th>
+              <th>Needed</th>
+              <th style="min-width:100px">Gap</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for gap in result.skill_gaps %}
+            <tr>
+              <td>{{ gap.skill }}</td>
+              <td>{{ gap.current }}/5</td>
+              <td>{{ gap.needed }}/5</td>
+              <td>
+                <div class="gap-bar">
+                  <div class="gap-bar-fill" style="width:{{ gap.gap|floatformat:0 }}0%"></div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="gap-ok">✓ Your current skills already meet the requirements for this role. Keep them sharp!</p>
+        {% endif %}
+      </div>
+
+      <div class="cc-card">
+        <p class="cc-card-title">Your learning roadmap</p>
+        <ol class="roadmap-steps">
+          {% for step in result.learning_roadmap %}
+          <li class="roadmap-step">
+            <span class="step-num">{{ forloop.counter }}</span>
+            <div class="step-body">
+              <p class="step-phase">{{ step.phase }}</p>
+              <p class="step-action">{{ step.action }}</p>
+            </div>
+            <span class="step-weeks">~{{ step.weeks }}w</span>
+          </li>
+          {% endfor %}
+        </ol>
+      </div>
+
+      {% if existing.updated_at %}
+      <p style="font-size:.78rem;color:var(--muted);text-align:right">
+        Last updated {{ existing.updated_at|date:"j M Y, H:i" }} · <a href="#career-form">Update my inputs</a>
+      </p>
+      {% endif %}
+
+    </div>
+    {% endif %}
+
+  </div>
+</main>
+
+<script>
+(function () {
+  var list = document.getElementById("skill-list");
+  var counter = list ? list.querySelectorAll(".skill-row").length : 1;
+
+  function bindRemove(row) {
+    var btn = row.querySelector(".remove-skill");
+    if (btn) btn.addEventListener("click", function () {
+      row.remove();
+      renumber();
+    });
+  }
+
+  function renumber() {
+    var rows = list.querySelectorAll(".skill-row");
+    rows.forEach(function (row, idx) {
+      var inputs = row.querySelectorAll("input, select");
+      inputs.forEach(function (el) {
+        el.name = el.name.replace(/_\d+$/, "_" + idx);
+      });
+    });
+    counter = rows.length;
+  }
+
+  list && list.querySelectorAll(".skill-row").forEach(bindRemove);
+
+  var addBtn = document.getElementById("add-skill");
+  if (addBtn) addBtn.addEventListener("click", function () {
+    var row = document.createElement("div");
+    row.className = "skill-row";
+    row.innerHTML =
+      '<input class="cc-input" type="text" name="skill_' + counter + '" placeholder="e.g. Python, Networking" required>' +
+      '<select class="cc-select" name="level_' + counter + '">' +
+        '<option value="beginner">Beginner</option>' +
+        '<option value="intermediate">Intermediate</option>' +
+        '<option value="advanced">Advanced</option>' +
+        '<option value="expert">Expert</option>' +
+      '</select>' +
+      '<button type="button" class="remove-skill" aria-label="Remove skill">✕</button>';
+    list.appendChild(row);
+    bindRemove(row);
+    counter++;
+    row.querySelector("input").focus();
+  });
+
+  // Scroll to result after form submission
+  var result = document.getElementById("cc-result");
+  if (result) result.scrollIntoView({ behavior: "smooth", block: "start" });
+})();
+</script>
+<script src="{% static 'home_page/js/theme.js' %}"></script>
+<script src="{% static 'shared/js/chrome.js' %}?v=nav2"></script>
+</body>
+</html>

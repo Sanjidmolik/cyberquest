@@ -1,14 +1,4 @@
 {% load static %}
 <figure class="cq-scene cq-scene-{{ theme.slug }}">
-  {% if theme.slug == "phishing" %}
-  <img src="{% static 'games/mission-timer/assets/art/phishing.jpg' %}" alt="" width="1200" height="900">
-  {% elif theme.slug == "password" %}
-  <img src="{% static 'games/mission-timer/assets/art/password.jpg' %}" alt="" width="1200" height="900">
-  {% elif theme.slug == "network" %}
-  <img src="{% static 'games/mission-timer/assets/art/network.jpg' %}" alt="" width="1200" height="900">
-  {% elif theme.slug == "crypto" %}
-  <img src="{% static 'games/mission-timer/assets/art/crypto.jpg' %}" alt="" width="1200" height="900">
-  {% else %}
-  <img src="{% static 'games/mission-timer/assets/art/stego.jpg' %}" alt="" width="1200" height="900">
-  {% endif %}
+  <img src="{% static 'games/mission-timer/assets/art/' %}{{ theme.art|default:theme.slug }}.jpg" alt="" width="1200" height="900">
 </figure>
