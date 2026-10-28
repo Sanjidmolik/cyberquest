@@ -132,6 +132,11 @@ WSGI_APPLICATION = 'cyberquest.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+#
+# Chosen by DATABASE_URL. Unset: the local SQLite file db.sqlite3 (development and tests).
+# MySQL 8.0.11+ (the planned production database):
+#   DATABASE_URL=mysql://USER:PASSWORD@HOST:3306/DBNAME
+# Only portable JSONField features are used, so both behave the same.
 
 DATABASES = {
     'default': dj_database_url.config(
@@ -139,6 +144,13 @@ DATABASES = {
         conn_max_age=600,
     )
 }
+if DATABASES["default"]["ENGINE"] == "django.db.backends.mysql":
+    # Full Unicode (Bengali text, emoji) and strict mode, so bad data errors instead of being
+    # silently truncated (Django's mysql.W002 check).
+    DATABASES["default"].setdefault("OPTIONS", {}).update({
+        "charset": "utf8mb4",
+        "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+    })
 
 # Shared across Gunicorn workers and still present after a process restart.
 # LocMemCache is per-process, so login limits and verification-code attempt

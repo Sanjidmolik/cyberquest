@@ -128,7 +128,7 @@ class SeedRuleTests(TestCase):
         self.assertNotEqual(json.dumps(shuffled), json.dumps(content))     # really reordered
         self.assertEqual(content_hash(shuffled), content_hash(content))
         self.assertEqual(content_hash(json.loads(json.dumps(content, indent=4))), content_hash(content))
-        # A seed row whose stored JSON comes back reordered (PostgreSQL jsonb) is not "hand-edited".
+        # A seed row whose stored JSON comes back reordered (MySQL JSON does this) is not "hand-edited".
         row = Scenario.objects.get(slug=CHOICE)
         Scenario.objects.filter(pk=row.pk).update(content=shuffled)
         _, err = _run("load_scenarios")

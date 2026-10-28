@@ -16,7 +16,7 @@ Status: **signed off**; implementation in progress (see §7).
 | D6 | Commits | Full suite on `fix/audit-phase2`, `git status` reviewed by folder, no secrets / `.env` / `db.sqlite3` / media. One baseline commit "chore: baseline practice engine and audit fixes" on `fix/audit-phase2`, then branch `feat/practice-studio` with one commit per phase. |
 | D7 | Deploys overwriting edits | `Scenario.source` (`seed` / `studio`) plus `content_hash`. `convert_scenarios` and `load_scenarios`: create missing sessions; update a seed session only while `source="seed"`; **never** touch `source="studio"` or a session with published studio versions; log every skip; `--force` only with an explicit slug list. The first studio save sets `source="studio"`. Tests include "running the build twice changes nothing". |
 | D8 | `meta` block | `content["meta"] = {badge, description}`. `public_content()` passes it through (it holds no answer keys; a test checks that). A test checks the player ignores unknown top-level keys. |
-| D9 | Database | PostgreSQL in production, SQLite in tests. Only portable `JSONField` use: no Postgres-only JSON lookups. Docs that say MySQL are corrected. |
+| D9 | Database | **MySQL** (8.0.11+) in production, SQLite locally and in tests, chosen by `DATABASE_URL`. Only portable `JSONField` use (no database-specific JSON lookups). JSON is compared and fingerprinted as canonical JSON, because MySQL's JSON type reorders keys. No deployment for now. |
 
 ## 1. Step types: the exact format the studio reads and writes
 
@@ -178,9 +178,9 @@ Tests run after every phase; one commit per phase on `feat/practice-studio`.
 
 **Commit notes**
 - The HANDOFF.md "MySQL" correction (D9) landed in the baseline commit `14daaf5`, not in the phase 1 commit `b26ffc3` whose message mentions it.
-- Phase 1 fixes (review): canonical-JSON fingerprint test (PostgreSQL jsonb reorders keys); `ScenarioVersion.origin` (seed / studio) with a seed snapshot of every existing version (migration 0008) and on every seed write, so attempts started before a deploy grade on their own content and seed snapshots never block seed updates; wider preview isolation tests; preview runs purged after 7 days by `purge_expired_data`.
+- Phase 1 fixes (review): canonical-JSON fingerprint test (database JSON types reorder keys); `ScenarioVersion.origin` (seed / studio) with a seed snapshot of every existing version (migration 0008) and on every seed write, so attempts started before a deploy grade on their own content and seed snapshots never block seed updates; wider preview isolation tests; preview runs purged after 7 days by `purge_expired_data`.
 
-**Before deploying:** run the full suite once against a local PostgreSQL (jsonb behaves differently from SQLite). Not yet done: this machine has no Docker, PostgreSQL or WSL distribution.
+**Before first deploy: run the full suite against MySQL** (`DATABASE_URL=mysql://... python manage.py test`; see DEPLOYMENT.md section 6). Not done yet: there is no MySQL server here and no deployment is planned for now.
 
 ## 8. Definition of done (as I'll verify it)
 

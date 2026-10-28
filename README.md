@@ -17,7 +17,7 @@ Public site branding also appears as **CyberShield Academy**.
 ## Tech stack
 
 - Python 3 / **Django 6**
-- SQLite locally; PostgreSQL on Render via `dj-database-url`
+- SQLite locally; MySQL (8.0.11+) in production via `DATABASE_URL` and `dj-database-url`
 - Frontend templates + shared theme CSS/JS
 - PyMuPDF + qrcode for certificate PDFs
 - WhiteNoise for static files in production

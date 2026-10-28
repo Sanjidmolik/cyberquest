@@ -14,7 +14,7 @@ def persistent_storage_check(app_configs, **kwargs):
     if on_render and engine.endswith("sqlite3"):
         issues.append(Warning(
             "The database is SQLite on Render, whose filesystem is wiped on every deploy.",
-            hint="Set DATABASE_URL to the Render PostgreSQL connection string.",
+            hint="Set DATABASE_URL to the MySQL connection string (mysql://USER:PASSWORD@HOST:3306/DBNAME).",
             id="cyberquest.W001",
         ))
     uses_r2 = getattr(settings, "MEDIA_STORAGE", "filesystem") == "r2"

@@ -70,12 +70,12 @@ Licences below are read from each installed package's metadata.
 | gunicorn | 26.2.0 | MIT | |
 | idna | 3.19 | BSD-3-Clause | |
 | jmespath | 1.1.0 | MIT | boto3 dependency. |
-| mysqlclient | 2.2.8 | GPL-2.0-or-later | **Unused**: the app runs on SQLite locally and PostgreSQL on Render. GPL-2 obligations attach to distribution, not network use, so this is not a compliance problem today, but removing it from `requirements.txt` would drop a GPL dependency and a native build step. **Recommended.** |
+| mysqlclient | 2.2.8 | GPL-2.0-or-later | The MySQL driver for the planned production database (`DATABASE_URL=mysql://…`). GPL-2 obligations attach to distribution, not network use, so running it as a web service creates no obligation; keep this notice if you ever distribute the app with it. |
 | pillow | 12.1.1 | MIT-CMU | |
-| psycopg2-binary | 2.9.13 | LGPL-3.0 with exceptions | Wheels bundle libpq (PostgreSQL Licence) and OpenSSL. No obligation for network use; keep notices if you ever distribute the wheel. |
+| psycopg2-binary | 2.9.13 | LGPL-3.0 with exceptions | PostgreSQL driver, kept from the earlier hosting plan; unused while the database is SQLite or MySQL. Wheels bundle libpq (PostgreSQL Licence) and OpenSSL. No obligation for network use; keep notices if you ever distribute the wheel. |
 | pycparser | 3.0 | BSD-3-Clause | |
 | PyMuPDF | 1.28.2 | AGPL-3.0 or commercial | See section 1. |
-| PyMySQL | 1.2.0 | MIT | Unused (see mysqlclient). |
+| PyMySQL | 1.2.0 | MIT | Unused: installed locally but not in `requirements.txt`; the app uses mysqlclient. |
 | pyotp | 2.9.0 | MIT | |
 | python-dateutil | 2.9.0.post0 | Apache-2.0 or BSD-3-Clause (dual) | botocore dependency. |
 | python-dotenv | 1.2.2 | BSD-3-Clause | |

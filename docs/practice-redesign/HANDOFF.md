@@ -1,6 +1,6 @@
 # CyberQuest — Practice Session Redesign: Implementation Handoff
 
-Target stack: **Django + PostgreSQL (production) / SQLite (local and tests)** (existing CQ repo; no Bootstrap, the app has its own stylesheets). No React.
+Target stack: **Django + MySQL (production) / SQLite (local and tests)** (existing CQ repo; no Bootstrap, the app has its own stylesheets). No React.
 Approach: one Django app `practice`, one session page, a small vanilla-JS step engine,
 server-side grading. The files in `design/` are the visual reference (markup, CSS,
 animations and interaction logic for every screen). They use a design-tool format
@@ -53,7 +53,7 @@ static/practice/js/steps/*.js              # one renderer per step type
 static/practice/js/hana.js                 # setExpression(el, name)
 ```
 
-### Models (portable JSONField: PostgreSQL in production, SQLite in tests)
+### Models (portable JSONField: MySQL in production, SQLite in tests)
 ```python
 class Scenario(models.Model):
     KIND = [("simulation","Simulation"),("incident","Incident"),("choice","Choice")]
