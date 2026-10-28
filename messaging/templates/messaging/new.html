@@ -1,0 +1,47 @@
+{% extends "dashboard/base_command.html" %}
+{% load static %}
+
+{% block title %}New message — CyberQuest{% endblock %}
+{% block context_name %}Messages{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+<div class="cq-dash msg">
+  <header class="msg-head">
+    <h1 class="cq-title cq-title--lg">NEW MESSAGE</h1>
+    <a class="msg-btn msg-btn--quiet" href="{% url 'messaging:inbox' %}">Back to messages</a>
+  </header>
+  {% if messages %}<ul class="msg-flash">{% for m in messages %}<li class="msg-flash-{{ m.tags }}" role="status">{{ m }}</li>{% endfor %}</ul>{% endif %}
+
+  <section class="cq-panel">
+    <form method="get" class="msg-search" role="search">
+      <label for="msg-find">Find someone by username</label>
+      <input id="msg-find" type="search" name="q" value="{{ query }}" minlength="2" maxlength="50" placeholder="At least 2 letters">
+      <button type="submit" class="msg-btn">Search</button>
+    </form>
+    {% if query %}
+    <ul class="msg-people">
+      {% for p in people %}
+      <li><img class="msg-av" src="{{ p.avatar_url }}" alt=""><span>{{ p.username }}</span><a class="msg-btn msg-btn--quiet" href="?to={{ p.username|urlencode }}">Message</a></li>
+      {% empty %}
+      <li class="msg-empty">No members match “{{ query }}”.</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+
+  <form method="post" class="cq-panel msg-new-form">
+    {% csrf_token %}
+    <label for="msg-to">To (username)</label>
+    <input id="msg-to" name="username" value="{{ to }}" required maxlength="50" autocomplete="off">
+    <label for="msg-new-text">Message</label>
+    <textarea id="msg-new-text" name="text" rows="4" maxlength="{{ max }}" required></textarea>
+    <p class="msg-hint">Text only, up to {{ max }} characters. If they haven’t messaged with you before, this arrives as a request they can accept or decline.</p>
+    <button type="submit" class="msg-btn">Send</button>
+  </form>
+</div>
+{% endblock %}

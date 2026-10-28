@@ -1,0 +1,46 @@
+{% extends "dashboard/base_command.html" %}
+{% load static %}
+
+{% block title %}Message settings — CyberQuest{% endblock %}
+{% block context_name %}Messages{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+<div class="cq-dash msg">
+  <header class="msg-head">
+    <h1 class="cq-title cq-title--lg">MESSAGE SETTINGS</h1>
+    <a class="msg-btn msg-btn--quiet" href="{% url 'messaging:inbox' %}">Back to messages</a>
+  </header>
+  {% if messages %}<ul class="msg-flash">{% for m in messages %}<li class="msg-flash-{{ m.tags }}" role="status">{{ m }}</li>{% endfor %}</ul>{% endif %}
+
+  <form method="post" class="cq-panel msg-settings">
+    {% csrf_token %}
+    <fieldset>
+      <legend>Who can message me</legend>
+      {% for value, label in choices %}
+      <label class="msg-radio"><input type="radio" name="who_can_message" value="{{ value }}"{% if value == who %} checked{% endif %}> {{ label }}</label>
+      {% endfor %}
+      <p class="msg-hint"><strong>Nobody:</strong> no one new can send you a message request. People whose conversation you already accepted can still reply.</p>
+    </fieldset>
+    <button type="submit" class="msg-btn">Save</button>
+  </form>
+
+  <section class="cq-panel">
+    <h2 class="cq-title">Blocked</h2>
+    <p class="msg-hint">Blocked members can’t message you, can’t find you in search, and don’t see your profile card or photo.</p>
+    <ul class="msg-people">
+      {% for username in blocked %}
+      <li><span>{{ username }}</span>
+        <form method="post" action="{% url 'messaging:unblock' %}">{% csrf_token %}<input type="hidden" name="username" value="{{ username }}"><button type="submit" class="msg-btn msg-btn--quiet">Unblock</button></form>
+      </li>
+      {% empty %}
+      <li class="msg-empty">You haven’t blocked anyone.</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

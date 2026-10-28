@@ -42,6 +42,7 @@ urlpatterns = [
     path('', include('pages.urls')),
     path('notifications/', include('notifications.urls')),
     path('leaderboard/', include('leaderboard.urls')),
+    path('messages/', include('messaging.urls')),
     path('certificate/', include('certificates.urls')),
     # Public QR verification URL (canonical for certificate QR codes)
     path('verify/<str:certificate_id>/', verify_certificate, name='certificate_verify'),

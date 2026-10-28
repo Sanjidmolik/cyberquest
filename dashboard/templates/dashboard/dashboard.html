@@ -35,7 +35,7 @@
         <div class="topnav-divider"></div>
         <a href="{% url 'accounts:settings' %}" class="user-chip" title="Settings">
             {% if profile_picture %}
-                <img src="{% url 'accounts:profile_photo' request.user.pk %}" class="user-avatar-sm" alt="">
+                <img src="{% url 'accounts:avatar' request.user.avatar_token %}" class="user-avatar-sm" alt="">
             {% else %}
                 <span class="user-avatar-sm user-avatar-fallback">{{ display_name|slice:":1"|upper }}</span>
             {% endif %}

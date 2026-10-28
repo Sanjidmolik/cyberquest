@@ -31,6 +31,8 @@ lists every variable with blank placeholders.
 |---|---|---|
 | `DEBUG` | yes | `False` in production |
 | `SECRET_KEY` | yes | Long random value. Signs sessions and keys the verification-code hashes |
+| `MESSAGE_ENCRYPTION_KEYS` | yes | Fernet key(s) that encrypt stored message text, newest first. The app refuses to start without one (`messaging.E001`). **Back it up**: if it is lost, stored messages can't be read |
+| `REDIS_URL` | optional | Live message updates across several processes (needs `channels-redis`). Without it, messages arrive by polling |
 | `FIELD_ENCRYPTION_KEYS` | yes | Fernet key that encrypts authenticator secrets. **Back it up**: if it is lost, users with an authenticator app must re-enrol |
 | `DATABASE_URL` | yes | `postgres://USER:PASSWORD@HOST:5432/DBNAME`. (A local `mysql://` URL also works; the app adds `utf8mb4` and strict mode for MySQL itself.) |
 | `MEDIA_ROOT` | yes | Mount path of the persistent disk, e.g. `/var/data/media` |
@@ -51,7 +53,20 @@ Generate the two secrets locally:
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(64))"                               # SECRET_KEY
 python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # FIELD_ENCRYPTION_KEYS
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # MESSAGE_ENCRYPTION_KEYS
 ```
+
+**Generate and back up the message key** before the first deploy, and store it in the
+password manager next to `FIELD_ENCRYPTION_KEYS`. To rotate it: put a new key first in
+`MESSAGE_ENCRYPTION_KEYS` (keep the old ones after it, comma-separated), deploy, run
+`python manage.py rotate_message_keys`, then remove the old keys.
+
+**Messaging transport.** Production stays on Gunicorn (WSGI) for now: messaging works by
+polling (every 4 s in an open, active conversation; 15 s when idle; paused in hidden tabs).
+For instant updates later, run an ASGI server instead (`daphne cyberquest.asgi:application`
+behind the host's HTTPS proxy, so sockets use `wss://`) and, with more than one process,
+set `REDIS_URL` and install `channels-redis`. Message text is encrypted at rest and travels
+over HTTPS/WSS; it is not end-to-end encrypted.
 
 ## 2a. Media storage on Render Free: Cloudflare R2
 
@@ -99,6 +114,7 @@ and whether a payment method is required before relying on it.
 | Health check | `/healthz/` | Render → Settings → Health Check Path |
 | Retention cleanup | `python manage.py purge_expired_data` (daily) | Render cron job, or the service shell |
 | Key rotation | `python manage.py rotate_field_encryption` | Service shell, after changing `FIELD_ENCRYPTION_KEYS` |
+| Message key rotation | `python manage.py rotate_message_keys` | Service shell, after putting a new key first in `MESSAGE_ENCRYPTION_KEYS` |
 
 On paid plans you can move `python manage.py migrate --no-input` out of `build.sh` into
 Render's **Pre-Deploy Command**, so a failed migration stops the release before traffic

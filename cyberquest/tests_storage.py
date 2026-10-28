@@ -230,7 +230,7 @@ class ProfilePhotoAccessTests(RemoteStorageTestCase):
     def test_photo_is_served_privately_through_the_view(self):
         owner = User.objects.create_user(email="owner@example.com", password="x", username="owner")
         owner.profile_picture.save("face.png", ContentFile(_png_bytes((20, 20))), save=True)
-        url = reverse("accounts:profile_photo", args=[owner.pk])
+        url = reverse("accounts:avatar", args=[owner.avatar_token])
         self.assertEqual(self.client.get(url).status_code, 302)  # anonymous
         viewer = User.objects.create_user(email="viewer@example.com", password="x", username="viewer")
         self.client.force_login(viewer)
@@ -373,7 +373,7 @@ class TemplateRemoteStorageTests(RemoteStorageTestCase):
             self.assertEqual(response.status_code, 200, page)
             self.assertNotContains(response, FAKE_BUCKET_HOST)
         self.assertContains(self.client.get(pages[0]), reverse("courses:ebook", args=["MOD-R2"]))
-        self.assertContains(self.client.get(pages[1]), reverse("accounts:profile_photo", args=[self.admin.pk]))
+        self.assertContains(self.client.get(pages[1]), reverse("accounts:avatar", args=[self.admin.avatar_token]))
 
 
 class CourseRemoteStorageTests(RemoteStorageTestCase):

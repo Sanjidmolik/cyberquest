@@ -36,6 +36,7 @@
       <li><strong>Learning activity:</strong> XP, level, daily streaks and the days you were active, badges, course completions and your last page in each course, practice sessions and the choices you made in them, and every mission attempt: questions served, answers you chose, score, start time, deadline, finish time, time taken, and XP awarded.</li>
       <li><strong>Certificate:</strong> the name printed on it, your overall score, the issue date, and its certificate ID.</li>
       <li><strong>Notifications</strong> we show you inside CyberQuest.</li>
+      <li><strong>Messages:</strong> the text messages you send and receive, when they were sent and read, message requests you accept or decline, your “who can message me” setting, and the members you block. Message text is encrypted when stored. This is not end-to-end encryption: CyberQuest’s servers can decrypt messages, for example to review a message reported for abuse.</li>
       <li><strong>Contact form:</strong> the name, email address and message you submit.</li>
       <li><strong>Visit counts:</strong> the homepage counts one visit per browser session per day. Only the daily total is stored, not your IP address.</li>
     </ul>
@@ -52,7 +53,8 @@
 
     <h2 id="visible" class="cq-section-title">Who can see your information</h2>
     <ul class="cq-legal-list">
-      <li><strong>Other signed-in learners</strong> can see your username, level and XP on the leaderboard, and your profile picture. The leaderboard never shows email addresses, names or dates of birth.</li>
+      <li><strong>Other signed-in learners</strong> can see your username, completed-course count and XP on the leaderboard and on your profile card, and your profile picture. They never see your email address, name or date of birth. Members you block don’t see your profile card or picture.</li>
+      <li><strong>The person you message</strong> sees the messages you send them.</li>
       <li><strong>Anyone with your certificate ID or QR code</strong> can open its verification page, which shows the name on the certificate, the score, the issue date, and that it is valid.</li>
       <li><strong>CyberQuest administrators</strong> can see account and activity data to run the service.</li>
       <li>We do not sell personal data or share it for advertising.</li>
@@ -92,7 +94,7 @@
     <ul class="cq-legal-list">
       <li><strong>See and correct:</strong> edit your profile details and picture in <a href="{% url 'accounts:settings' %}">Settings</a>.</li>
       <li><strong>Download:</strong> export your data as JSON or as CSV files from <a href="{% url 'accounts:settings' %}#your-data">Settings → Your data</a>. Exports never include password hashes, authenticator secrets, recovery codes, verification codes or session data.</li>
-      <li><strong>Delete:</strong> delete your account from <a href="{% url 'accounts:delete_account' %}">Settings → Delete my account</a>. This removes your profile, picture, activity, attempts, badges, notifications and certificate straight away. Copies can remain in hosting backups until those backups expire, and contact-form messages are kept as described above.</li>
+      <li><strong>Delete:</strong> delete your account from <a href="{% url 'accounts:delete_account' %}">Settings → Delete my account</a>. This removes your profile, picture, activity, attempts, badges, notifications and certificate straight away. Messages you sent stay in the other person’s conversation as “Deleted user”, with the text removed. Copies can remain in hosting backups until those backups expire, and contact-form messages are kept as described above.</li>
       <li><strong>Ask us:</strong> for anything else, including objections or questions about this policy, use the contact details below.</li>
     </ul>
     <p class="cq-body">Depending on where you live, you may have further rights under local data-protection law, including the right to complain to a data-protection authority.</p>

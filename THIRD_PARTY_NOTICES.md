@@ -58,19 +58,30 @@ Licences below are read from each installed package's metadata.
 | Package | Version | Licence | Notes |
 |---|---|---|---|
 | asgiref | 3.12.1 | BSD-3-Clause | |
+| attrs | 26.1.0 | MIT | Twisted dependency (daphne). |
+| autobahn | 26.10.2 | MIT | WebSocket protocol for daphne. |
+| Automat | 25.4.16 | MIT | Twisted dependency. |
 | boto3 / botocore | 1.43.105 | Apache-2.0 | Added for Cloudflare R2 media storage (S3 API). |
+| cbor2 | 6.1.5 | MIT | autobahn dependency. |
 | certifi | 2026.7.22 | MPL-2.0 | File-level copyleft; used unmodified, so no source obligation. |
 | cffi | 2.1.1 | MIT-0 (per metadata) | |
+| channels | 4.3.2 | BSD-3-Clause | Added for messaging: WebSocket consumers with Django sessions (`messaging/consumers.py`). |
 | charset-normalizer | 3.5.1 | MIT | |
 | colorama | 0.4.6 | BSD | |
+| constantly | 23.10.4 | MIT | Twisted dependency. |
 | cryptography | 50.0.1 | Apache-2.0 OR BSD-3-Clause | Added for TOTP secret encryption. Wheels bundle OpenSSL (Apache-2.0). |
-| django-storages | 1.14.6 | BSD-3-Clause | R2 storage backend (`cyberquest/storage.py`). Metadata lists Django ≤5.1; verified offline against Django 6.0.7 / Python 3.14.6 (save, exists, open, signed URLs). |
+| daphne | 4.2.3 | BSD-3-Clause | Added for messaging: ASGI server, so `manage.py runserver` serves WebSockets locally. |
 | dj-database-url | 3.1.2 | BSD-3-Clause | |
 | Django | 6.0.7 | BSD-3-Clause | |
+| django-storages | 1.14.6 | BSD-3-Clause | R2 storage backend (`cyberquest/storage.py`). Metadata lists Django ≤5.1; verified offline against Django 6.0.7 / Python 3.14.6 (save, exists, open, signed URLs). |
 | gunicorn | 26.2.0 | MIT | |
+| hyperlink | 21.0.0 | MIT | Twisted dependency. |
 | idna | 3.19 | BSD-3-Clause | |
+| Incremental | 24.11.0 | MIT | Twisted dependency. |
 | jmespath | 1.1.0 | MIT | boto3 dependency. |
+| msgpack | 1.2.4 | Apache-2.0 | autobahn dependency. |
 | mysqlclient | 2.2.8 | GPL-2.0-or-later | The MySQL driver for local development (`DATABASE_URL=mysql://…`). GPL-2 obligations attach to distribution, not network use, so running it as a web service creates no obligation; keep this notice if you ever distribute the app with it. |
+| packaging | 26.3 | Apache-2.0 OR BSD-2-Clause | Twisted dependency. |
 | pillow | 12.1.1 | MIT-CMU | |
 | psycopg2-binary | 2.9.13 | LGPL-3.0 with exceptions | PostgreSQL driver for the production database at launch. Wheels bundle libpq (PostgreSQL Licence) and OpenSSL. No obligation for network use; keep notices if you ever distribute the wheel. |
 | pycparser | 3.0 | BSD-3-Clause | |
@@ -84,9 +95,14 @@ Licences below are read from each installed package's metadata.
 | s3transfer | 0.19.2 | Apache-2.0 | boto3 dependency. |
 | six | 1.17.0 | MIT | python-dateutil dependency. |
 | sqlparse | 0.5.5 | BSD | |
+| Twisted | 26.4.0 | MIT | Networking engine under daphne. |
+| txaio | 26.6.1 | MIT | autobahn dependency. |
+| typing_extensions | 4.16.0 | PSF-2.0 | Twisted dependency. |
 | tzdata | 2026.3 | Apache-2.0 | |
+| ujson | 6.0.0 | BSD-3-Clause AND TCL | autobahn dependency. |
 | urllib3 | 2.7.0 | MIT | |
 | whitenoise | 6.12.0 | MIT | |
+| zope.interface | 8.7 | ZPL-2.1 | Twisted dependency. |
 
 The local virtualenv also contains `reportlab` and `weasyprint`, which are not in
 `requirements.txt` and not imported by the application. They are not deployed.

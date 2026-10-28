@@ -26,7 +26,7 @@ class CustomUserAdmin(UserAdmin):
         if db_field.name == "profile_picture":
             from certificates.admin import ProtectedFileWidget
 
-            kwargs["widget"] = ProtectedFileWidget("accounts:profile_photo")
+            kwargs["widget"] = ProtectedFileWidget("accounts:avatar", arg_attr="avatar_token")
         return super().formfield_for_dbfield(db_field, request, **kwargs)
 
     @admin.action(description="Make selected users ADMIN (staff access)")

@@ -112,7 +112,13 @@ def build_export(user) -> dict:
         "notifications": notifications,
         "certificate": certificate[0] if certificate else None,
         "contact_messages": contact,
+        **_messaging_export(user),
     }
+
+
+def _messaging_export(user) -> dict:
+    from messaging.services import export_for
+    return export_for(user)
 
 
 def export_json_bytes(user) -> bytes:
@@ -140,9 +146,11 @@ def export_zip_bytes(user) -> bytes:
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
         bundle.writestr("profile.csv", _csv_bytes([data["profile"]]))
         for key in ("activity_days", "mission_attempts", "practice_sessions", "course_completions",
-                    "reading_progress", "badges", "notifications", "contact_messages"):
+                    "reading_progress", "badges", "notifications", "contact_messages",
+                    "messages", "blocked_members"):
             bundle.writestr(f"{key}.csv", _csv_bytes(data[key]))
         bundle.writestr("certificate.csv", _csv_bytes([data["certificate"]] if data["certificate"] else []))
+        bundle.writestr("message_settings.csv", _csv_bytes([data["message_settings"]]))
         bundle.writestr("README.txt", (
             "CyberQuest personal data export\n"
             f"Generated: {data['export']['generated_at'].isoformat()}\n"

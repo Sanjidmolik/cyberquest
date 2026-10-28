@@ -1,0 +1,128 @@
+{% extends "dashboard/base_command.html" %}
+{% load static %}
+
+{% block title %}Messages — CyberQuest{% endblock %}
+{% block context_name %}Messages{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+<div class="cq-dash msg{% if conversation %} has-conversation{% endif %}">
+  <header class="msg-head">
+    <h1 class="cq-title cq-title--lg">MESSAGES</h1>
+    <div class="msg-head-actions">
+      <a class="msg-btn" href="{% url 'messaging:new' %}">New message</a>
+      <a class="msg-btn msg-btn--quiet" href="{% url 'messaging:settings' %}">Settings</a>
+    </div>
+  </header>
+
+  {% if messages %}<ul class="msg-flash">{% for m in messages %}<li class="msg-flash-{{ m.tags }}" role="status">{{ m }}</li>{% endfor %}</ul>{% endif %}
+
+  <details class="msg-protect">
+    <summary>How your messages are protected</summary>
+    <ul>
+      <li><strong>On the way:</strong> messages travel over an encrypted connection (HTTPS, and WSS for live updates).</li>
+      <li><strong>When stored:</strong> message text is encrypted in our database, with keys kept outside it.</li>
+      <li><strong>Not end-to-end:</strong> CyberQuest’s servers can decrypt messages, so moderators can review a message when it is reported. Don’t share passwords or other secrets in messages.</li>
+    </ul>
+  </details>
+
+  <div class="msg-panes">
+    <section class="cq-panel msg-list-pane" aria-label="Conversations">
+      <nav class="msg-tabs" aria-label="Inbox">
+        <a href="{% url 'messaging:inbox' %}" class="msg-tab{% if tab == 'inbox' %} is-active{% endif %}"{% if tab == 'inbox' %} aria-current="page"{% endif %}>Inbox</a>
+        <a href="{% url 'messaging:inbox' %}?tab=requests" class="msg-tab{% if tab == 'requests' %} is-active{% endif %}"{% if tab == 'requests' %} aria-current="page"{% endif %}>Requests{% if requests %} <span class="msg-count" id="msg-request-count">{{ requests }}</span>{% endif %}</a>
+      </nav>
+      <form class="msg-search" method="get" action="{% url 'messaging:inbox' %}" role="search">
+        {% if tab == 'requests' %}<input type="hidden" name="tab" value="requests">{% endif %}
+        <input type="search" name="q" value="{{ query }}" placeholder="Search by username" aria-label="Search conversations by username" maxlength="50">
+      </form>
+      <ul class="msg-convs" id="msg-convs">
+        {% for row in rows %}
+        <li>
+          <a class="msg-conv{% if conversation and row.id == conversation.public_id|stringformat:'s' %} is-open{% endif %}{% if row.unread %} is-unread{% endif %}" href="{% url 'messaging:conversation' row.id %}" data-id="{{ row.id }}">
+            <img class="msg-av" src="{{ row.avatar_url|default:'' }}" alt="">
+            <span class="msg-conv-main">
+              <span class="msg-conv-name">{{ row.username|default:"Deleted user" }}</span>
+              <span class="msg-conv-preview">{% if row.mine_last %}You: {% endif %}{{ row.preview }}</span>
+            </span>
+            <span class="msg-conv-side">
+              <time datetime="{{ row.at }}">{{ row.when }}</time>
+              {% if row.unread %}<span class="msg-count" aria-label="{{ row.unread }} unread">{{ row.unread }}</span>{% endif %}
+              {% if row.waiting %}<span class="msg-tag">Waiting</span>{% elif row.blocked %}<span class="msg-tag">Blocked</span>{% elif row.state == 'declined' %}<span class="msg-tag">Not accepted</span>{% endif %}
+            </span>
+          </a>
+        </li>
+        {% empty %}
+        <li class="msg-empty">{% if query %}No conversations with that username.{% elif tab == 'requests' %}No message requests.{% else %}No conversations yet. <a href="{% url 'messaging:new' %}">Start one</a>.{% endif %}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="cq-panel msg-thread-pane" aria-label="Conversation">
+      {% if conversation %}
+      <header class="msg-thread-head">
+        <a class="msg-back" href="{% url 'messaging:inbox' %}{% if tab == 'requests' %}?tab=requests{% endif %}">← All conversations</a>
+        {% if card %}
+        <div class="msg-card">
+          <img class="msg-av msg-av--lg" src="{{ card.avatar_url }}" alt="">
+          <div>
+            <strong class="msg-card-name">{{ card.username }}</strong>
+            <span class="msg-card-meta">{{ card.courses }} course{{ card.courses|pluralize }} completed · {{ card.xp }} XP</span>
+          </div>
+        </div>
+        {% else %}
+        <div class="msg-card"><span class="msg-av msg-av--lg" aria-hidden="true"></span><strong class="msg-card-name">{% if other %}{{ other.username }}{% else %}Deleted user{% endif %}</strong></div>
+        {% endif %}
+        {% if other %}
+        <form method="post" action="{% if i_blocked %}{% url 'messaging:unblock' %}{% else %}{% url 'messaging:block' %}{% endif %}" class="msg-block-form"
+              {% if not i_blocked %}data-confirm="Block {{ other.username }}? They won’t be able to message you or find you in search."{% endif %}>
+          {% csrf_token %}
+          <input type="hidden" name="username" value="{{ other.username }}">
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="msg-btn msg-btn--quiet">{% if i_blocked %}Unblock{% else %}Block{% endif %}</button>
+        </form>
+        {% endif %}
+      </header>
+
+      {% if is_request %}
+      <div class="msg-request" role="region" aria-label="Message request">
+        <p><strong>{{ other.username|default:"Someone" }}</strong> wants to message you. They won’t know you’ve read this until you reply.</p>
+        <div class="msg-request-actions">
+          <form method="post" action="{% url 'messaging:accept' conversation.public_id %}">{% csrf_token %}<button type="submit" class="msg-btn">Accept</button></form>
+          <form method="post" action="{% url 'messaging:decline' conversation.public_id %}">{% csrf_token %}<button type="submit" class="msg-btn msg-btn--quiet">Decline</button></form>
+        </div>
+      </div>
+      {% endif %}
+
+      <button type="button" class="msg-older" id="msg-older" hidden>Show earlier messages</button>
+      <ol class="msg-thread" id="msg-thread" aria-live="polite" aria-label="Messages"></ol>
+
+      <form class="msg-compose" id="msg-compose"{% if not status.can_send %} hidden{% endif %}>
+        <label for="msg-text" class="visually-hidden">Message</label>
+        <textarea id="msg-text" name="text" rows="2" maxlength="{{ config.max }}" placeholder="Write a message" required></textarea>
+        <div class="msg-compose-foot">
+          <span class="msg-counter" id="msg-counter" aria-live="polite">0 / {{ config.max }}</span>
+          <span class="msg-error" id="msg-error" role="alert"></span>
+          <button type="submit" class="msg-btn" id="msg-send">Send</button>
+        </div>
+      </form>
+      <p class="msg-cannot" id="msg-cannot"{% if status.can_send %} hidden{% endif %}>{{ status.reason }}</p>
+      {% else %}
+      <div class="msg-placeholder">
+        <h2 class="cq-title">Pick a conversation</h2>
+        <p>Choose someone on the left, or start a new message.</p>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{{ config|json_script:"msg-config" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'messaging/js/messaging.js' %}?v=1"></script>
+{% endblock %}

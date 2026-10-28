@@ -48,6 +48,12 @@
            {% if ns == 'leaderboard' %}aria-current="page"{% endif %}>
             <span class="nav-icon">📈</span> Leaderboard
         </a>
+        <a href="{% url 'messaging:inbox' %}"
+           class="nav-item{% if ns == 'messaging' %} active{% endif %}"
+           data-nav="messaging"
+           {% if ns == 'messaging' %}aria-current="page"{% endif %}>
+            <span class="nav-icon">💬</span> Messages
+        </a>
 <a href="{% url 'certificates:page' %}"
            class="nav-item{% if ns == 'certificates' %} active{% endif %}"
            data-nav="certificates"
