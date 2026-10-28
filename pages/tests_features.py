@@ -26,7 +26,8 @@ class VisitorCounterTests(TestCase):
         self.assertFalse(HomepageVisitDay.objects.exists())
 
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+# BREVO_API_KEY="": login with email codes must use the in-memory backend, never real mail.
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", BREVO_API_KEY="")
 class TotpTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
@@ -133,3 +134,12 @@ class AnalyticsTests(TestCase):
         self.assertContains(page, "1 attempts")
         self.assertEqual(UserActivityDay.objects.filter(user=player).count(), 1)
         self.assertNotContains(page, "play@gmail.com")
+
+
+class LiveServiceIsolationTests(TestCase):
+    """The suite must never use live keys from .env (it once sent real login-code mail via Brevo)."""
+
+    def test_live_service_keys_are_blank_during_tests(self):
+        from django.conf import settings
+        self.assertEqual(settings.BREVO_API_KEY, "")
+        self.assertEqual(settings.GEMINI_API_KEY, "")

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 
 from dotenv import load_dotenv
 import dj_database_url
@@ -380,3 +381,11 @@ MISSION_TIME_LIMIT_SECONDS = _env_bounded_int(
 MISSION_QUALIFYING_SCORE_PERCENT = _env_bounded_int(
     "MISSION_QUALIFYING_SCORE_PERCENT", default=80, minimum=1, maximum=100,
 )
+
+
+# The test suite must never reach a real outside service with the live keys from .env: a test
+# that logs in with email codes would otherwise send real mail through Brevo (and fail whenever
+# the network does). Tests that cover these services set their own fake key and mock the call.
+if sys.argv[1:2] == ["test"]:
+    BREVO_API_KEY = ""
+    GEMINI_API_KEY = ""
