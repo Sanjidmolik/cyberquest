@@ -112,3 +112,18 @@
   .msg-thread { max-height: 60vh; }
   .msg-bubble { max-width: 88%; }
 }
+
+/* Moderation: notices, the "may be offensive" choice, reporting. */
+.msg-notice { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--cq-raised); border: 1px solid var(--cq-gold); font-size: 13px; }
+.msg-notice--stop { border-color: #f87171; }
+.msg-notice a { color: var(--cq-violet); font-weight: 600; }
+.msg-warn { padding: 10px 12px; border-radius: 12px; background: var(--cq-raised); border: 1px solid var(--cq-gold); display: grid; gap: 8px; }
+.msg-warn p { margin: 0; font-weight: 600; }
+.msg-report-btn { align-self: flex-start; background: none; border: 0; padding: 0; font-size: 11px; color: var(--cq-muted); cursor: pointer; text-decoration: underline; }
+.msg-report-btn:disabled { text-decoration: none; cursor: default; }
+.msg-report { border: 1px solid var(--cq-line); border-radius: 18px; background: var(--cq-surface); color: var(--cq-text); width: min(92vw, 460px); padding: 18px; }
+.msg-report::backdrop { background: rgba(10, 4, 30, .6); }
+.msg-report form { display: grid; gap: 10px; }
+.msg-report fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.msg-report legend, .msg-report label[for] { font-weight: 600; }
+.msg-report textarea { font: inherit; color: var(--cq-text); background: var(--cq-raised); border: 1px solid var(--cq-line); border-radius: 12px; padding: 8px 10px; }

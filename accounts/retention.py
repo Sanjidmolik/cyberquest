@@ -49,6 +49,20 @@ RETENTION = [
     ("Message settings and the members you blocked",
      "While your account exists",
      "Deleted when you delete your account"),
+    ("Reports you file about a message, with a copy of that message and up to three messages "
+     "before and after it",
+     "Until a moderator resolves it, then 180 days",
+     "Automatic cleanup"),
+    ("Moderation log (who took which action, and who opened reported content, and when)",
+     "Kept; after 180 days the reason text and the link to the report are removed",
+     "If you delete your account, entries stay with your name removed"),
+    ("Warnings and messaging restrictions a moderator placed on your account",
+     "While your account exists",
+     "Deleted when you delete your account"),
+    ("“This message may be offensive” warnings shown to you (when, and whether you sent "
+     "anyway; never the message)",
+     "90 days",
+     "Automatic cleanup"),
     ("Practice Studio preview runs by staff (never count toward XP, badges or progress)",
      f"{PREVIEW_ATTEMPT_DAYS} days",
      "Automatic cleanup"),
@@ -160,6 +174,13 @@ def close_expired_attempts(dry_run=False) -> int:
             return total
 
 
+def _moderation_purge(dry_run) -> dict:
+    from moderation.services import purge_old
+    counts = purge_old(dry_run=dry_run)
+    return {"resolved_reports_older_than_180_days": counts["reports"],
+            "message_warnings_older_than_90_days": counts["flags"]}
+
+
 def run_all(dry_run=False) -> dict:
     return {
         "verification_codes": purge_verification_codes(dry_run=dry_run),
@@ -168,4 +189,5 @@ def run_all(dry_run=False) -> dict:
         "expired_cache_entries": purge_expired_cache(dry_run=dry_run),
         "expired_mission_attempts_closed": close_expired_attempts(dry_run=dry_run),
         "old_practice_preview_runs": purge_preview_attempts(dry_run=dry_run),
+        **_moderation_purge(dry_run),
     }

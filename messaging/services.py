@@ -10,7 +10,7 @@ from accounts.public import avatar_url, default_avatar_url
 
 from . import events, policy
 from .models import Block, Conversation, Message, MessagingPreference
-from .policy import Denied
+from .policy import Denied, NeedsConfirmation
 
 PREVIEW_LENGTH = 80
 PAGE = 50
@@ -47,10 +47,27 @@ def _post(conversation, sender, text):
     return message
 
 
-def start(sender, username, text):
+def _screen(sender, text, confirmed):
+    """The offensive-message check. It only warns: unconfirmed flagged text raises
+    NeedsConfirmation; confirmed text is sent. Only the fact of the warning is recorded."""
+    from moderation.detection import may_be_offensive
+    from moderation.services import record_flag
+    if not may_be_offensive(text):
+        return False
+    if not confirmed:
+        record_flag(sender, "warned")
+        raise NeedsConfirmation()
+    return True
+
+
+def start(sender, username, text, confirmed=False):
     """Message someone by username: into the existing conversation, or a new request."""
     text = clean_text(text)
     recipient = find_user(username)
+    reason = policy.restriction(sender)
+    if reason:
+        raise Denied(reason)
+    flagged = _screen(sender, text, confirmed)
     with transaction.atomic():
         conversation = between(sender, recipient)
         if conversation is None:
@@ -63,14 +80,21 @@ def start(sender, username, text):
             policy.check_start(sender, recipient)
             conversation.state, conversation.initiator = Conversation.ACCEPTED, sender
             conversation.save(update_fields=["state", "initiator"])
-        return conversation, send(sender, conversation, text, checked_text=True)
+        return conversation, send(sender, conversation, text, checked_text=True, confirmed=True,
+                                  flagged=flagged)
 
 
-def send(sender, conversation, text, checked_text=False):
+def send(sender, conversation, text, checked_text=False, confirmed=False, flagged=None):
     text = text if checked_text else clean_text(text)
     policy.check_send(sender, conversation)
+    if flagged is None:
+        flagged = _screen(sender, text, confirmed)
     policy.check_message_rate(sender)
-    return _post(conversation, sender, text)
+    message = _post(conversation, sender, text)
+    if flagged:
+        from moderation.services import record_flag
+        record_flag(sender, "sent_anyway")
+    return message
 
 
 def accept(user, conversation):
@@ -128,7 +152,7 @@ def when_label(moment):
     return f"{local:%H:%M}" if local.date() == timezone.localdate() else f"{local.day} {local:%b}"
 
 
-def serialize(message, viewer):
+def serialize(message, viewer, reported=frozenset()):
     sender = message.sender
     return {
         "id": message.pk,
@@ -136,6 +160,8 @@ def serialize(message, viewer):
         "sender": sender.username if sender else None,      # None: "Deleted user"
         "text": message.text,
         "removed": message.removed,
+        "can_report": message.sender_id not in (None, viewer.pk) and not message.removed,
+        "reported": message.pk in reported,
         "at": timezone.localtime(message.created_at).isoformat(),
     }
 
@@ -149,7 +175,10 @@ def messages_after(conversation, viewer, after=0, before=None):
         rows = list(qs.filter(pk__gt=after).order_by("pk")[:PAGE])
     else:
         rows = list(qs.order_by("-pk")[:PAGE])[::-1]
-    return [serialize(m, viewer) for m in rows]
+    from moderation.models import Report
+    reported = set(Report.objects.filter(reporter=viewer, message__in=[m.pk for m in rows])
+                   .values_list("message_id", flat=True))
+    return [serialize(m, viewer, reported) for m in rows]
 
 
 def conversation_status(viewer, conversation):

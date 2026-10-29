@@ -1,0 +1,44 @@
+# Example messages for the offensive-message check (moderation/tests.py runs every line).
+#   + text   must trigger the warning
+#   - text   must NOT trigger it (false positives we've decided to avoid)
+# Add a line whenever you add a term or find a false positive.
+
+# ---- must match: English ----
++ you are an idiot
++ You IDIOOOT
++ 1d10t
++ what a m0r0n
++ fuuuck you
++ FUCK YOU
++ sh!t, you are a piece of shit
++ just kill yourself
++ i will hurt you tomorrow
++ send me nudes
++ i know where you live
+
+# ---- must match: Bangla and Banglish ----
++ তুই একটা হারামজাদা
++ কুত্তার বাচ্চা কোথাকার
++ তোকে মেরে ফেলব
++ tui ekta haramjada
++ HARAMZAADA
++ kuttar bachha
++ shuorer baccha
++ toke mere felbo kintu
+
+# ---- must NOT match: ordinary words that contain or resemble a term ----
+- hello, how was the phishing course?
+- I passed the class assessment
+- as soon as possible
+- the assistant helped me
+- Scunthorpe is a town
+- shitake mushrooms are tasty
+- I killed it in the quiz today
+- that skill test was hard
+- bitcoin is not a password manager
+- maggi noodles for dinner
+- kuttar khabar kinte hobe
+- মশা মেরে ফেলব
+- আমি ভালো আছি, তুমি কেমন আছো?
+- the killer whale documentary
+- lose the loss, learn the lesson

@@ -236,24 +236,31 @@ def login_view(request):
 
 
 def _admin_target_allowed(user, target: str) -> bool:
-    """Superusers may go anywhere. Plain staff may reach the Django admin, and Content
-    Editors / Publishers the Practice Studio. Every other Command Center page stays closed."""
+    """Superusers may go anywhere. Plain staff may reach the Django admin, Content Editors /
+    Publishers the Practice Studio, and Moderators moderation. Every other Command Center page
+    stays closed."""
+    from moderation.access import can_moderate
     from practice.studio.access import can_use_studio
 
     if user.is_superuser:
         return True
     if can_use_studio(user) and target.startswith(reverse("studio:list")):
         return True
+    if can_moderate(user) and target.startswith(reverse("moderation:queue")):
+        return True
     return bool(user.is_staff) and target.startswith(reverse("admin:index"))
 
 
 def _admin_home(user) -> str:
-    """Where an administrator lands without a ?next: the Command Center, or the Practice Studio
-    for Content Editors and Publishers."""
+    """Where an administrator lands without a ?next: the Command Center for superusers, the
+    Practice Studio for Content Editors and Publishers, moderation for Moderators."""
+    from moderation.access import can_moderate
     from practice.studio.access import can_use_studio
 
     if not user.is_superuser and can_use_studio(user):
         return reverse("studio:list")
+    if not user.is_superuser and can_moderate(user):
+        return reverse("moderation:queue")
     return reverse("ops:overview")
 
 

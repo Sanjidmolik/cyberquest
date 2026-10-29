@@ -103,6 +103,7 @@ INSTALLED_APPS = [
     'question_bank',
     'channels',
     'messaging',
+    'moderation',
 ]
 
 MIDDLEWARE = [
@@ -421,6 +422,7 @@ MESSAGING_MESSAGES_PER_MINUTE = _env_bounded_int("MESSAGING_MESSAGES_PER_MINUTE"
 MESSAGING_NEW_CONVERSATIONS_PER_DAY = _env_bounded_int(
     "MESSAGING_NEW_CONVERSATIONS_PER_DAY", default=10, minimum=1, maximum=500,
 )
+MODERATION_REPORTS_PER_DAY = _env_bounded_int("MODERATION_REPORTS_PER_DAY", default=10, minimum=1, maximum=200)
 
 if sys.argv[1:2] == ["test"]:
     # Tests use their own throwaway message key, never one from .env.

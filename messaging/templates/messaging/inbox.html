@@ -6,7 +6,7 @@
 {% block extra_css %}
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
-<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -21,12 +21,20 @@
 
   {% if messages %}<ul class="msg-flash">{% for m in messages %}<li class="msg-flash-{{ m.tags }}" role="status">{{ m }}</li>{% endfor %}</ul>{% endif %}
 
+  {% if restriction %}
+  <p class="msg-notice msg-notice--stop" role="status">{{ restriction }} <a href="{% url 'moderation_public:notices' %}">Details</a> · <a href="{% url 'pages:contact' %}">Contact support</a> if you think this is a mistake.</p>
+  {% elif warning %}
+  <p class="msg-notice" role="status">A moderator warned you: {{ warning.reason }} <a href="{% url 'moderation_public:notices' %}">Details</a> · <a href="{% url 'pages:contact' %}">Contact support</a></p>
+  {% endif %}
+
   <details class="msg-protect">
     <summary>How your messages are protected</summary>
     <ul>
       <li><strong>On the way:</strong> messages travel over an encrypted connection (HTTPS, and WSS for live updates).</li>
       <li><strong>When stored:</strong> message text is encrypted in our database, with keys kept outside it.</li>
-      <li><strong>Not end-to-end:</strong> CyberQuest’s servers can decrypt messages, so moderators can review a message when it is reported. Don’t share passwords or other secrets in messages.</li>
+      <li><strong>Not end-to-end:</strong> CyberQuest’s servers can decrypt messages. Moderators read a message only when someone in the conversation reports it, and then only that message and up to three before and after it. Every time they open it, it is logged.</li>
+      <li><strong>Automatic checks:</strong> before sending, we may ask “This message may be offensive. Edit or send anyway?”. That check never shows your message to anyone; we only count how often it appeared.</li>
+      <li>Don’t share passwords or other secrets in messages.</li>
     </ul>
   </details>
 
@@ -101,6 +109,13 @@
       <button type="button" class="msg-older" id="msg-older" hidden>Show earlier messages</button>
       <ol class="msg-thread" id="msg-thread" aria-live="polite" aria-label="Messages"></ol>
 
+      <div class="msg-warn" id="msg-warn" role="alertdialog" aria-labelledby="msg-warn-text" hidden>
+        <p id="msg-warn-text">This message may be offensive. Edit it, or send it anyway?</p>
+        <div class="msg-request-actions">
+          <button type="button" class="msg-btn msg-btn--quiet" id="msg-warn-edit">Edit</button>
+          <button type="button" class="msg-btn" id="msg-warn-send">Send anyway</button>
+        </div>
+      </div>
       <form class="msg-compose" id="msg-compose"{% if not status.can_send %} hidden{% endif %}>
         <label for="msg-text" class="visually-hidden">Message</label>
         <textarea id="msg-text" name="text" rows="2" maxlength="{{ config.max }}" placeholder="Write a message" required></textarea>
@@ -111,6 +126,26 @@
         </div>
       </form>
       <p class="msg-cannot" id="msg-cannot"{% if status.can_send %} hidden{% endif %}>{{ status.reason }}</p>
+      <dialog class="msg-report" id="msg-report" aria-labelledby="msg-report-title">
+        <form method="dialog" id="msg-report-form">
+          <h2 class="cq-title" id="msg-report-title">Report message</h2>
+          <p class="msg-hint">A moderator will see this message and up to three messages before and after it. {{ other.username|default:"The sender" }} isn’t told who reported it.</p>
+          <fieldset>
+            <legend>Why are you reporting it?</legend>
+            {% for value, label in report_reasons %}
+            <label class="msg-radio"><input type="radio" name="reason" value="{{ value }}" required> {{ label }}</label>
+            {% endfor %}
+          </fieldset>
+          <label for="msg-report-note">Anything else? (optional)</label>
+          <textarea id="msg-report-note" name="note" rows="3" maxlength="500"></textarea>
+          <label class="msg-radio"><input type="checkbox" name="block" value="1"> Also block {{ other.username|default:"this person" }}</label>
+          <p class="msg-error" id="msg-report-error" role="alert"></p>
+          <div class="msg-request-actions">
+            <button type="submit" class="msg-btn" value="send">Send report</button>
+            <button type="button" class="msg-btn msg-btn--quiet" id="msg-report-cancel">Cancel</button>
+          </div>
+        </form>
+      </dialog>
       {% else %}
       <div class="msg-placeholder">
         <h2 class="cq-title">Pick a conversation</h2>
@@ -124,5 +159,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'messaging/js/messaging.js' %}?v=1"></script>
+<script src="{% static 'messaging/js/messaging.js' %}?v=3"></script>
 {% endblock %}

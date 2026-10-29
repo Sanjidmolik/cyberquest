@@ -1,0 +1,71 @@
+# Words and phrases that make CyberQuest ask the sender "This message may be offensive.
+# Edit or send anyway?". Matching only WARNS the sender; it never blocks or punishes.
+#
+# One term or phrase per line. Matching is whole-word, after normalisation (see
+# moderation/detection.py): case, invisible characters, l33t swaps and repeated letters
+# don't matter, so list each word once in plain spelling.
+#
+# Before adding a short word, check it doesn't collapse into an ordinary word
+# (repeated letters are squashed: "ass" would become "as"). Add examples that must and must
+# not match to examples.txt; the tests run every example.
+#
+# This is a starter list. Extend it with the terms your community sees (including hate
+# terms), and keep examples.txt in step.
+
+# ---- English: insults ----
+idiot
+moron
+dumbass
+asshole
+bastard
+bitch
+fuck
+fucking
+fuck you
+motherfucker
+piece of shit
+bullshit
+cunt
+retard
+loser
+shut up idiot
+
+# ---- English: threats and self-harm encouragement ----
+kill you
+kill yourself
+kys
+go die
+i will hurt you
+i know where you live
+
+# ---- English: sexual harassment ----
+send nudes
+send me nudes
+slut
+whore
+
+# ---- Bangla (script) ----
+হারামজাদা
+হারামি
+কুত্তার বাচ্চা
+শুয়োরের বাচ্চা
+বোকাচোদা
+খানকি
+তোকে মেরে ফেলব
+তোরে মেরে ফেলব
+তোমাকে মেরে ফেলব
+
+# ---- Banglish (Bangla in Latin letters; spelling variants) ----
+haramjada
+haramzada
+harami
+kuttar baccha
+kuttar bachcha
+shuorer baccha
+shuyorer baccha
+bokachoda
+khanki
+khankir pola
+toke mere felbo
+tore mere felbo
+tomake mere felbo

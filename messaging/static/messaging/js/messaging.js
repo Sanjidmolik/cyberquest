@@ -58,6 +58,14 @@
     var t = el("time", "msg-bubble-time", timeLabel(m.at));
     t.setAttribute("datetime", m.at);
     li.appendChild(t);
+    if (m.can_report && cfg.urls.report) {
+      var report = el("button", "msg-report-btn", m.reported ? "Reported" : "Report");
+      report.type = "button";
+      report.disabled = !!m.reported;
+      report.setAttribute("aria-label", "Report this message");
+      report.addEventListener("click", function () { openReport(m.id, report); });
+      li.appendChild(report);
+    }
     return li;
   }
 
@@ -131,23 +139,72 @@
     box.addEventListener("keydown", function (e) {
       if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); }
     });
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
+    var warn = document.getElementById("msg-warn");
+
+    function submit(confirm) {
       var text = box.value.trim();
       if (!text) return;
       send.disabled = true;
       error.textContent = "";
-      api(cfg.urls.send, { text: text }).then(function (data) {
+      if (warn) warn.hidden = true;
+      api(cfg.urls.send, { text: text, confirm: confirm }).then(function (data) {
         if (data._status === 201) {
           box.value = "";
           counter.textContent = "0 / " + cfg.max;
           addMessages([data.message]);
+        } else if (data._status === 409 && data.needs_confirmation && warn) {
+          // "May be offensive": the sender decides. Nothing is sent until they confirm.
+          warn.hidden = false;
+          document.getElementById("msg-warn-send").focus();
         } else {
           error.textContent = data.error || "Couldn't send. Try again.";
         }
       }).catch(function () {
         error.textContent = "Couldn't send: check your connection.";
-      }).then(function () { send.disabled = false; box.focus(); });
+      }).then(function () { send.disabled = false; if (!warn || warn.hidden) box.focus(); });
+    }
+
+    form.addEventListener("submit", function (e) { e.preventDefault(); submit(false); });
+    if (warn) {
+      document.getElementById("msg-warn-send").addEventListener("click", function () { submit(true); });
+      document.getElementById("msg-warn-edit").addEventListener("click", function () { warn.hidden = true; box.focus(); });
+    }
+  }
+
+  // ---------- reporting ----------
+
+  var reportDialog = document.getElementById("msg-report");
+  var reportTarget = null;
+
+  function openReport(messageId, button) {
+    if (!reportDialog) return;
+    reportTarget = { id: messageId, button: button };
+    document.getElementById("msg-report-form").reset();
+    document.getElementById("msg-report-error").textContent = "";
+    reportDialog.showModal();
+  }
+
+  if (reportDialog) {
+    document.getElementById("msg-report-cancel").addEventListener("click", function () { reportDialog.close(); });
+    document.getElementById("msg-report-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var form = e.target;
+      var reason = form.querySelector("input[name=reason]:checked");
+      var errorBox = document.getElementById("msg-report-error");
+      if (!reason) { errorBox.textContent = "Choose a reason."; return; }
+      api(cfg.urls.report, {
+        message: reportTarget.id, reason: reason.value,
+        note: form.note.value, block: form.block.checked
+      }).then(function (data) {
+        if (data._status === 201 || data._status === 200) {
+          reportDialog.close();
+          reportTarget.button.textContent = "Reported";
+          reportTarget.button.disabled = true;
+          if (form.block.checked) window.location.reload();
+        } else {
+          errorBox.textContent = data.error || "Couldn't send the report. Try again.";
+        }
+      });
     });
   }
 
