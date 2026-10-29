@@ -56,8 +56,9 @@
     alertEl.hidden = !message;
   }
 
+  /** Resolves true when the draft was saved, false otherwise (the reason is shown). */
   function save(autosave) {
-    if (state.saving || state.blocked || !collect) return Promise.resolve();
+    if (state.saving || state.blocked || !collect) return Promise.resolve(false);
     state.saving = true;
     var sentAt = state.edits;
     var payload = collect();
@@ -83,21 +84,33 @@
         if (revisionInput) revisionInput.value = state.revision;
         showAlert("");
         setStatus((dirty() ? "Unsaved changes · " : "") + (autosave ? "Autosaved at " : "Saved at ") + result.data.saved_at);
-      } else if (result.status === 409) {
+        return true;
+      }
+      setStatus("Not saved");
+      if (result.status === 409) {
         state.blocked = true;
-        setStatus("Not saved");
         showAlert(result.data.error, true);
       } else {
-        setStatus("Not saved");
         showAlert(result.data.error || "Couldn't save. Try again.");
       }
+      return false;
     }).catch(function (err) {
       setStatus("Not saved");
       showAlert(err && err.auth
         ? "You've been signed out, or this page's security token expired. Everything you typed is still here: sign in again in a new tab, then press Save on this page."
         : "Couldn't reach the server. Your changes are still here; try Save again in a moment.");
-    }).then(function () { state.saving = false; });
+      return false;
+    }).then(function (ok) { state.saving = false; return ok; });
   }
+
+  // "Preview" always shows the latest SAVED draft: save first, and only go on if it worked.
+  document.querySelectorAll("a[data-save-first]").forEach(function (link) {
+    link.addEventListener("click", function (e) {
+      if (!collect || !dirty()) return;
+      e.preventDefault();
+      save(false).then(function (ok) { if (ok) window.location.href = link.href; });
+    });
+  });
 
   window.addEventListener("beforeunload", function (e) {
     if (dirty()) { e.preventDefault(); e.returnValue = ""; }

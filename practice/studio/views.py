@@ -155,7 +155,7 @@ def wizard_basics(request, slug):
             error = str(exc)
         else:
             messages.success(request, "Saved.")
-            target = "studio:steps" if request.POST.get("next") == "steps" else "studio:basics"
+            target = {"steps": "studio:steps", "preview": "studio:preview"}.get(request.POST.get("next"), "studio:basics")
             return redirect(target, slug=slug)
     return render(request, "practice/studio/wizard_basics.html", _wizard(
         request, scenario, 1, "Basics", basics=basics, error=error, difficulties=services.DIFFICULTIES))

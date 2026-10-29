@@ -58,15 +58,20 @@ class StudioTestCase(TestCase):
 
 class AccessTests(StudioTestCase):
     def test_students_and_staff_without_a_studio_group_get_403_everywhere(self):
+        # Preview URLs answer 404 instead, so they don't even reveal that a draft exists.
         for user in (self.student, self.staff):
             self.client.force_login(user)
             for url in _studio_urls():
-                self.assertEqual(self.client.get(url).status_code, 403, f"{user.email} GET {url}")
-                self.assertEqual(self.client.post(url).status_code, 403, f"{user.email} POST {url}")
+                expected = 404 if "/preview/" in url else 403
+                self.assertEqual(self.client.get(url).status_code, expected, f"{user.email} GET {url}")
+                self.assertEqual(self.client.post(url).status_code, expected, f"{user.email} POST {url}")
 
     def test_signed_out_visitors_are_sent_to_the_admin_sign_in(self):
         for url in _studio_urls():
             res = self.client.get(url)
+            if "/preview/" in url:
+                self.assertEqual(res.status_code, 404, url)
+                continue
             self.assertEqual(res.status_code, 302, url)
             self.assertTrue(res.url.startswith("/admin-login/"), url)
 

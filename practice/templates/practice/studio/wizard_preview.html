@@ -1,0 +1,36 @@
+{% extends "dashboard/ops/base.html" %}
+{% load static %}
+{% block ops_head %}{% include "practice/studio/_head.html" %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block ops_content %}
+{% include "practice/studio/_wizard_head.html" %}
+
+<p class="st-preview-banner" role="status">PREVIEW — no XP, no stats. This is the latest saved draft; students can’t see it.</p>
+
+<div class="st-preview-tools">
+  <div class="st-segment" role="group" aria-label="Preview width">
+    <button type="button" class="is-on" data-width="desktop" aria-pressed="true">Desktop</button>
+    <button type="button" data-width="mobile" aria-pressed="false">Mobile (390 px)</button>
+  </div>
+  <button type="button" class="ops-btn-quiet" id="st-restart">Restart preview</button>
+  <a class="ops-btn-link" href="{% url 'studio:steps' scenario.slug %}">← Back to Steps</a>
+</div>
+
+<div class="st-preview">
+  <div class="st-preview-stage">
+    <iframe id="st-player" class="st-player" src="{{ play_url }}" title="Student player preview"></iframe>
+  </div>
+  <aside class="ops-panel st-key" aria-labelledby="st-key-title">
+    <h2 id="st-key-title">Answer key <span>(staff only)</span></h2>
+    <p class="ops-note">The right answers per step, so you can check the session while you play it. Students never receive these.</p>
+    <ol class="st-key-list">
+      {% for step in answer_key %}
+      <li>
+        <strong>Step {{ step.number }} · {{ step.name }}</strong>
+        <ul>{% for line in step.lines %}<li>{{ line }}</li>{% endfor %}</ul>
+      </li>
+      {% endfor %}
+    </ol>
+  </aside>
+</div>
+<script src="{% static 'practice/studio/studio-preview.js' %}?v=1"></script>
+{% endblock %}

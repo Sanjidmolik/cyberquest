@@ -294,7 +294,7 @@
     var btn = root.querySelector("[data-cq-start]");
     btn.disabled = true;
     btn.textContent = "Loading…";
-    post(cfg.urls.start, { scenario: cfg.slug }).then(function (data) {
+    post(cfg.urls.start, { scenario: cfg.slug, preview: !!cfg.preview }).then(function (data) {
       attemptId = data.attempt_id;
       content = data.content;
       setHearts(data.hearts);
@@ -310,7 +310,7 @@
 
   /** Branch "Try another path": a fresh attempt, straight back to the first scene. */
   function restart() {
-    return post(cfg.urls.start, { scenario: cfg.slug }).then(function (data) {
+    return post(cfg.urls.start, { scenario: cfg.slug, preview: !!cfg.preview }).then(function (data) {
       attemptId = data.attempt_id;
       content = data.content;
       setHearts(data.hearts);

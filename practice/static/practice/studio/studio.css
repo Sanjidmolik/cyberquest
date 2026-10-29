@@ -152,3 +152,20 @@ a.st-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; 
 .st-add-step select { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
 
 @media (max-width: 760px) { .st-field-row { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Preview (phase 5) ---- */
+.st-preview-banner { margin: 0 0 10px; padding: 10px 14px; border-radius: 8px; font-weight: 700; letter-spacing: .03em;
+  color: #1b140c; background: #ffd23f; }
+.st-preview-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+.st-segment { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 3px; }
+.st-segment button { border-radius: 999px; background: transparent; color: var(--text); padding: 6px 14px; }
+.st-segment button.is-on { background: var(--accent); color: var(--accent-ink); }
+.st-preview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 320px); gap: 14px; align-items: start; }
+.st-preview-stage { background: #2a2f3a; border-radius: 12px; padding: 12px; display: flex; justify-content: center; min-width: 0; }
+.st-player { width: 100%; height: 78vh; min-height: 560px; border: 0; border-radius: 8px; background: #fff; transition: width .2s ease; }
+.st-player.is-mobile { width: 390px; max-width: 100%; }
+.st-key { position: sticky; top: 12px; max-height: 82vh; overflow: auto; }
+.st-key h2 span { color: var(--muted); font-weight: 500; }
+.st-key-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.st-key-list ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; font-size: 13px; white-space: pre-wrap; }
+@media (max-width: 1100px) { .st-preview { grid-template-columns: minmax(0, 1fr); } .st-key { position: static; max-height: none; } }
