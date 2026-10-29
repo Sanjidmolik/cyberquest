@@ -188,6 +188,15 @@
     });
   }
 
+  // Deterrent only: no text selection while disappearing messages are on (screen readers still
+  // read everything; nothing is hidden from assistive technology).
+  function applyTimer(value) {
+    cfg.timer = value;
+    if (thread) thread.classList.toggle("is-nocopy", value !== "off");
+    var note = document.getElementById("msg-nocopy");
+    if (note) note.hidden = value === "off";
+  }
+
   function applyPresence(online) {
     var p = document.getElementById("msg-presence");
     if (p) p.hidden = !online;
@@ -216,6 +225,7 @@
       applyPresence(data.online);
       var select = document.getElementById("msg-timer");
       if (select && data.timer && document.activeElement !== select) select.value = data.timer;
+      if (data.timer) applyTimer(data.timer);
     });
   }
 
@@ -242,7 +252,7 @@
     var timerSelect = document.getElementById("msg-timer");
     if (timerSelect) timerSelect.addEventListener("change", function () {
       api(cfg.urls.timer, { timer: timerSelect.value }).then(function (data) {
-        if (data._status === 200) { if (data.message) addMessages([data.message]); }
+        if (data._status === 200) { if (data.message) addMessages([data.message]); applyTimer(timerSelect.value); }
         else { error.textContent = data.error || "Couldn't change it. Try again."; timerSelect.value = cfg.timer; }
       });
     });

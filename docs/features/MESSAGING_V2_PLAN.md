@@ -322,3 +322,28 @@ stored photo files.
   people's online status from you, like read receipts? I recommend yes, for consistency.
 - **D7. The reference files.** Please add `docs/messaging-design/messages-prototype.dc.html` and
   `hero.png`. I can do steps 1–4 (the server side) before they arrive. Step 5 needs them.
+
+---
+
+## 9. Progress (steps 1–4, server side, on `feat/messaging-v2`)
+
+Decisions applied: D1 Messages-page "Search users…"; D2 in-app sweep (cache lock, 200 rows, at
+most once a minute, messaging/polling endpoints only) + optional host job + daily backstop;
+D3 single conditional UPDATE decides the one open, which reads, deletes and serves the file;
+D4 sender sees "Photo · sent" / "Photo · opened"; D5 the exact "not end-to-end" sentence only
+in the Privacy Policy; D6 reciprocal "online". Each step: full suite, `makemigrations --check`,
+`check --deploy`, browser check at desktop and 390 px.
+
+- **Step 1:** disappearing messages, visible-only default manager, timer API + system notices,
+  `purge_expired_messages`, sweep. Migration `messaging/0002`.
+- **Step 2:** delivered/read markers and ticks (reciprocal, none across blocks), presence
+  heartbeat, WebSocket-only typing, Privacy panel.
+- **Step 3:** view-once photos (shared `cyberquest/images.py`, encrypted private storage,
+  race-safe open, viewer deterrents, report copies). Migration `moderation/0003`.
+- **Step 4:** wording ("Encrypted in transit and at rest…"), copy-off in timed chats, Privacy
+  Policy, retention table, export, `.env.example`, `DEPLOYMENT.md` (cleanup schedule), launch
+  checklist in `docs/features/PLAN.md`.
+
+Open point for sign-off: an opened view-once photo can't be copied into a later report (it is
+deleted when opened, per D3), so only photos reported before opening reach moderators.
+Next: step 5, the UI port to `docs/messaging-design/messages-prototype.dc.html`.

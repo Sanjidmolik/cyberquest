@@ -150,3 +150,10 @@
   color: #fff; background: rgba(0, 0, 0, .55); pointer-events: none; }
 .msg-viewer-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 10px 0 4px; }
 @media (prefers-reduced-motion: no-preference) { .msg-viewer-stage img { transition: filter .15s ease; } }
+.msg-thread.is-nocopy .msg-bubble-text { user-select: none; -webkit-user-select: none; }
+.msg-nocopy { margin: 4px 0 0; }
+.msg-honest ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.msg-user-search input { font: inherit; color: inherit; background: var(--cq-surface); border: 1px solid var(--cq-line);
+  border-radius: 999px; padding: 8px 14px; min-width: 0; width: 200px; max-width: 100%; }
+.msg-user-search input:focus-visible { outline: 2px solid var(--cq-violet-strong); outline-offset: 2px; }
+@media (max-width: 600px) { .msg-user-search { flex-basis: 100%; } .msg-user-search input { width: 100%; } }

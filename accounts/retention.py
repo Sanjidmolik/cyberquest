@@ -42,15 +42,28 @@ RETENTION = [
     ("Mission attempts left unfinished",
      "Closed automatically when the mission timer ends",
      "Kept as part of your attempt history"),
-    ("Messages you send and receive (text encrypted when stored; not end-to-end)",
-     "While your account exists",
+    ("Messages you send and receive (encrypted in transit and at rest; not end-to-end)",
+     "While your account exists, unless the chat's disappearing-messages timer is on",
      "When you delete your account, your messages stay in the other person's conversation as "
      "\"Deleted user\" with the text removed"),
+    ("Disappearing messages (sent while a chat's timer is on)",
+     "1 hour, 24 hours or 7 days after sending, or 30 seconds after the other person reads it",
+     "Hidden everywhere the moment they expire; deleted from the database within minutes by automatic "
+     "cleanup (daily at the latest)"),
+    ("View-once photos (encrypted, location and camera data removed)",
+     "Until opened once, or until the chat's timer runs out if that comes first",
+     "Deleted from storage the moment they are opened; otherwise by automatic cleanup. "
+     "Unopened photos are deleted when the sender deletes their account"),
+    ("When you were last active in Messages (for \"online\"), and how far each person has "
+     "received and read a conversation",
+     "While your account exists",
+     "Deleted when you delete your account"),
     ("Message settings and the members you blocked",
      "While your account exists",
      "Deleted when you delete your account"),
     ("Reports you file about a message, with a copy of that message and up to three messages "
-     "before and after it",
+     "before and after it (and of a reported view-once photo, if reported before it was opened), "
+     "kept even if the messages disappear",
      "Until a moderator resolves it, then 180 days",
      "Automatic cleanup"),
     ("Moderation log (who took which action, and who opened reported content, and when)",

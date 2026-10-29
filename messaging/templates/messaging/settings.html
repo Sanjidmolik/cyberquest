@@ -6,7 +6,7 @@
 {% block extra_css %}
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
-<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=6">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=8">
 {% endblock %}
 
 {% block content %}
@@ -39,6 +39,15 @@
       </select>
       <p class="msg-hint">Either person can change it in a chat; it applies to messages sent after the change.</p>
     </fieldset>
+    <div class="msg-hint msg-honest">
+      <p><strong>What these settings can and can’t do</strong></p>
+      <ul>
+        <li>Encrypted in transit and at rest. Moderators can review messages only if they’re reported.</li>
+        <li>Disappearing messages and view-once photos are deleted from our servers when they expire, but the other person may already have seen, copied or photographed them, and copies can stay in backups until those backups expire.</li>
+        <li>Web browsers can’t block or detect screenshots or screen recording. In chats with disappearing messages we turn off text selection, and view-once photos are watermarked and blurred when you switch away. These only discourage copying; they don’t prevent it.</li>
+        <li>If you report a message, a copy is kept for the moderators until 180 days after the report is resolved, even if the message disappears.</li>
+      </ul>
+    </div>
     <button type="submit" class="msg-btn">Save</button>
   </form>
 

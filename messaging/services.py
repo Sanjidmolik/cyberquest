@@ -405,18 +405,27 @@ def export_for(user):
     for conversation in conversations:
         other = conversation.other(user)
         for message in conversation.messages.select_related("sender").order_by("pk"):
+            if message.kind == Message.PHOTO:     # never the picture itself: it is view-once
+                text = "[view-once photo, opened]" if message.photo_opened_at else "[view-once photo, not opened]"
+            else:
+                text = "" if message.removed else message.text
             rows.append({
                 "conversation": str(conversation.public_id),
                 "with": other.username if other else "Deleted user",
                 "from": "you" if message.sender_id == user.pk else (
                     message.sender.username if message.sender else "Deleted user"),
-                "text": "" if message.removed else message.text,
+                "kind": message.kind,
+                "text": text,
                 "sent_at": message.created_at,
+                "disappearing": TIMERS.get(message.timer, ("Off", None))[0],
+                "expires_at": message.expires_at,
             })
     blocked = Block.objects.filter(blocker=user).select_related("blocked").order_by("created_at")
     return {
         "messages": rows,
-        "message_settings": {"who_can_message": preference(user)},
+        "message_settings": {"who_can_message": preference(user), **privacy(user),
+                             "last_active_in_messages": getattr(
+                                 MessagingPreference.objects.filter(user=user).first(), "last_seen_at", None)},
         "blocked_members": [{"username": b.blocked.username, "blocked_at": b.created_at} for b in blocked],
     }
 
