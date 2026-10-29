@@ -88,6 +88,19 @@ Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
 | `leaderboard` | Rankings |
 | `notifications` | In-app alerts |
 | `pages` | Marketing / about / contact / home |
+| `messaging` | One-to-one messages (encrypted at rest) |
+| `moderation` | Offensive-message warnings, reports, moderation panel |
+
+## Running the tests
+
+```bash
+python manage.py test --parallel
+```
+
+Runs the whole suite on all CPU cores (about 1.5 minutes on a 16-core machine, against
+about 6–8 minutes without `--parallel`). Each worker gets its own copy of the test database
+and cache, and the tests never use live keys from `.env` or the network. Add an app name
+(`python manage.py test messaging`) to run one part.
 
 ## Deployment notes
 

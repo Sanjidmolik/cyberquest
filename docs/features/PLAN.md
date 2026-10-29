@@ -171,6 +171,10 @@ The polling fallback is always on, so a socket failure never stops messaging.
 
 ## Audit checklist (per feature)
 
+Run the suite with `python manage.py test --parallel` (about 90 s on 16 cores; about 6–8 min
+serially). It ran clean four times in a row in parallel, so tests don't share state.
+
+
 The full suite passes, `makemigrations --check` is clean, migrations apply on a fresh
 database, and `check` passes (with `check --deploy` warnings listed here). Then:
 
