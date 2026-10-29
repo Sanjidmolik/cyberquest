@@ -103,7 +103,13 @@ class Scenario(models.Model):
     status = models.CharField(max_length=10, choices=STATUS, default=PUBLISHED)
     # Studio edits not yet published. Students keep getting `content` until publish.
     draft_content = models.JSONField(null=True, blank=True)
-    draft_meta = models.JSONField(null=True, blank=True)  # pending title, difficulty, minutes, XP, topic
+    draft_meta = models.JSONField(null=True, blank=True)  # pending title, difficulty, minutes, topic
+    # Optimistic locking for the Studio editor: every save must name the revision it started
+    # from, so one admin never silently overwrites another's changes.
+    draft_revision = models.PositiveIntegerField(default=0)
+    draft_saved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                       related_name="+")
+    draft_saved_at = models.DateTimeField(null=True, blank=True)
     # "seed" rows may be rewritten by the seed commands; the first studio save makes a row "studio",
     # and the seed commands never touch it again.
     source = models.CharField(max_length=10, choices=SOURCE, default=SEED)

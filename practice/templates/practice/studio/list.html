@@ -42,6 +42,7 @@
       <td><small class="st-meta">{{ s.updated_at|date:"j M Y, H:i" }}{% if s.updated_by %}<br>{{ s.updated_by.email }}{% endif %}</small></td>
       <td>
         <div class="st-actions">
+          {% if perms.practice.change_scenario %}<a href="{% url 'studio:basics' s.slug %}">Edit</a>{% endif %}
           {% if perms.practice.add_scenario %}
           <form method="post" action="{% url 'studio:duplicate' %}">
             {% csrf_token %}

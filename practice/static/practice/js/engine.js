@@ -17,8 +17,7 @@
         var v = attrs[k];
         if (v === null || v === undefined || v === false) return;
         if (k === "class") el.className = v;
-        else if (k === "text") el.textContent = v;
-        else if (k === "html") el.innerHTML = v;
+        else if (k === "text") el.textContent = v;      // content is only ever set as text
         else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), v);
         else if (k === "style" && typeof v === "object") {
           Object.keys(v).forEach(function (prop) {

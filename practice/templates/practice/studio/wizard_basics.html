@@ -1,0 +1,62 @@
+{% extends "dashboard/ops/base.html" %}
+{% load static %}
+{% block ops_head %}{% include "practice/studio/_head.html" %}{% endblock %}
+{% block ops_content %}
+{% include "practice/studio/_wizard_head.html" %}
+{% if error %}<p class="st-alert" role="alert">{{ error }}</p>{% endif %}
+
+<form method="post" class="ops-panel st-form" id="st-basics" data-save-url="{% url 'studio:save' scenario.slug %}">
+  {% csrf_token %}
+  <input type="hidden" name="revision" value="{{ scenario.draft_revision }}">
+  <h2>Basics</h2>
+  <div class="st-field">
+    <label for="b-title">Title</label>
+    <input id="b-title" name="title" maxlength="160" value="{{ basics.title }}" data-max="80" required>
+    <small>What students see on the card and in the session. <span class="st-counter"></span></small>
+  </div>
+  <div class="st-field">
+    <label for="b-topic">Topic</label>
+    <select id="b-topic" name="topic">
+      {% for course in topics %}<option value="{{ course.pk }}"{% if course.pk == basics.topic %} selected{% endif %}>{{ course.title }} ({{ course.code }})</option>{% endfor %}
+    </select>
+    <small>The course this session practises.</small>
+  </div>
+  <div class="st-field">
+    <span class="st-label">Kind</span>
+    <p class="st-readonly">{{ scenario.get_kind_display }}</p>
+    <small>Fixed when the session was created: its steps are built for this kind.</small>
+  </div>
+  <div class="st-field-row">
+    <div class="st-field">
+      <label for="b-difficulty">Difficulty</label>
+      <select id="b-difficulty" name="difficulty">
+        {% for d in difficulties %}<option value="{{ d }}"{% if d == basics.difficulty %} selected{% endif %}>{{ d|capfirst }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="st-field">
+      <label for="b-minutes">Estimated minutes</label>
+      <input id="b-minutes" name="est_minutes" type="number" min="1" max="120" value="{{ basics.est_minutes }}">
+    </div>
+    <div class="st-field">
+      <span class="st-label">XP reward</span>
+      <p class="st-readonly">{{ xp }} XP</p>
+      <small>Every practice session gives the same XP.</small>
+    </div>
+  </div>
+  <div class="st-field">
+    <label for="b-badge">Badge name (optional)</label>
+    <input id="b-badge" name="badge" maxlength="60" value="{{ basics.badge }}" data-max="40" data-example="Phish Spotter">
+    <small><span class="st-counter"></span> <button type="button" class="st-example" data-for="b-badge">Insert example</button></small>
+  </div>
+  <div class="st-field">
+    <label for="b-description">Short description (optional)</label>
+    <textarea id="b-description" name="description" maxlength="200" rows="2" data-max="160" data-example="Spot the signs of a fake login email and decide what to do.">{{ basics.description }}</textarea>
+    <small><span class="st-counter"></span> <button type="button" class="st-example" data-for="b-description">Insert example</button></small>
+  </div>
+  <div class="st-wizard-nav">
+    <button type="submit" class="ops-btn-quiet" name="next" value="">Save</button>
+    <button type="submit" name="next" value="steps">Save and go to Steps →</button>
+  </div>
+</form>
+<script src="{% static 'practice/studio/studio-editor.js' %}?v=1"></script>
+{% endblock %}
