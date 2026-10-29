@@ -297,6 +297,61 @@ class UploadTests(BlogTestCase):
             images.process(upload("bomb.png", picture_bytes("PNG", size=(8000, 6000)), "image/png"))
 
 
+class InsertImageTests(BlogTestCase):
+    """The editor's "Insert image" button: same validation as the Images panel, JSON answer."""
+
+    def setUp(self):
+        super().setUp()
+        self.post = make_post(self.publisher)
+        self.url = reverse("blog_panel:image_insert", args=[self.post.pk])
+
+    def test_returns_the_markdown_line_for_the_cursor(self):
+        self.client.force_login(self.publisher)
+        data = picture_bytes("JPEG", size=(2400, 1200), exif=True)
+        res = self.client.post(self.url, {"file": upload("home.jpg", data), "alt": "Fake [login] page"})
+        self.assertEqual(res.status_code, 201)
+        picture = PostImage.objects.get()
+        self.assertEqual(res.json()["markdown"], f"![Fake \\[login\\] page]({reverse('blog:image', args=[picture.public_id])})")
+        self.assertEqual(picture.alt, "Fake [login] page")
+        with Image.open(picture.image.path) as stored:                       # same processing as the panel
+            self.assertEqual((stored.size, dict(stored.getexif())), ((1600, 800), {}))
+        html = rendering.render("Before\n\n" + res.json()["markdown"])
+        self.assertIn('alt="Fake [login] page"', html)
+        self.assertIn(f'src="{reverse("blog:image", args=[picture.public_id])}"', html)
+        self.assertIsNone(Post.objects.get(pk=self.post.pk).cover)
+
+    def test_bad_files_and_missing_alt_text_are_refused(self):
+        self.client.force_login(self.publisher)
+        for payload in ({"file": upload("evil.jpg", b"<?php ?>"), "alt": "Alt"},
+                        {"file": upload(), "alt": "   "},
+                        {"alt": "No file"}):
+            res = self.client.post(self.url, payload)
+            self.assertEqual(res.status_code, 400)
+            self.assertTrue(res.json()["errors"])
+        self.assertFalse(PostImage.objects.exists())
+
+    def test_only_blog_managers_can_insert(self):
+        editor = member("ed", "Content Editor", is_staff=True)
+        for user in (editor, self.student):
+            self.client.force_login(user)
+            self.assertEqual(self.client.post(self.url, {"file": upload(), "alt": "x"}).status_code, 403)
+        self.client.logout()
+        self.assertEqual(self.client.post(self.url, {"file": upload(), "alt": "x"}).status_code, 302)
+        self.client.force_login(self.publisher)
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+        self.assertFalse(PostImage.objects.exists())
+
+    def test_editor_page_has_the_button_once_the_draft_exists(self):
+        self.client.force_login(self.publisher)
+        page = self.client.get(reverse("blog_panel:edit", args=[self.post.pk]))
+        self.assertContains(page, 'id="bp-insert-open"')
+        self.assertContains(page, f'action="{self.url}"')
+        self.assertContains(page, "blog/js/panel-editor.js")
+        new = self.client.get(reverse("blog_panel:new"))
+        self.assertNotContains(new, 'id="bp-insert-open"')
+        self.assertContains(new, "Save the draft first")
+
+
 class PublicPageTests(BlogTestCase):
     def test_list_is_newest_first_nine_per_page(self):
         now = timezone.now()
