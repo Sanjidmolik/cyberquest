@@ -1,7 +1,7 @@
 # Practice Studio: implementation plan
 
-Status: **phases 1–4 done and tested** (the four features in `docs/features/PLAN.md` are
-finished). Phases 5–7 continue one at a time, each merged into `develop` after an audit.
+Status: **phases 1–6 done and tested** (the four features in `docs/features/PLAN.md` are
+finished). Phase 7 (polish and the admin guide) is next, merged into `develop` after an audit.
 
 ---
 
@@ -256,3 +256,34 @@ Dropped from the studio forms because the player doesn't render them (D2). Each 
   Edge/Chrome with `meta` and unknown keys at every level; no JavaScript errors, the first step
   renders. Skipped when no such browser is installed. A deliberately broken step makes it fail.
 - Tests: 640 with `--parallel` (~97 s).
+
+## 13. Phase 6 notes (check and publish)
+
+- **Checklist** (`practice/studio/checks.py`, wizard step 4 `<slug>/check/`): every rule is shown
+  passed or failed in plain English: title, topic, briefing first, step order for the kind, at
+  least one graded step, each step's required fields and answers (a clue ticked, a right answer,
+  a severity, a secure option, a Good choice per scene), the results-screen summary, no unchanged
+  template example text, and finally `validate_content()` itself. Each failure has a **Fix**
+  link (`steps/#step-4:question`, `steps/#results:sub`, `basics/#b-title`); the editor scrolls
+  to that step, outlines the field and puts the cursor in it. Every seed session passes.
+- **Who can do what, checked on the server**: any Studio user sees the checklist and history;
+  Content Editors get **Request review**, which notifies active Content Publishers and superusers
+  (in-app notification linking to the checklist; once per 10 minutes per session). Publish,
+  Unpublish/Archive, Un-archive and Restore need `practice.publish_scenario`; a direct POST from
+  an editor gets 403 (tested). All actions are POST-only.
+- **Publish**: enabled only when every check passes; the server runs the checks again and uses
+  the draft revision check, so a stale page can't publish. The dialog says "Students will see
+  this version immediately." The old live version is kept as a snapshot first, so a student
+  mid-session keeps playing and being graded on the version they started (tested). The first
+  publish keeps version 1; later ones add 1. Each publish writes a `ScenarioVersion`
+  (who, when, what changed) and an audit entry, and clears the draft.
+- **Archive** only changes the status: the session leaves the Practice Center and its page
+  404s for students; attempts, history and XP are untouched. **Un-archive** returns it to
+  published (or to draft if it was never published).
+- **Version history** (`<slug>/versions/`): number, who, when and a "what changed" summary
+  (title and settings, steps added/removed/edited, results screen). Studio publishes store it;
+  seed snapshots are compared with the version before.
+- **Restore** copies a version into a NEW DRAFT (revision-checked) and never publishes: students
+  keep the live version until a publisher checks and publishes it.
+- Audit actions added: `unarchive`, `review` (migration 0010, choices only).
+- Tests: 658 with `--parallel` (~93 s); phase 6 in `practice/tests_studio_publish.py` (18).
