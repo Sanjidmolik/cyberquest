@@ -171,7 +171,8 @@ class StudioAuditLog(models.Model):
     ACTIONS = [
         ("create", "Created"), ("duplicate", "Duplicated"), ("import", "Imported"), ("edit", "Edited"),
         ("publish", "Published"), ("unpublish", "Unpublished"), ("archive", "Archived"),
-        ("restore", "Restored a version"), ("seed_force", "Overwritten by a forced seed command"),
+        ("unarchive", "Un-archived"), ("review", "Requested review"),
+        ("restore", "Restored a version as a draft"), ("seed_force", "Overwritten by a forced seed command"),
     ]
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                              related_name="+")

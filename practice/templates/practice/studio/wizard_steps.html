@@ -13,7 +13,8 @@
   <a class="ops-btn-link" href="{% url 'studio:basics' scenario.slug %}">← Basics</a>
   <button type="button" id="st-save" class="ops-btn-quiet">Save</button>
   <a href="{% url 'studio:preview' scenario.slug %}" class="ops-create" data-save-first>Save and preview →</a>
+  <a href="{% url 'studio:check' scenario.slug %}" class="ops-btn-link" data-save-first>Save and check →</a>
 </div>
 {{ editor_config|json_script:"st-editor-config" }}
-<script src="{% static 'practice/studio/studio-editor.js' %}?v=2"></script>
+<script src="{% static 'practice/studio/studio-editor.js' %}?v=3"></script>
 {% endblock %}

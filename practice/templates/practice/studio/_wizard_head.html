@@ -8,7 +8,7 @@
     <li class="{% if wizard_step == 1 %}is-current{% endif %}"><a href="{% url 'studio:basics' scenario.slug %}"{% if wizard_step == 1 %} aria-current="step"{% endif %}><span>1</span> Basics</a></li>
     <li class="{% if wizard_step == 2 %}is-current{% endif %}"><a href="{% url 'studio:steps' scenario.slug %}"{% if wizard_step == 2 %} aria-current="step"{% endif %}><span>2</span> Steps</a></li>
     <li class="{% if wizard_step == 3 %}is-current{% endif %}"><a href="{% url 'studio:preview' scenario.slug %}" data-save-first{% if wizard_step == 3 %} aria-current="step"{% endif %}><span>3</span> Preview</a></li>
-    <li class="is-later" aria-disabled="true"><span>4</span> Check &amp; publish</li>
+    <li class="{% if wizard_step == 4 %}is-current{% endif %}"><a href="{% url 'studio:check' scenario.slug %}" data-save-first{% if wizard_step == 4 %} aria-current="step"{% endif %}><span>4</span> Check &amp; publish</a></li>
   </ol>
 </header>
 <p class="st-save-status" id="st-save-status" role="status" aria-live="polite">{% if scenario.draft_saved_at %}Last saved {{ scenario.draft_saved_at|date:"j M, H:i" }}{% if scenario.draft_saved_by %} by {{ scenario.draft_saved_by.username }}{% endif %}{% endif %}</p>
