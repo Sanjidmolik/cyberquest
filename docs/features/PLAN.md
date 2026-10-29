@@ -171,8 +171,11 @@ The polling fallback is always on, so a socket failure never stops messaging.
 
 ## Audit checklist (per feature)
 
-Run the suite with `python manage.py test --parallel` (about 90 s on 16 cores; about 6–8 min
-serially). It ran clean four times in a row in parallel, so tests don't share state.
+Run the suite with `python manage.py test --parallel` (about 90–100 s on 16 cores; about 6–8 min
+serially). It ran clean four times in a row in parallel, so tests don't share state. The
+browser test (`practice/tests_player_browser.py`) runs whenever Edge or Chrome is installed and
+FAILS if the browser won't start; it is skipped only when no browser is installed or
+`CQ_SKIP_BROWSER_TESTS=1` is set.
 
 
 The full suite passes, `makemigrations --check` is clean, migrations apply on a fresh
@@ -182,6 +185,9 @@ database, and `check` passes (with `check --deploy` warnings listed here). Then:
   fields.
 - **Commit hygiene:** no secrets, databases or media in the commit.
 - **Regressions:** dashboard, practice, Practice Studio and login/2FA still work.
+- **Admin pages:** new or changed Command Center pages fit at 820 and 390 px without sideways
+  scrolling, have labels, visible focus and confirmations for anything students or members
+  will notice.
 - **Merge:** merge into `develop` with `--no-ff`, re-run the full suite, and report.
 
 ## Audit log
@@ -272,4 +278,5 @@ Decisions applied (they change the earlier spec):
 - Known limitations: no scheduled publishing UI (a future `published_at` stays hidden
   until then, which is tested); no sitemap or feed yet (they must use
   `Post.objects.published()` when added); image upload has no drag-and-drop, the editor
-  shows a Markdown line to paste.
+  shows a Markdown line to paste. (Later: Studio phase 7 added an **Insert image** button that
+  uploads and inserts the line at the cursor.)

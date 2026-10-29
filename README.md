@@ -13,6 +13,9 @@ Public site branding also appears as **CyberShield Academy**.
 - **Accounts** — Email signup/login, Google OAuth, email 2FA, and TOTP authenticator support
 - **Dashboard, badges, leaderboard, notifications**
 - **Certificates** — Eligibility after all 5 core games at ≥80% overall; PyMuPDF PDF generation, admin templates, QR verification
+- **Messaging and moderation** — Encrypted one-to-one messages, reports, and a moderation panel that shows a message only when it was reported (every view logged)
+- **Blog** — Markdown posts with sanitised output and cleaned image uploads
+- **Practice Studio** — Staff create, preview, check and publish practice sessions without code; see the **[admin guide](docs/practice-studio/ADMIN_GUIDE.md)**
 
 ## Tech stack
 
