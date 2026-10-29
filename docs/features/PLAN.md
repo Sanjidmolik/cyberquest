@@ -259,3 +259,17 @@ Decisions applied (they change the earlier spec):
 - Known limitations: words split by spaces ("i d i o t") aren't caught;
   Banglish has many spellings, so the list will need tuning from real reports; a
   determined user can avoid the warning, which is acceptable because it only warns.
+
+### Feature 4: Blog (merged into `develop`)
+- Tests: 616 pass with `--parallel` in about 100 s (23 new in `blog/tests.py`).
+  `makemigrations --check` clean; fresh-database `migrate` OK (Content Publisher gets
+  `blog.publish_post`); `check` clean; `check --deploy`: only `accounts.W001` (local).
+- Verified in a browser: list, article (raw `<script>` in a post shows as text), editor
+  (publisher nav shows only Practice Studio and Blog).
+- Security: every editor URL gated on the server; drafts, their preview links and their
+  images are 404 for anyone who can't edit the blog; titles, excerpts and alt text are
+  autoescaped; the body goes through the nh3 allow-list on save and on display.
+- Known limitations: no scheduled publishing UI (a future `published_at` stays hidden
+  until then, which is tested); no sitemap or feed yet (they must use
+  `Post.objects.published()` when added); image upload has no drag-and-drop, the editor
+  shows a Markdown line to paste.
