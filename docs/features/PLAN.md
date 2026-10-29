@@ -219,3 +219,36 @@ database, and `check` passes (with `check --deploy` warnings listed here). Then:
   avatar endpoint still returns the default image to the blocked viewer.
 - Added to the checklist: new pages must show public cards via `accounts.public` (never
   user ids); any new message path must go through `messaging/policy.py`.
+
+### Feature 3: Abuse detection, reporting, moderation
+Decisions applied (they change the earlier spec):
+- Moderators read message content only for messages a participant reported: an encrypted
+  snapshot of that message and up to 3 before and after, taken at report time. Content is
+  shown only after "Show reported message" (POST, `Cache-Control: no-store`), and every
+  view writes a `view` entry to the moderation log.
+- Keyword detection only warns the sender ("may be offensive, edit or send anyway?") and
+  records metadata (`FlagEvent`: warned / sent anyway; no text, no words). The panel shows
+  per-user counts only. Detection never punishes.
+- Detection: NFC, invisible (Cf) characters removed, case-folded, l33t swaps, repeated
+  letters collapsed, whole-word matching in any script. Terms in
+  `moderation/wordlists/terms.txt`; must/must-not examples in `examples.txt` (all tested).
+  Starter list: English, Bangla and Banglish insults, threats, sexual harassment; hate terms
+  are left for the owner to add per community policy.
+- Reports: harassment, hate, threats, spam, sexual content, other (+ note, encrypted);
+  "Also block"; 10/day (`MODERATION_REPORTS_PER_DAY`); duplicate report = no-op.
+- Panel `/admin-dashboard/moderation/`: Moderator group (`moderation.moderate`) sees only
+  moderation; reports a moderator filed or that are about them are hidden (404) and can't
+  be acted on. Actions need a reason: dismiss, warn, mute 24 h / 7 d (expire by time, no
+  job), suspend (until lifted; lifting needs a reason). Members are notified and see their
+  notices with a Contact support link.
+- Log: append-only (instance save/delete and queryset delete raise). Deleted accounts leave
+  entries with the user cleared.
+- Retention: resolved reports and their snapshots are deleted 180 days after resolution
+  (`purge_expired_data`), and log entries pointing at them lose the reason text and report
+  link; warning metadata is deleted after 90 days (a decision made here: the counts only
+  need recent weeks). Privacy Policy, retention table and data export updated (reports
+  you filed without message text, restrictions on you, warnings; reports about you are
+  excluded so reporters stay anonymous).
+- Known limitations: spaced or punctuated spellings ("i.d.i.o.t", "f*ck") aren't caught;
+  Banglish has many spellings, so the list will need tuning from real reports; a
+  determined user can avoid the warning, which is acceptable because it only warns.
