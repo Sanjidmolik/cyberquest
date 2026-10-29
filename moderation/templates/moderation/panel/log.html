@@ -1,0 +1,25 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+{% include "moderation/panel/_tabs.html" %}
+<p class="ops-note">Every moderation action and every time someone opened reported content. Entries can’t be edited or deleted. After 180 days the reason text and report link are removed.</p>
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead><tr><th>When</th><th>Moderator</th><th>Action</th><th>Member</th><th>Report</th><th>Reason</th></tr></thead>
+  <tbody>
+    {% for e in page.object_list %}
+    <tr>
+      <td>{{ e.created_at|date:"j M Y, H:i" }}</td>
+      <td>{{ e.actor.username|default:"—" }}</td>
+      <td>{{ e.get_action_display }}</td>
+      <td>{{ e.subject.username|default:"—" }}</td>
+      <td>{% if e.report_id %}{{ e.report_id }}{% else %}—{% endif %}</td>
+      <td>{{ e.reason|default:"—" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="6">Nothing logged yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if page.has_other_pages %}<p class="ops-pager">{% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">Previous</a>{% endif %} Page {{ page.number }} of {{ page.paginator.num_pages }} {% if page.has_next %}<a href="?page={{ page.next_page_number }}">Next</a>{% endif %}</p>{% endif %}
+{% endblock %}

@@ -6,7 +6,7 @@
 {% block extra_css %}
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
-<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -36,10 +36,16 @@
 
   <form method="post" class="cq-panel msg-new-form">
     {% csrf_token %}
+    {% if warning %}
+    <div class="msg-warn" role="alert">
+      <p>{{ warning }}</p>
+      <label class="msg-radio"><input type="checkbox" name="confirm" value="1"> Send it anyway</label>
+    </div>
+    {% endif %}
     <label for="msg-to">To (username)</label>
     <input id="msg-to" name="username" value="{{ to }}" required maxlength="50" autocomplete="off">
     <label for="msg-new-text">Message</label>
-    <textarea id="msg-new-text" name="text" rows="4" maxlength="{{ max }}" required></textarea>
+    <textarea id="msg-new-text" name="text" rows="4" maxlength="{{ max }}" required>{{ text }}</textarea>
     <p class="msg-hint">Text only, up to {{ max }} characters. If they haven’t messaged with you before, this arrives as a request they can accept or decline.</p>
     <button type="submit" class="msg-btn">Send</button>
   </form>

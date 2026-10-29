@@ -17,10 +17,12 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET, require_POST
 
 from accounts.public import public_card
+from moderation.models import Report
+from moderation.services import recent_warning, restriction_reason
 
 from . import services
 from .models import Block, Conversation, MessagingPreference
-from .policy import Denied, RateLimited
+from .policy import Denied, NeedsConfirmation, RateLimited
 
 LOGIN_URL = "/accounts/login/"
 
@@ -64,6 +66,9 @@ def inbox(request, public_id=None):
     if conversation is not None and conversation.is_request_for(request.user):
         tab = "requests"
     context = {
+        "restriction": restriction_reason(request.user),
+        "warning": recent_warning(request.user),
+        "report_reasons": Report.REASONS,
         "tab": tab,
         "query": request.GET.get("q", "")[:50],
         "rows": services.inbox(request.user, tab, request.GET.get("q", "")[:50]),
@@ -90,6 +95,7 @@ def inbox(request, public_id=None):
                     "poll": reverse("messaging:api_poll", args=[conversation.public_id]),
                     "read": reverse("messaging:api_read", args=[conversation.public_id]),
                     "inbox": reverse("messaging:api_inbox"),
+                    "report": reverse("moderation_public:report"),
                 },
             },
         })
@@ -104,8 +110,14 @@ def inbox(request, public_id=None):
 def new_message(request):
     if request.method == "POST":
         username = request.POST.get("username", "")
+        text = request.POST.get("text", "")
         try:
-            conversation, _ = services.start(request.user, username, request.POST.get("text", ""))
+            conversation, _ = services.start(request.user, username, text,
+                                             confirmed=request.POST.get("confirm") == "1")
+        except NeedsConfirmation as exc:
+            return render(request, "messaging/new.html", {
+                "to": username[:50], "text": text, "warning": str(exc), "max": settings.MESSAGING_MAX_LENGTH,
+            })
         except Denied as exc:
             messages.error(request, str(exc))
             return redirect(f"{reverse('messaging:new')}?to={username[:50]}")
@@ -123,8 +135,11 @@ def new_message(request):
 @require_POST
 def api_send(request, public_id):
     conversation = _conversation(request, public_id)
+    body = _body(request)
     try:
-        message = services.send(request.user, conversation, _body(request).get("text"))
+        message = services.send(request.user, conversation, body.get("text"), confirmed=body.get("confirm") is True)
+    except NeedsConfirmation as exc:
+        return JsonResponse({"warning": str(exc), "needs_confirmation": True}, status=409)
     except RateLimited as exc:
         return JsonResponse({"error": str(exc)}, status=429)
     except Denied as exc:

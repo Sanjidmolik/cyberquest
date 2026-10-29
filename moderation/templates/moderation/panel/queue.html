@@ -1,0 +1,44 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_content %}
+<p class="ops-note">Reports come from people in the conversation. Message text stays hidden until you choose to show it, and every time you do, it is logged. Automatic checks never show text; the counts below are all they record. Nothing here acts on its own.</p>
+{% include "moderation/panel/_tabs.html" %}
+
+<div class="ops-kpis">
+  <div class="ops-kpi"><strong>{{ open_count }}</strong><span>Open reports</span></div>
+</div>
+
+<div class="ops-table-wrap">
+<table class="ops-table">
+  <thead><tr><th>Report</th><th>Reason</th><th>About</th><th>From</th><th>{% if status == "open" %}Reported{% else %}Resolved{% endif %}</th></tr></thead>
+  <tbody>
+    {% for r in page.object_list %}
+    <tr>
+      <td><a href="{% url 'moderation:report' r.pk %}">Report {{ r.pk }}</a>{% if r.resolution %}<br><small>{{ r.resolution }}</small>{% endif %}</td>
+      <td>{{ r.get_reason_display }}</td>
+      <td>{{ r.reported_user.username|default:"Deleted user" }}</td>
+      <td>{{ r.reporter.username|default:"Deleted user" }}</td>
+      <td>{% if status == "open" %}{{ r.created_at|date:"j M Y, H:i" }}{% else %}{{ r.resolved_at|date:"j M Y, H:i" }}{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td class="ops-empty" colspan="5">{% if status == "open" %}No open reports. Reports you filed or that are about you go to another moderator.{% else %}No resolved reports.{% endif %}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if page.has_other_pages %}<p class="ops-pager">{% if page.has_previous %}<a href="?status={{ status }}&amp;page={{ page.previous_page_number }}">Previous</a>{% endif %} Page {{ page.number }} of {{ page.paginator.num_pages }} {% if page.has_next %}<a href="?status={{ status }}&amp;page={{ page.next_page_number }}">Next</a>{% endif %}</p>{% endif %}
+
+<section class="ops-panel">
+  <h2>Offensive-message warnings, last 7 days <span>(counts only)</span></h2>
+  <p class="ops-note">How often each member saw “This message may be offensive” and how often they sent anyway. No message text or words are stored. Use this to prioritise; it isn’t evidence on its own.</p>
+  <table class="ops-table">
+    <thead><tr><th>Member</th><th class="ops-num">Warned</th><th>Sent anyway</th></tr></thead>
+    <tbody>
+      {% for f in flags %}
+      <tr><td>{{ f.username|default:"Deleted user" }}</td><td class="ops-num">{{ f.warned }}</td><td>sent {{ f.sent }} flagged message{{ f.sent|pluralize }} this week</td></tr>
+      {% empty %}
+      <tr><td class="ops-empty" colspan="3">No warnings this week.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -25,12 +25,21 @@
     <p class="ops-brand">CyberQuest <span>Ops</span></p>
     <nav aria-label="Command center">
       {% if not request.user.is_superuser %}
-      {# Content Editors and Publishers reach only the Practice Studio. #}
+      {# Content Editors, Publishers and Moderators see only the areas their group allows. #}
+      {% if perms.practice.use_studio %}
       <p class="ops-group">Content</p>
       <a class="ops-link{% if active == 'studio' %} is-active{% endif %}" href="{% url 'studio:list' %}" {% if active == 'studio' %}aria-current="page"{% endif %}>
         <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>
         Practice Studio
       </a>
+      {% endif %}
+      {% if perms.moderation.moderate %}
+      <p class="ops-group">Safety</p>
+      <a class="ops-link{% if active == 'moderation' %} is-active{% endif %}" href="{% url 'moderation:queue' %}" {% if active == 'moderation' %}aria-current="page"{% endif %}>
+        <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v6c0 4 3 7 7 9 4-2 7-5 7-9V6z"/></svg>
+        Moderation
+      </a>
+      {% endif %}
       {% else %}
       <p class="ops-group">Command</p>
       <a class="ops-link{% if active == 'overview' %} is-active{% endif %}" href="{% url 'ops:overview' %}" {% if active == 'overview' %}aria-current="page"{% endif %}>
@@ -65,6 +74,10 @@
       <a class="ops-link{% if active == 'studio' %} is-active{% endif %}" href="{% url 'studio:list' %}" {% if active == 'studio' %}aria-current="page"{% endif %}>
         <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>
         Practice Studio
+      </a>
+      <a class="ops-link{% if active == 'moderation' %} is-active{% endif %}" href="{% url 'moderation:queue' %}" {% if active == 'moderation' %}aria-current="page"{% endif %}>
+        <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v6c0 4 3 7 7 9 4-2 7-5 7-9V6z"/></svg>
+        Moderation
       </a>
       <p class="ops-group">Content</p>
       <a class="ops-link{% if active == 'questions' %} is-active{% endif %}" href="{% url 'ops:questions' %}" {% if active == 'questions' %}aria-current="page"{% endif %}>
@@ -124,7 +137,7 @@
         <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
       <div class="ops-heading">
-        <p class="ops-crumb">{% if active == "studio" %}Practice Studio{% else %}Command Center{% endif %} <span aria-hidden="true">/</span> {{ page_title }}</p>
+        <p class="ops-crumb">{% if active == "studio" %}Practice Studio{% elif active == "moderation" %}Moderation{% else %}Command Center{% endif %} <span aria-hidden="true">/</span> {{ page_title }}</p>
         <h1>{{ page_title }}</h1>
       </div>
       {% if request.user.is_superuser %}

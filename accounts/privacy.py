@@ -118,7 +118,8 @@ def build_export(user) -> dict:
 
 def _messaging_export(user) -> dict:
     from messaging.services import export_for
-    return export_for(user)
+    from moderation.services import export_for as moderation_export
+    return {**export_for(user), **moderation_export(user)}
 
 
 def export_json_bytes(user) -> bytes:
@@ -147,7 +148,8 @@ def export_zip_bytes(user) -> bytes:
         bundle.writestr("profile.csv", _csv_bytes([data["profile"]]))
         for key in ("activity_days", "mission_attempts", "practice_sessions", "course_completions",
                     "reading_progress", "badges", "notifications", "contact_messages",
-                    "messages", "blocked_members"):
+                    "messages", "blocked_members", "reports_filed", "messaging_restrictions",
+                    "message_warnings"):
             bundle.writestr(f"{key}.csv", _csv_bytes(data[key]))
         bundle.writestr("certificate.csv", _csv_bytes([data["certificate"]] if data["certificate"] else []))
         bundle.writestr("message_settings.csv", _csv_bytes([data["message_settings"]]))

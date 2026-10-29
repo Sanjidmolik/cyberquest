@@ -23,6 +23,13 @@ class RateLimited(Denied):
     """Too many messages or new conversations; try again later."""
 
 
+class NeedsConfirmation(Denied):
+    """The text may be offensive: the sender must edit it or confirm sending it anyway."""
+
+    def __init__(self):
+        super().__init__("This message may be offensive. Edit it, or send it anyway.")
+
+
 def blocked_between(one, two):
     """True if either person has blocked the other."""
     return Block.objects.filter(Q(blocker=one, blocked=two) | Q(blocker=two, blocked=one)).exists()
@@ -42,8 +49,9 @@ def can_be_messaged(user):
 
 
 def restriction(user):
-    """A reason this user can't send messages right now (moderation), or "". Feature 3 adds mutes."""
-    return ""
+    """Why this user can't send messages right now (a moderator's mute or suspension), or ""."""
+    from moderation.services import restriction_reason
+    return restriction_reason(user)
 
 
 def check_start(sender, recipient):

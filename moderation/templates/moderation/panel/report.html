@@ -1,0 +1,65 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_head %}
+<style>
+.mod-context { list-style: none; padding: 0; display: grid; gap: 8px; }
+.mod-context li { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.mod-context li.is-reported { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.mod-context p { margin: 4px 0 0; overflow-wrap: anywhere; }
+.mod-actions { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+.mod-actions legend { font-weight: 600; margin-bottom: 4px; }
+</style>
+{% endblock %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'moderation:queue' %}">Back to reports</a></p>
+<section class="ops-panel">
+  <h2>{{ report.get_reason_display }} <span>· {{ report.get_status_display }}</span></h2>
+  <p>About <strong>{{ report.reported_user.username|default:"Deleted user" }}</strong>, reported by <strong>{{ report.reporter.username|default:"Deleted user" }}</strong> on {{ report.created_at|date:"j M Y, H:i" }}.</p>
+  {% if report.resolution %}<p class="ops-note">Resolved: {{ report.resolution }} by {{ report.resolved_by.username|default:"a former moderator" }}, {{ report.resolved_at|date:"j M Y, H:i" }}.</p>{% endif %}
+
+  {% if rows is None %}
+  <form method="post" action="{% url 'moderation:reveal' report.pk %}">
+    {% csrf_token %}
+    <p class="ops-note">The reported message and up to three messages before and after it are hidden. Showing them is recorded in the moderation log with your name and the time.</p>
+    <button type="submit">Show reported message</button>
+  </form>
+  {% else %}
+  <h3>Reported message and context <span>(this view is logged)</span></h3>
+  <ol class="mod-context">
+    {% for row in rows %}
+    <li class="{% if row.reported %}is-reported{% endif %}">
+      <strong>{{ row.sender }}</strong>{% if row.reported %} <small>(reported)</small>{% endif %}
+      <p>{% if row.text %}{{ row.text|linebreaksbr }}{% else %}<em>Text removed</em>{% endif %}</p>
+    </li>
+    {% endfor %}
+  </ol>
+  {% if note %}<h3>Reporter’s note</h3><p>{{ note|linebreaksbr }}</p>{% endif %}
+  {% endif %}
+</section>
+
+{% if report.status == "open" %}
+<form class="ops-panel ops-course-form" method="post" action="{% url 'moderation:act' report.pk %}">
+  {% csrf_token %}
+  <h2>Decision</h2>
+  <fieldset class="mod-actions">
+    <legend>Action</legend>
+    {% for key, label in action_choices %}
+    <label><input type="radio" name="action" value="{{ key }}" required{% if key == "dismiss" %} checked{% endif %}> {{ label }}</label>
+    {% endfor %}
+  </fieldset>
+  <label for="mod-reason">Reason (required; logged, and shown to the member for warnings and restrictions)</label>
+  <textarea id="mod-reason" name="reason" rows="3" maxlength="1000" required></textarea>
+  <button type="submit">Save decision</button>
+</form>
+{% endif %}
+
+<section class="ops-panel">
+  <h2>History</h2>
+  <ul class="ops-list">
+    {% for entry in history %}
+    <li>{{ entry.created_at|date:"j M Y, H:i" }} · {{ entry.actor.username|default:"former moderator" }} · {{ entry.get_action_display }}{% if entry.reason %}: {{ entry.reason }}{% endif %}</li>
+    {% empty %}
+    <li>Nothing yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,6 @@
+<nav class="ops-filters" aria-label="Moderation">
+  <a href="{% url 'moderation:queue' %}">Open reports</a> ·
+  <a href="{% url 'moderation:queue' %}?status=resolved">Resolved</a> ·
+  <a href="{% url 'moderation:restrictions' %}">Active restrictions</a> ·
+  <a href="{% url 'moderation:log' %}">Log</a>
+</nav>
