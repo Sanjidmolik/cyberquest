@@ -6,6 +6,8 @@ content in that response only. Reports a moderator filed, or that are about them
 hidden from them and return 404.
 """
 
+import base64
+
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import Http404
@@ -71,7 +73,10 @@ def report_detail(request, pk):
 def reveal(request, pk):
     report = _report(request, pk)
     rows, note = services.reveal(request.user, report)
+    photo = services.reported_photo(report)
     context = {"report": report, "action_choices": _choices(), "rows": rows, "note": note,
+               # Inline in this logged, no-store response only: the photo never gets a URL.
+               "photo": ({"type": photo[1], "data": base64.b64encode(photo[0]).decode("ascii")} if photo else None),
                "history": ModerationLog.objects.filter(report=report).select_related("actor")}
     response = render(request, "moderation/panel/report.html", _shell(request, f"Report {report.pk}", **context))
     response["Cache-Control"] = "no-store"

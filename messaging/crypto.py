@@ -34,3 +34,16 @@ def decrypt(token):
 def rotate(token):
     """Re-encrypt with the newest key (after a new key was put first)."""
     return _current().rotate(token.encode("ascii")).decode("ascii")
+
+
+def encrypt_bytes(data):
+    """View-once photo files are stored as Fernet tokens too (same keys)."""
+    return _current().encrypt(data)
+
+
+def decrypt_bytes(token):
+    return _current().decrypt(token)
+
+
+def rotate_bytes(token):
+    return _current().rotate(token)

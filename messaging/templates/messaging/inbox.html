@@ -6,7 +6,7 @@
 {% block extra_css %}
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
-<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=6">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=7">
 {% endblock %}
 
 {% block content %}
@@ -132,10 +132,25 @@
         <div class="msg-compose-foot">
           <span class="msg-counter" id="msg-counter" aria-live="polite">0 / {{ config.max }}</span>
           <span class="msg-error" id="msg-error" role="alert"></span>
+          {% if config.urls.photo %}
+          <label class="msg-btn msg-btn--quiet msg-photo-btn">Photo
+            <input type="file" id="msg-photo" accept="image/jpeg,image/png,image/webp" class="visually-hidden">
+          </label>
+          {% endif %}
           <button type="submit" class="msg-btn" id="msg-send">Send</button>
         </div>
       </form>
       <p class="msg-cannot" id="msg-cannot"{% if status.can_send %} hidden{% endif %}>{{ status.reason }}</p>
+      <dialog class="msg-viewer" id="msg-viewer" aria-labelledby="msg-viewer-title">
+        <h2 class="visually-hidden" id="msg-viewer-title">View-once photo</h2>
+        <div class="msg-viewer-stage" id="msg-viewer-stage">
+          <img id="msg-viewer-img" alt="View-once photo" draggable="false">
+          <span class="msg-viewer-mark" id="msg-viewer-mark" aria-hidden="true"></span>
+        </div>
+        <p class="msg-viewer-foot"><span id="msg-viewer-count" aria-live="polite"></span>
+          <button type="button" class="msg-btn msg-btn--quiet" id="msg-viewer-close">Close</button></p>
+        <p class="msg-hint">This photo can be opened once. Screenshots can't be blocked on the web, so only share what you'd be fine with someone keeping.</p>
+      </dialog>
       <dialog class="msg-report" id="msg-report" aria-labelledby="msg-report-title">
         <form method="dialog" id="msg-report-form">
           <h2 class="cq-title" id="msg-report-title">Report message</h2>
@@ -169,5 +184,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'messaging/js/messaging.js' %}?v=5"></script>
+<script src="{% static 'messaging/js/messaging.js' %}?v=6"></script>
 {% endblock %}

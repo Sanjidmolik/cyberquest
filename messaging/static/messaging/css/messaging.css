@@ -138,3 +138,15 @@
 @media (max-width: 600px) { .msg-timer { order: 3; flex-basis: 100%; } }
 .msg-timer select, .msg-settings select { font: inherit; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 8px; padding: 4px 6px; }
 @media (prefers-reduced-motion: reduce) { .msg-typing { transition: none; } }
+.msg-photo-btn { position: relative; cursor: pointer; }
+.msg-photo-btn:focus-within { outline: 2px solid var(--cq-violet-strong); outline-offset: 2px; }
+.msg-photo-note { font-style: italic; }
+.msg-viewer { border: 0; border-radius: 16px; padding: 14px; max-width: min(92vw, 720px); background: var(--cq-surface, #1b1035); color: var(--cq-text, #fff); }
+.msg-viewer::backdrop { background: rgba(5, 2, 15, .85); }
+.msg-viewer-stage { position: relative; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.msg-viewer-stage img { display: block; max-width: 100%; max-height: 70vh; margin: 0 auto; pointer-events: none; }
+.msg-viewer-stage.is-blurred img { filter: blur(24px); }
+.msg-viewer-mark { position: absolute; inset: auto 8px 8px auto; padding: 2px 8px; border-radius: 6px; font-size: 12px;
+  color: #fff; background: rgba(0, 0, 0, .55); pointer-events: none; }
+.msg-viewer-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 10px 0 4px; }
+@media (prefers-reduced-motion: no-preference) { .msg-viewer-stage img { transition: filter .15s ease; } }

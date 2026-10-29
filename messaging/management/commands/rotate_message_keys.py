@@ -6,7 +6,9 @@ deploy, run this command, then remove the old keys. Safe to run again.
 
 from django.core.management.base import BaseCommand
 
-from messaging.crypto import rotate
+from django.core.files.base import ContentFile
+
+from messaging.crypto import rotate, rotate_bytes
 from messaging.models import Message
 
 
@@ -20,4 +22,16 @@ class Command(BaseCommand):
             if fresh != message.body:
                 Message.all_objects.filter(pk=message.pk).update(body=fresh)
                 done += 1
-        self.stdout.write(self.style.SUCCESS(f"Re-encrypted {done} messages."))
+        files = 0
+        from moderation.models import Report
+        for model, manager in ((Message, Message.all_objects), (Report, Report.objects)):
+            field = model._meta.get_field("photo")
+            for pk, name in manager.exclude(photo="").values_list("pk", "photo").iterator(chunk_size=200):
+                with field.storage.open(name, "rb") as handle:
+                    token = handle.read()
+                fresh = rotate_bytes(token)
+                if fresh != token:
+                    field.storage.delete(name)
+                    field.storage.save(name, ContentFile(fresh))
+                    files += 1
+        self.stdout.write(self.style.SUCCESS(f"Re-encrypted {done} messages and {files} photo files."))

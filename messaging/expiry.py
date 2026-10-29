@@ -39,16 +39,21 @@ def _delete_files(names_and_storages):
 
 
 def purge_batch(limit, now=None, dry_run=False):
-    """Delete up to `limit` expired messages. Returns {"messages": n, "photo_files": n}."""
+    """Delete up to `limit` expired messages, plus any opened view-once photo files still stored
+    (a safety net: opening deletes them). Returns {"messages": n, "photo_files": n}."""
     now = now or timezone.now()
     rows = list(Message.all_objects.filter(expires_at__lte=now).order_by("pk").values_list("pk", "photo")[:limit])
-    if dry_run or not rows:
+    if dry_run:
         return {"messages": len(rows), "photo_files": sum(1 for _, photo in rows if photo)}
+    from .photos import purge_opened_files
+    opened = purge_opened_files(now=now, limit=limit)
+    if not rows:
+        return {"messages": 0, "photo_files": opened}
     storage = Message._meta.get_field("photo").storage
     files = [(storage, photo) for _, photo in rows if photo]
     with transaction.atomic():
         Message.all_objects.filter(pk__in=[pk for pk, _ in rows], expires_at__lte=now).delete()
-    return {"messages": len(rows), "photo_files": _delete_files(files)}
+    return {"messages": len(rows), "photo_files": _delete_files(files) + opened}
 
 
 def purge(now=None, dry_run=False, batch=COMMAND_BATCH):

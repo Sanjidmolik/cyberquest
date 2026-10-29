@@ -62,7 +62,8 @@
     var li = el("li", "msg-bubble " + (m.mine ? "is-mine" : "is-theirs"));
     li.dataset.id = m.id;
     if (!m.mine) li.appendChild(el("span", "msg-bubble-who", m.sender || "Deleted user"));
-    li.appendChild(el("p", "msg-bubble-text" + (m.removed ? " is-removed" : ""), m.removed ? "Message removed" : m.text));
+    if (m.photo) li.appendChild(photoBody(m));
+    else li.appendChild(el("p", "msg-bubble-text" + (m.removed ? " is-removed" : ""), m.removed ? "Message removed" : m.text));
     var t = el("time", "msg-bubble-time", timeLabel(m.at));
     t.setAttribute("datetime", m.at);
     li.appendChild(t);
@@ -102,6 +103,71 @@
       if (nearBottom || list.some(function (m) { return m.mine; })) thread.scrollTop = thread.scrollHeight;
     }
     markRead();
+  }
+
+  // ---------- view-once photos ----------
+
+  function photoLabel(m) {
+    if (m.photo.state === "opened") return "Photo · opened";
+    return m.mine ? "Photo · sent" : "Photo · view once";
+  }
+
+  function photoBody(m) {
+    if (!m.photo.can_open) return el("p", "msg-bubble-text msg-photo-note", photoLabel(m));
+    var open = el("button", "msg-btn msg-photo-open", "Open photo · view once");
+    open.type = "button";
+    open.addEventListener("click", function () { openPhoto(m, open); });
+    return open;
+  }
+
+  var viewer = document.getElementById("msg-viewer");
+  var viewerUrl = null, viewerTimer = null;
+
+  function closeViewer() {
+    clearInterval(viewerTimer);
+    var img = document.getElementById("msg-viewer-img");
+    img.removeAttribute("src");
+    if (viewerUrl) { URL.revokeObjectURL(viewerUrl); viewerUrl = null; }
+    if (viewer.open) viewer.close();
+  }
+
+  function openPhoto(m, button) {
+    if (!viewer) return;
+    button.disabled = true;
+    fetch(cfg.urls.photo_open.replace("/0/open/", "/" + m.id + "/open/"), {
+      method: "POST", credentials: "same-origin", headers: { "X-CSRFToken": csrf() }
+    }).then(function (res) {
+      if (!res.ok) return res.json().catch(function () { return {}; }).then(function (d) { throw new Error(d.error || "This photo isn't available."); });
+      return res.blob();
+    }).then(function (blob) {
+      button.replaceWith(el("p", "msg-bubble-text msg-photo-note", "Photo · opened"));
+      viewerUrl = URL.createObjectURL(blob);
+      document.getElementById("msg-viewer-img").src = viewerUrl;
+      // Deterrent only: who is looking, and when.
+      document.getElementById("msg-viewer-mark").textContent = cfg.me + " · " + new Date().toLocaleString();
+      var left = cfg.view_seconds || 10, count = document.getElementById("msg-viewer-count");
+      count.textContent = left + " s left";
+      viewer.showModal();
+      viewerTimer = setInterval(function () {
+        left -= 1;
+        count.textContent = left + " s left";
+        if (left <= 0) closeViewer();
+      }, 1000);
+    }).catch(function (err) {
+      button.replaceWith(el("p", "msg-bubble-text msg-photo-note", err.message));
+    });
+  }
+
+  if (viewer) {
+    document.getElementById("msg-viewer-close").addEventListener("click", closeViewer);
+    viewer.addEventListener("close", closeViewer);
+    viewer.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    viewer.addEventListener("dragstart", function (e) { e.preventDefault(); });
+    var stage = document.getElementById("msg-viewer-stage");
+    function blurIt(on) { stage.classList.toggle("is-blurred", on); }
+    window.addEventListener("blur", function () { blurIt(true); });
+    window.addEventListener("focus", function () { blurIt(false); });
+    document.addEventListener("visibilitychange", function () { blurIt(document.hidden); });
   }
 
   function setTick(tick, status) {
@@ -218,6 +284,21 @@
     }
 
     form.addEventListener("submit", function (e) { e.preventDefault(); submit(false); });
+    var photoInput = document.getElementById("msg-photo");
+    if (photoInput) photoInput.addEventListener("change", function () {
+      var file = photoInput.files[0];
+      if (!file) return;
+      var body = new FormData();
+      body.append("photo", file);
+      error.textContent = "Sending photo…";
+      fetch(cfg.urls.photo, { method: "POST", credentials: "same-origin", headers: { "X-CSRFToken": csrf() }, body: body })
+        .then(function (res) { return res.json().then(function (d) { d._status = res.status; return d; }); })
+        .then(function (data) {
+          error.textContent = data._status === 201 ? "" : (data.error || "Couldn't send the photo.");
+          if (data._status === 201) addMessages([data.message]);
+        }).catch(function () { error.textContent = "Couldn't send the photo: check your connection."; })
+        .then(function () { photoInput.value = ""; });
+    });
     if (warn) {
       document.getElementById("msg-warn-send").addEventListener("click", function () { submit(true); });
       document.getElementById("msg-warn-edit").addEventListener("click", function () { warn.hidden = true; box.focus(); });

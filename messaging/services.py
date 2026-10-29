@@ -293,6 +293,11 @@ def serialize(message, viewer, reported=frozenset(), seen=None):
         "mine": message.sender_id == viewer.pk,
         "sender": sender.username if sender else None,      # None: "Deleted user"
         "text": message.text,
+        # View-once photos: never a URL here; the recipient opens it once through api_photo_open.
+        "photo": ({"state": "opened" if message.photo_opened_at else "view_once",
+                   "can_open": (message.sender_id != viewer.pk and not message.photo_opened_at
+                                and bool(message.photo))}
+                  if message.kind == Message.PHOTO else None),
         "removed": message.removed,
         "can_report": (message.sender_id not in (None, viewer.pk) and not message.removed
                        and message.kind != Message.SYSTEM),
@@ -357,7 +362,13 @@ def inbox(user, tab="inbox", query=""):
         last_message = last_messages.get(c.last_id)
         preview = ""
         if last_message is not None:
-            preview = "Message removed" if last_message.removed else last_message.text[:PREVIEW_LENGTH]
+            if last_message.removed:
+                preview = "Message removed"
+            elif last_message.kind == Message.PHOTO:
+                from .photos import preview as photo_preview
+                preview = photo_preview(last_message, user)
+            else:
+                preview = last_message.text[:PREVIEW_LENGTH]
             if last_message.sender_id != user.pk and c.last_id > (c.my_delivered or 0):
                 mark_delivered(user, c, c.last_id)       # the inbox list fetched it: delivered
         cut_off = other is None or other.pk in blocked or other.pk in blocked_me
