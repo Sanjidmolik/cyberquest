@@ -11,6 +11,10 @@ Text and listed terms go through the same normalisation, then whole words are co
   3. Split into words (letters, combining marks and digits, in any script, so Bangla works).
   4. Common l33t swaps inside a word: 0→o 1→i 3→e 4→a 5→s 7→t @→a $→s !→i.
   5. Collapse repeated letters ("idiooot" → "idiot", "haramzaada" → "haramzada").
+Disguised spellings: inside one space-separated chunk, symbols between letters are dropped
+("i.d.i.o.t" → "idiot") or each stands for one letter ("f*ck" → f?ck). That form only
+counts when the WHOLE chunk equals a single listed word of 4+ letters, so "e.g.", "U.S.A.",
+version numbers and URLs don't match.
 Step 5 means a listed term must not collapse into an ordinary word (e.g. "ass" → "as");
 moderation/wordlists/examples.txt keeps such false positives visible in the tests.
 
@@ -67,14 +71,55 @@ def terms(path=WORDLIST):
     return frozenset(found)
 
 
+DISGUISE_MIN_LETTERS = 4
+
+
+def _is_letter(ch):
+    return unicodedata.category(ch)[0] in "LM"
+
+
+def _disguised(text):
+    """(letters-only form, one-symbol-per-letter pattern) for each chunk that hides symbols
+    between letters, e.g. "i.d.i.o.t" or "f*ck"."""
+    out = []
+    for chunk in normalise(text).split():
+        chunk = chunk.translate(LEET)
+        start, end = 0, len(chunk)
+        while start < end and not _is_letter(chunk[start]):
+            start += 1
+        while end > start and not _is_letter(chunk[end - 1]):
+            end -= 1
+        core = chunk[start:end]
+        if not core or all(_is_letter(ch) for ch in core):
+            continue                                    # plain words are handled by words()
+        # Collapse repeated letters like the listed words are ("bullsh*t" → "bulsh*t"); each
+        # symbol stays one wildcard ("f**k" → f..k).
+        squashed = "".join(ch for i, ch in enumerate(core)
+                           if not (_is_letter(ch) and i and core[i - 1] == ch))
+        letters = REPEATS.sub(r"", "".join(ch for ch in core if _is_letter(ch)))
+        pattern = "".join(re.escape(ch) if _is_letter(ch) else "." for ch in squashed)
+        out.append((letters, re.compile(pattern)))
+    return out
+
+
+@lru_cache(maxsize=1)
+def _single_words():
+    return frozenset(p[0] for p in terms() if len(p) == 1 and len(p[0]) >= DISGUISE_MIN_LETTERS)
+
+
 def matches(text):
     """The listed terms found in `text` (for tests and tuning; never stored or logged)."""
     seq = words(text)
-    found = []
+    found = set()
     for phrase in terms():
         size = len(phrase)
         if any(tuple(seq[i:i + size]) == phrase for i in range(len(seq) - size + 1)):
-            found.append(" ".join(phrase))
+            found.add(" ".join(phrase))
+    long_words = _single_words()
+    for letters, pattern in _disguised(text):
+        if letters in long_words:
+            found.add(letters)
+        found.update(word for word in long_words if pattern.fullmatch(word))
     return sorted(found)
 
 

@@ -249,6 +249,9 @@ Decisions applied (they change the earlier spec):
   need recent weeks). Privacy Policy, retention table and data export updated (reports
   you filed without message text, restrictions on you, warnings; reports about you are
   excluded so reporters stay anonymous).
-- Known limitations: spaced or punctuated spellings ("i.d.i.o.t", "f*ck") aren't caught;
+- Follow-up: disguised spellings are caught for listed words of 4+ letters (symbols between
+  letters dropped, or each symbol standing for one letter: "i.d.i.o.t", "f*ck"), only when a
+  whole chunk equals the word; "e.g.", "U.S.A.", versions and URLs stay clean (examples.txt).
+- Known limitations: words split by spaces ("i d i o t") aren't caught;
   Banglish has many spellings, so the list will need tuning from real reports; a
   determined user can avoid the warning, which is acceptable because it only warns.

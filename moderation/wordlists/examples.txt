@@ -26,6 +26,28 @@
 + shuorer baccha
 + toke mere felbo kintu
 
+# ---- must match: disguised spellings (symbols between letters, 4+ letter words) ----
++ you are an i.d.i.o.t
++ what a m-o-r-o-n
++ f*ck off
++ that is bullsh*t
++ f**k this
++ you b!tch
++ total a$$hole
++ you're an id_iot
+
+# ---- must NOT match: normal text with dots and symbols ----
+- e.g. use a password manager
+- i.e. never reuse passwords
+- I moved to the U.S.A. last year
+- update to version 2.4.1 today
+- see https://www.example.com/docs/idiomatic-python
+- the file is report.final.pdf
+- 10:30 a.m. meeting
+- Dr. Rahman said it's fine
+- C++ and C# are languages
+- mr.smith@example.com wrote back
+
 # ---- must NOT match: ordinary words that contain or resemble a term ----
 - hello, how was the phishing course?
 - I passed the class assessment
