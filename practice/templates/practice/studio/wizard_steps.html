@@ -12,7 +12,8 @@
 <div class="st-wizard-nav st-wizard-nav--sticky">
   <a class="ops-btn-link" href="{% url 'studio:basics' scenario.slug %}">← Basics</a>
   <button type="button" id="st-save" class="ops-btn-quiet">Save</button>
+  <a href="{% url 'studio:preview' scenario.slug %}" class="ops-create" data-save-first>Save and preview →</a>
 </div>
 {{ editor_config|json_script:"st-editor-config" }}
-<script src="{% static 'practice/studio/studio-editor.js' %}?v=1"></script>
+<script src="{% static 'practice/studio/studio-editor.js' %}?v=2"></script>
 {% endblock %}

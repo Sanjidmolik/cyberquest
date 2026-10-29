@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import preview_views, views
 
 app_name = "studio"
 
@@ -13,4 +13,6 @@ urlpatterns = [
     path("<slug:slug>/basics/", views.wizard_basics, name="basics"),
     path("<slug:slug>/steps/", views.wizard_steps, name="steps"),
     path("<slug:slug>/save/", views.wizard_save, name="save"),
+    path("<slug:slug>/preview/", preview_views.wizard_preview, name="preview"),
+    path("<slug:slug>/preview/play/", preview_views.play, name="play"),
 ]

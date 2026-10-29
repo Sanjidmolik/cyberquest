@@ -235,3 +235,24 @@ Dropped from the studio forms because the player doesn't render them (D2). Each 
 - **Escaping**: the player's `h()` helper no longer has an `html` option; admin text reaches the
   player through text nodes and template autoescaping (tested with `<script>alert(1)</script>`).
 - Tests: `practice/tests_studio_wizard.py` (15). Full suite 631 with `--parallel` (~96 s).
+
+## 12. Phase 5 notes (preview)
+
+- **Latest saved draft only**: "Save and preview" (Steps and Basics) and the wizard's Preview
+  link save first, with the revision check; on a conflict or sign-out the page stays put.
+- **Real player in an iframe** (`<slug>/preview/play/`), Desktop / Mobile (390 px) toggle,
+  "Restart preview" (reloads the player: a fresh preview attempt), a "PREVIEW — no XP, no
+  stats" banner inside and outside the player. Back / play-again stay inside the preview.
+- **Preview attempts**: `api_start` honours `preview: true` only for Studio staff; the attempt
+  is `is_preview`, starts from a copy of the saved draft (graded on that copy even if the draft
+  changes mid-play), awards no XP or badges and writes no practice record.
+- **Framing**: every response now sends X-Frame-Options DENY and CSP `frame-ancestors 'none'`
+  (`cyberquest/framing.py`). Only the preview player sends SAMEORIGIN / `frame-ancestors 'self'`.
+- **Access**: preview and play are Studio-staff only; everyone else, signed out included, gets
+  404. Both are `noindex` and `no-store`.
+- **Answer key**: beside the iframe (staff page only), built on the server from the saved draft;
+  the player and the student API never receive answers (tested).
+- **Deferred phase 1 test**: `practice/tests_player_browser.py` runs the real player in headless
+  Edge/Chrome with `meta` and unknown keys at every level; no JavaScript errors, the first step
+  renders. Skipped when no such browser is installed. A deliberately broken step makes it fail.
+- Tests: 640 with `--parallel` (~97 s).

@@ -3,16 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ scenario.title }} · CyberQuest Practice</title>
+<title>{% if preview %}Preview: {% endif %}{{ title|default:scenario.title }} · CyberQuest Practice</title>
+{% if preview %}<meta name="robots" content="noindex, nofollow">{% endif %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap">
 <link rel="stylesheet" href="{% static 'practice/css/session.css' %}?v=3">
-<style>body{margin:0;background:#FFFFFF}</style>
+<style>body{margin:0;background:#FFFFFF}
+.cqs-preview-banner{margin:0;padding:8px 12px;text-align:center;font:800 13px/1.3 Nunito,system-ui,sans-serif;letter-spacing:.04em;color:#1b140c;background:#FFD23F;border-bottom:2px solid #8A5A00}</style>
 </head>
 <body>
 {% include "practice/_hana.html" %}
 
+{% if preview %}<p class="cqs-preview-banner" role="status">PREVIEW — no XP, no stats. Students can't see this draft.</p>{% endif %}
 <div class="cq-session" id="cq-session" data-kind="{{ scenario.kind }}">
   {# Briefing (story step). Rendered on the server; engine.js takes over on "Start mission". #}
   <div class="cqs-top cqs-top--brief">
@@ -37,7 +40,7 @@
       <section class="cqs-card cqs-brief-card rise">
         <div>
           <span class="cqs-tag cqs-tag--{{ scenario.kind }}">{{ scenario.get_kind_display|upper }} SESSION</span>
-          <h1 class="cqs-brief-title">{{ scenario.title }}</h1>
+          <h1 class="cqs-brief-title">{{ title|default:scenario.title }}</h1>
           <p class="cqs-brief-desc">{{ brief.desc }}</p>
         </div>
         <div class="cqs-chips">
@@ -47,7 +50,7 @@
           <span class="cqs-chip">
             <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>~{{ scenario.est_minutes }} min · no timer
           </span>
-          <span class="cqs-chip cqs-chip--xp">+{{ scenario.xp_reward }} XP</span>
+          <span class="cqs-chip cqs-chip--xp">{% if preview %}{{ scenario.xp_reward }} XP for students · 0 in preview{% else %}+{{ scenario.xp_reward }} XP{% endif %}</span>
         </div>
         <ol class="cqs-track" aria-label="Mission steps" style="list-style:none;margin:0;padding:4px 0 0">
           {% for label in brief.labels %}
@@ -73,7 +76,7 @@
 
 {{ session_config|json_script:"cq-session-config" }}
 <script src="{% static 'practice/js/hana.js' %}?v=1"></script>
-<script src="{% static 'practice/js/engine.js' %}?v=3"></script>
+<script src="{% static 'practice/js/engine.js' %}?v=4"></script>
 <script src="{% static 'practice/js/steps/mcq.js' %}?v=2"></script>
 <script src="{% static 'practice/js/steps/hotspot.js' %}?v=2"></script>
 <script src="{% static 'practice/js/steps/match.js' %}?v=1"></script>

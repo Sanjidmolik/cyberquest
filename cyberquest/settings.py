@@ -116,6 +116,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'cyberquest.framing.FrameAncestorsMiddleware',
 ]
 ROOT_URLCONF = 'cyberquest.urls'
 
@@ -133,6 +134,10 @@ TEMPLATES = [
         },
     },
 ]
+
+# Never framed by other pages (also CSP frame-ancestors, cyberquest/framing.py). Only the
+# Practice Studio preview player allows same-origin framing.
+X_FRAME_OPTIONS = 'DENY'
 
 WSGI_APPLICATION = 'cyberquest.wsgi.application'
 # Local `runserver` (daphne) and an ASGI production server use this; Gunicorn/WSGI keeps working

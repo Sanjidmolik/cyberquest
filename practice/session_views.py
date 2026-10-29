@@ -52,7 +52,10 @@ def topic_label(scenario):
 
 def attempt_content(attempt):
     """The content this attempt is graded on: the version it started on, so publishing a new
-    version never changes the answers under a learner who is mid-session."""
+    version never changes the answers under a learner who is mid-session. A Studio preview is
+    graded on the draft copy it started with."""
+    if attempt.is_preview and isinstance(attempt.state.get("preview_content"), dict):
+        return attempt.state["preview_content"]
     return attempt.scenario.content_for_version(attempt.state.get("version"))
 
 
@@ -77,25 +80,26 @@ def _own_attempt(request, attempt_id):
     )
 
 
-@login_required(login_url=LOGIN_URL)
-def session_page(request, slug):
-    scenario = Scenario.objects.published().select_related("topic").filter(slug=slug).first()
-    if scenario is None:
-        raise Http404("Unknown practice scenario.")
-    locked = not scenario_is_open(scenario, request.user)
-    steps = scenario.content.get("steps") or []
+def render_session(request, scenario, *, content, title, locked=False, preview_url=""):
+    """The real player page. With `preview_url` it is a Studio preview: banner, no lock, and
+    "back" / "play again" stay inside the preview."""
+    steps = content.get("steps") or []
     brief = public_content(steps[0]) if steps else {}
+    center = preview_url or reverse("practice:center")
     return render(request, "practice/session.html", {
         "scenario": scenario,
+        "title": title,
         "brief": brief,
         "topic_label": topic_label(scenario),
         "locked": locked,
-        "center_url": reverse("practice:center"),
+        "preview": bool(preview_url),
+        "center_url": center,
         "session_config": {
             "slug": scenario.slug,
             "kind": scenario.kind,
-            "title": scenario.title,
+            "title": title,
             "locked": locked,
+            "preview": bool(preview_url),
             "hearts": START_HEARTS,
             "xp": request.user.xp,
             "csrf": get_token(request),
@@ -103,33 +107,50 @@ def session_page(request, slug):
                 "start": reverse("practice:api_start"),
                 "answer": reverse("practice:api_answer", args=[0]),
                 "complete": reverse("practice:api_complete", args=[0]),
-                "center": reverse("practice:center"),
-                "replay": session_url(scenario),
+                "center": center,
+                "replay": preview_url or session_url(scenario),
             },
         },
     })
 
 
 @login_required(login_url=LOGIN_URL)
+def session_page(request, slug):
+    scenario = Scenario.objects.published().select_related("topic").filter(slug=slug).first()
+    if scenario is None:
+        raise Http404("Unknown practice scenario.")
+    return render_session(request, scenario, content=scenario.content, title=scenario.title,
+                          locked=not scenario_is_open(scenario, request.user))
+
+
+@login_required(login_url=LOGIN_URL)
 @require_POST
 def api_start(request):
+    from .studio.access import can_use_studio
+    from .studio.services import working_content
+
     data = _body(request)
     slug = data.get("scenario") if data else None
-    scenario = (Scenario.objects.published().select_related("topic").filter(slug=slug).first()
-                if isinstance(slug, str) else None)
+    # Studio preview: only for Studio staff, any status, the latest SAVED draft, no XP or stats.
+    preview = bool(data and data.get("preview") is True and can_use_studio(request.user))
+    found = Scenario.objects.select_related("topic") if preview else Scenario.objects.published().select_related("topic")
+    scenario = found.filter(slug=slug).first() if isinstance(slug, str) else None
     if scenario is None:
         return _json_error("Unknown scenario.", 404)
-    if not scenario_is_open(scenario, request.user):
+    if not preview and not scenario_is_open(scenario, request.user):
         return _json_error("This scenario is not open yet.", 403)
-    attempt = Attempt.objects.create(
-        user=request.user, scenario=scenario, hearts=START_HEARTS,
-        state={"version": scenario.version},
-    )
+    content = working_content(scenario) if preview else scenario.content
+    state = {"version": scenario.version}
+    if preview:
+        state.update({"preview_content": content, "draft_revision": scenario.draft_revision})
+    attempt = Attempt.objects.create(user=request.user, scenario=scenario, hearts=START_HEARTS,
+                                     state=state, is_preview=preview)
     return JsonResponse({
         "attempt_id": attempt.pk,
         "kind": scenario.kind,
         "hearts": attempt.hearts,
-        "content": public_content(scenario.content),
+        "preview": preview,
+        "content": public_content(content),
     }, status=201)
 
 
