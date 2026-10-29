@@ -431,6 +431,7 @@ a.ops-create:hover { filter: brightness(1.06); }
   margin-bottom: 14px;
   align-items: center;
 }
+.ops-filters a[aria-current="page"] { color: var(--text); font-weight: 700; text-decoration: none; }
 .ops-filters input, .ops-filters select, .ops-panel input, .ops-panel select {
   font: inherit;
   color: inherit;
@@ -578,7 +579,7 @@ a:hover { text-decoration: none; }
   .ops-feed time { grid-column: 1; }
 }
 @media (max-width: 860px) {
-  .ops-app { grid-template-columns: 1fr; }
+  .ops-app { grid-template-columns: minmax(0, 1fr); }   /* plain 1fr would grow to fit wide tables */
   .ops-side {
     display: none;
     position: fixed;

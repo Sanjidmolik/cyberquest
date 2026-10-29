@@ -1,8 +1,19 @@
-/* Blog editor: "Insert image". Uploads through the same checks as the Images panel
-   (blog_panel:image_insert) and puts the returned Markdown line at the cursor in the body.
-   The Images panel's own upload form keeps working without JavaScript. */
+/* Blog editor: a warning before leaving with unsaved text, and "Insert image", which uploads
+   through the same checks as the Images panel (blog_panel:image_insert) and puts the returned
+   Markdown line at the cursor in the body. The Images panel's own upload form keeps working
+   without JavaScript. */
 (function () {
   "use strict";
+
+  var postForm = document.querySelector(".bp-form");
+  var unsaved = false;
+  if (postForm) {
+    postForm.addEventListener("input", function () { unsaved = true; });
+    postForm.addEventListener("submit", function () { unsaved = false; });
+    window.addEventListener("beforeunload", function (e) {
+      if (unsaved) { e.preventDefault(); e.returnValue = ""; }
+    });
+  }
 
   var dialog = document.getElementById("bp-insert");
   var open = document.getElementById("bp-insert-open");

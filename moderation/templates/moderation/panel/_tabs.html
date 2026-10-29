@@ -1,6 +1,8 @@
+{% with here=request.resolver_match.url_name resolved=request.GET.status %}
 <nav class="ops-filters" aria-label="Moderation">
-  <a href="{% url 'moderation:queue' %}">Open reports</a> ·
-  <a href="{% url 'moderation:queue' %}?status=resolved">Resolved</a> ·
-  <a href="{% url 'moderation:restrictions' %}">Active restrictions</a> ·
-  <a href="{% url 'moderation:log' %}">Log</a>
+  <a href="{% url 'moderation:queue' %}"{% if here == "queue" and resolved != "resolved" %} aria-current="page"{% endif %}>Open reports</a> ·
+  <a href="{% url 'moderation:queue' %}?status=resolved"{% if here == "queue" and resolved == "resolved" %} aria-current="page"{% endif %}>Resolved</a> ·
+  <a href="{% url 'moderation:restrictions' %}"{% if here == "restrictions" %} aria-current="page"{% endif %}>Active restrictions</a> ·
+  <a href="{% url 'moderation:log' %}"{% if here == "log" %} aria-current="page"{% endif %}>Log</a>
 </nav>
+{% endwith %}

@@ -1,4 +1,5 @@
 {% extends "dashboard/ops/base.html" %}
+{% block ops_head %}<style>.mod-flags { margin-top: 14px; }</style>{% endblock %}
 {% block ops_content %}
 <p class="ops-note">Reports come from people in the conversation. Message text stays hidden until you choose to show it, and every time you do, it is logged. Automatic checks never show text; the counts below are all they record. Nothing here acts on its own.</p>
 {% include "moderation/panel/_tabs.html" %}
@@ -9,7 +10,7 @@
 
 <div class="ops-table-wrap">
 <table class="ops-table">
-  <thead><tr><th>Report</th><th>Reason</th><th>About</th><th>From</th><th>{% if status == "open" %}Reported{% else %}Resolved{% endif %}</th></tr></thead>
+  <thead><tr><th scope="col">Report</th><th scope="col">Reason</th><th scope="col">About</th><th scope="col">From</th><th scope="col">{% if status == "open" %}Reported{% else %}Resolved{% endif %}</th></tr></thead>
   <tbody>
     {% for r in page.object_list %}
     <tr>
@@ -27,11 +28,12 @@
 </div>
 {% if page.has_other_pages %}<p class="ops-pager">{% if page.has_previous %}<a href="?status={{ status }}&amp;page={{ page.previous_page_number }}">Previous</a>{% endif %} Page {{ page.number }} of {{ page.paginator.num_pages }} {% if page.has_next %}<a href="?status={{ status }}&amp;page={{ page.next_page_number }}">Next</a>{% endif %}</p>{% endif %}
 
-<section class="ops-panel">
+<section class="ops-panel mod-flags">
   <h2>Offensive-message warnings, last 7 days <span>(counts only)</span></h2>
   <p class="ops-note">How often each member saw “This message may be offensive” and how often they sent anyway. No message text or words are stored. Use this to prioritise; it isn’t evidence on its own.</p>
+  <div class="ops-table-wrap">
   <table class="ops-table">
-    <thead><tr><th>Member</th><th class="ops-num">Warned</th><th>Sent anyway</th></tr></thead>
+    <thead><tr><th scope="col">Member</th><th scope="col" class="ops-num">Warned</th><th scope="col">Sent anyway</th></tr></thead>
     <tbody>
       {% for f in flags %}
       <tr><td>{{ f.username|default:"Deleted user" }}</td><td class="ops-num">{{ f.warned }}</td><td>sent {{ f.sent }} flagged message{{ f.sent|pluralize }} this week</td></tr>
@@ -40,5 +42,6 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
 {% endblock %}

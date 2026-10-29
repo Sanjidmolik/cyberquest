@@ -9,6 +9,7 @@
 .bp-images li { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 10px; }
 .bp-images img { width: 100%; height: auto; border-radius: 8px; }
 .bp-images code { display: block; padding: 6px 8px; border-radius: 6px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow-wrap: anywhere; user-select: all; }
+.bp-grid aside a { overflow-wrap: anywhere; }
 .bp-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .bp-row form { margin: 0; }
 .bp-help { font-size: 13px; }
@@ -64,7 +65,8 @@
       <p class="ops-note">Private preview (only blog editors can open it):<br><a href="{{ preview_url }}">{{ preview_url }}</a></p>
       {% endif %}
       {% if post.slug_locked %}<p class="ops-note">The address is fixed because this post has been published.</p>{% endif %}
-      <form method="post" action="{% url 'blog_panel:publish' post.pk %}">
+      <form method="post" action="{% url 'blog_panel:publish' post.pk %}"
+            onsubmit="return confirm({% if post.status == 'published' %}'Unpublish? The post disappears from /blog/ until you publish it again.'{% else %}'Publish now? Everyone can read it at /blog/{{ post.slug }}/.'{% endif %});">
         {% csrf_token %}
         {% if post.status == "published" %}
         <button type="submit" name="action" value="unpublish" class="ops-btn-quiet">Unpublish</button>
@@ -127,6 +129,6 @@
     </div>
   </form>
 </dialog>
-<script src="{% static 'blog/js/panel-editor.js' %}?v=1"></script>
 {% endif %}
+<script src="{% static 'blog/js/panel-editor.js' %}?v=1"></script>
 {% endblock %}

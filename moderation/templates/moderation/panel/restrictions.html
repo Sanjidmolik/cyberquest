@@ -4,7 +4,7 @@
 <p class="ops-note">Mutes end on their own. Suspensions last until lifted. Lifting needs a reason and is logged; the member is told.</p>
 <div class="ops-table-wrap">
 <table class="ops-table">
-  <thead><tr><th>Member</th><th>Restriction</th><th>Reason</th><th>Until</th><th>Lift</th></tr></thead>
+  <thead><tr><th scope="col">Member</th><th scope="col">Restriction</th><th scope="col">Reason</th><th scope="col">Until</th><th scope="col">Lift</th></tr></thead>
   <tbody>
     {% for r in rows %}
     <tr>
@@ -13,7 +13,7 @@
       <td>{{ r.reason }}</td>
       <td>{% if r.ends_at %}{{ r.ends_at|date:"j M Y, H:i" }}{% else %}Until lifted{% endif %}</td>
       <td>
-        <form method="post" action="{% url 'moderation:lift' r.pk %}">
+        <form method="post" action="{% url 'moderation:lift' r.pk %}" onsubmit="return confirm('Lift this restriction now? The member is told, and it is logged.');">
           {% csrf_token %}
           <input name="reason" required maxlength="500" placeholder="Reason" aria-label="Reason for lifting">
           <button type="submit" class="ops-btn-quiet">Lift</button>

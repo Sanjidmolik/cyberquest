@@ -4,6 +4,9 @@
   position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
+/* Hidden header text is absolutely positioned: keep it inside the table's scroll box, or it
+   widens the whole page on phones. */
+.ops-table-wrap { position: relative; }
 
 .st-start {
   display: grid;
@@ -29,7 +32,8 @@ a.st-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; 
 .st-card p { margin: 0; color: var(--muted); }
 .st-card .ops-ico { width: 26px; height: 26px; color: var(--accent); }
 .st-card.is-recommended { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
-.st-card.is-disabled { opacity: 0.6; }
+.st-card.is-disabled { border-style: dashed; box-shadow: none; }   /* no fading: its text keeps full contrast */
+.st-card.is-disabled .ops-ico { color: var(--muted); }
 .st-tag {
   align-self: flex-start;
   font-size: 12px;
@@ -85,6 +89,7 @@ a.st-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; 
 .st-import small { display: block; margin-top: 4px; }
 .st-import .errorlist { color: var(--bad); margin: 4px 0 0; padding-left: 18px; }
 .st-import button { margin-top: 16px; }
+.st-import input, .st-import select { max-width: 100%; }
 
 @media (max-width: 900px) {
   .st-start { grid-template-columns: minmax(0, 1fr); }
@@ -98,12 +103,11 @@ a.st-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; 
 .st-wizard-title { margin: 0; font-size: 20px; }
 .st-progress { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .st-progress li { display: flex; }
-.st-progress a, .st-progress li.is-later { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+.st-progress a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
   border: 1px solid var(--line); color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600; }
 .st-progress span { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--line); font-size: 11px; }
 .st-progress li.is-current a { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .st-progress li.is-current span { background: var(--accent); color: var(--accent-ink); }
-.st-progress li.is-later { color: var(--muted); opacity: .7; }
 .st-save-status { margin: 0 0 10px; font-size: 12px; color: var(--muted); min-height: 1.2em; }
 .st-alert { margin: 0 0 12px; padding: 10px 14px; border-radius: 8px; background: var(--bad-bg); color: var(--bad); font-weight: 600; }
 .st-alert button { margin-left: 8px; }
@@ -171,8 +175,7 @@ a.st-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; 
 @media (max-width: 1100px) { .st-preview { grid-template-columns: minmax(0, 1fr); } .st-key { position: static; max-height: none; } }
 
 /* ---- Check & publish, version history (phase 6) ---- */
-.st-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.st-check { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: 14px; align-items: start; }
+.st-check-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: 14px; align-items: start; }
 .st-check-side { display: grid; gap: 14px; }
 .st-check-summary { font-weight: 600; margin: 0 0 10px; }
 .st-check-summary.is-ok { color: var(--good); }
@@ -193,5 +196,5 @@ a.st-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; 
 .st-version-mini, .st-changes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
 .st-versions td { vertical-align: top; }
 .is-flagged { outline: 2px solid var(--warn); outline-offset: 4px; border-radius: 6px; }
-@media (max-width: 1000px) { .st-check { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1000px) { .st-check-layout { grid-template-columns: minmax(0, 1fr); } }
 .st-check-side button:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
