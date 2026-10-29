@@ -6,7 +6,7 @@
 {% block extra_css %}
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
-<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=6">
 {% endblock %}
 
 {% block content %}
@@ -53,6 +53,7 @@
         <li>
           <a class="msg-conv{% if conversation and row.id == conversation.public_id|stringformat:'s' %} is-open{% endif %}{% if row.unread %} is-unread{% endif %}" href="{% url 'messaging:conversation' row.id %}" data-id="{{ row.id }}">
             <img class="msg-av" src="{{ row.avatar_url|default:'' }}" alt="">
+            <span class="msg-online-dot" data-online{% if not row.online %} hidden{% endif %} aria-label="Online" role="img"></span>
             <span class="msg-conv-main">
               <span class="msg-conv-name">{{ row.username|default:"Deleted user" }}</span>
               <span class="msg-conv-preview">{% if row.mine_last %}You: {% endif %}{{ row.preview }}</span>
@@ -80,10 +81,18 @@
           <div>
             <strong class="msg-card-name">{{ card.username }}</strong>
             <span class="msg-card-meta">{{ card.courses }} course{{ card.courses|pluralize }} completed · {{ card.xp }} XP</span>
+            <span class="msg-presence" id="msg-presence"{% if not config.online %} hidden{% endif %}>Online</span>
           </div>
         </div>
         {% else %}
         <div class="msg-card"><span class="msg-av msg-av--lg" aria-hidden="true"></span><strong class="msg-card-name">{% if other %}{{ other.username }}{% else %}Deleted user{% endif %}</strong></div>
+        {% endif %}
+        {% if status.can_send %}
+        <label class="msg-timer">Disappearing
+          <select id="msg-timer" aria-label="Disappearing messages">
+            {% for value, label in config.timers %}<option value="{{ value }}"{% if value == config.timer %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </label>
         {% endif %}
         {% if other %}
         <form method="post" action="{% if i_blocked %}{% url 'messaging:unblock' %}{% else %}{% url 'messaging:block' %}{% endif %}" class="msg-block-form"
@@ -108,6 +117,7 @@
 
       <button type="button" class="msg-older" id="msg-older" hidden>Show earlier messages</button>
       <ol class="msg-thread" id="msg-thread" aria-live="polite" aria-label="Messages"></ol>
+      <p class="msg-typing" id="msg-typing" aria-live="polite" hidden></p>
 
       <div class="msg-warn" id="msg-warn" role="alertdialog" aria-labelledby="msg-warn-text" hidden>
         <p id="msg-warn-text">This message may be offensive. Edit it, or send it anyway?</p>
@@ -159,5 +169,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'messaging/js/messaging.js' %}?v=4"></script>
+<script src="{% static 'messaging/js/messaging.js' %}?v=5"></script>
 {% endblock %}

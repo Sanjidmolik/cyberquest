@@ -6,7 +6,7 @@
 {% block extra_css %}
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
-<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=6">
 {% endblock %}
 
 {% block content %}
@@ -25,6 +25,19 @@
       <label class="msg-radio"><input type="radio" name="who_can_message" value="{{ value }}"{% if value == who %} checked{% endif %}> {{ label }}</label>
       {% endfor %}
       <p class="msg-hint"><strong>Nobody:</strong> no one new can send you a message request. People whose conversation you already accepted can still reply.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Privacy</legend>
+      <input type="hidden" name="privacy" value="1">
+      <label class="msg-radio"><input type="checkbox" name="read_receipts"{% if privacy.read_receipts %} checked{% endif %}> Read receipts</label>
+      <p class="msg-hint">Others see two coloured ticks when you’ve read their message. If you turn this off, you also stop seeing when others have read yours.</p>
+      <label class="msg-radio"><input type="checkbox" name="show_online"{% if privacy.show_online %} checked{% endif %}> Show when I’m online</label>
+      <p class="msg-hint">Only people whose conversation you accepted can see it, never someone you blocked or who blocked you. If you turn this off, you also stop seeing when others are online.</p>
+      <label for="msg-default-timer">Disappearing messages in new chats</label>
+      <select id="msg-default-timer" name="default_timer">
+        {% for value, label in timers %}<option value="{{ value }}"{% if value == privacy.default_timer %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <p class="msg-hint">Either person can change it in a chat; it applies to messages sent after the change.</p>
     </fieldset>
     <button type="submit" class="msg-btn">Save</button>
   </form>

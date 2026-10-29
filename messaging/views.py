@@ -21,7 +21,7 @@ from moderation.models import Report
 from moderation.services import recent_warning, restriction_reason
 
 from . import expiry, services
-from .models import Block, Conversation, MessagingPreference
+from .models import TIMER_CHOICES, Block, Conversation, MessagingPreference
 from .policy import Denied, NeedsConfirmation, RateLimited
 
 LOGIN_URL = "/accounts/login/"
@@ -62,6 +62,7 @@ def _int(raw):
 @require_GET
 def inbox(request, public_id=None):
     expiry.maybe_sweep()
+    services.touch_presence(request.user)
     tab = "requests" if request.GET.get("tab") == "requests" else "inbox"
     conversation = _conversation(request, public_id) if public_id else None
     if conversation is not None and conversation.is_request_for(request.user):
@@ -79,6 +80,9 @@ def inbox(request, public_id=None):
     if conversation is not None:
         other = conversation.other(request.user)
         status = services.conversation_status(request.user, conversation)
+        first_page = services.messages_after(conversation, request.user)
+        if first_page:
+            services.mark_delivered(request.user, conversation, first_page[-1]["id"])
         context.update({
             "conversation": conversation,
             "other": other,
@@ -88,8 +92,13 @@ def inbox(request, public_id=None):
             "status": status,
             "config": {
                 "conversation": str(conversation.public_id),
-                "messages": services.messages_after(conversation, request.user),
+                "messages": first_page,
                 "status": status,
+                "receipts": services.receipts(request.user, conversation),
+                "online": services.is_online(request.user, conversation),
+                "timer": conversation.disappear_after,
+                "timers": TIMER_CHOICES,
+                "other": other.username if other else None,
                 "max": settings.MESSAGING_MAX_LENGTH,
                 "urls": {
                     "send": reverse("messaging:api_send", args=[conversation.public_id]),
@@ -169,11 +178,18 @@ def api_timer(request, public_id):
 def api_poll(request, public_id):
     """Only messages newer than ?after=<id> (or older than ?before=<id>): cheap to call often."""
     expiry.maybe_sweep()
+    services.touch_presence(request.user)
     conversation = _conversation(request, public_id)
     rows = services.messages_after(conversation, request.user, after=_int(request.GET.get("after")),
                                    before=_int(request.GET.get("before")) or None)
+    if rows and not request.GET.get("before"):
+        services.mark_delivered(request.user, conversation, rows[-1]["id"])
+    conversation.refresh_from_db(fields=["disappear_after", "state"])
     return JsonResponse({"messages": rows, "state": conversation.state,
-                         "status": services.conversation_status(request.user, conversation)})
+                         "status": services.conversation_status(request.user, conversation),
+                         "receipts": services.receipts(request.user, conversation),
+                         "online": services.is_online(request.user, conversation),
+                         "timer": conversation.disappear_after})
 
 
 @login_required(login_url=LOGIN_URL)
@@ -188,6 +204,7 @@ def api_read(request, public_id):
 @require_GET
 def api_inbox(request):
     expiry.maybe_sweep()
+    services.touch_presence(request.user)
     tab = "requests" if request.GET.get("tab") == "requests" else "inbox"
     return JsonResponse({"rows": services.inbox(request.user, tab, request.GET.get("q", "")[:50]),
                          "requests": services.request_count(request.user)})
@@ -225,6 +242,10 @@ def messaging_settings(request):
     if request.method == "POST":
         try:
             services.set_preference(request.user, request.POST.get("who_can_message"))
+            if request.POST.get("privacy") == "1":          # the Privacy panel's fields
+                services.set_privacy(request.user, read_receipts=request.POST.get("read_receipts") == "on",
+                                     show_online=request.POST.get("show_online") == "on",
+                                     default_timer=request.POST.get("default_timer", ""))
         except Denied as exc:
             messages.error(request, str(exc))
         else:
@@ -234,5 +255,7 @@ def messaging_settings(request):
     return render(request, "messaging/settings.html", {
         "who": services.preference(request.user),
         "choices": MessagingPreference.CHOICES,
+        "privacy": services.privacy(request.user),
+        "timers": TIMER_CHOICES,
         "blocked": [b.blocked.username for b in blocked if b.blocked.username],
     })

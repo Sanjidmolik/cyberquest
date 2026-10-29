@@ -128,3 +128,13 @@
 .msg-report legend, .msg-report label[for] { font-weight: 600; }
 .msg-report textarea { font: inherit; color: var(--cq-text); background: var(--cq-raised); border: 1px solid var(--cq-line); border-radius: 12px; padding: 8px 10px; }
 .msg-system { list-style: none; align-self: center; text-align: center; font-size: 0.85rem; padding: 4px 10px; }
+.msg-tick { margin-left: 6px; font-size: 0.75rem; letter-spacing: -2px; }
+.msg-tick.is-read { color: #002147; font-weight: 700; }
+[data-theme="light"] .msg-tick.is-read { color: #a5f3fc; }
+.msg-presence { display: block; font-size: 0.8rem; color: #7ff0b0; }
+.msg-online-dot { width: 10px; height: 10px; border-radius: 50%; background: #3ddc84; border: 2px solid #1b1035; margin-left: -14px; align-self: flex-end; flex: none; }
+.msg-typing { margin: 4px 0 0; font-size: 0.85rem; font-style: italic; }
+.msg-timer { display: inline-flex; gap: 6px; align-items: center; font-size: 0.85rem; }
+@media (max-width: 600px) { .msg-timer { order: 3; flex-basis: 100%; } }
+.msg-timer select, .msg-settings select { font: inherit; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 8px; padding: 4px 6px; }
+@media (prefers-reduced-motion: reduce) { .msg-typing { transition: none; } }

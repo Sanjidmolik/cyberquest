@@ -1,7 +1,10 @@
 """Messaging actions. Views and the API call these; each one checks the rules in policy.py."""
 
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Case, Count, F, OuterRef, Q, Subquery, When
 from django.utils import timezone
@@ -14,6 +17,8 @@ from .policy import Denied, NeedsConfirmation
 
 PREVIEW_LENGTH = 80
 PAGE = 50
+ONLINE_WINDOW = timedelta(minutes=2)   # "online" = a heartbeat this recent
+HEARTBEAT_SECONDS = 60                 # write last_seen_at at most this often per user
 
 
 def clean_text(text):
@@ -156,9 +161,81 @@ def _mark_read(conversation, user, upto):
                            expires_at__isnull=True).exclude(sender=user)        .update(expires_at=timezone.now() + VIEW_GRACE)
 
 
+def _newest(conversation):
+    return conversation.messages.order_by("-pk").values_list("pk", flat=True).first() or 0
+
+
 def mark_read(user, conversation, upto):
-    newest = conversation.messages.order_by("-pk").values_list("pk", flat=True).first() or 0
-    _mark_read(conversation, user, min(int(upto), newest))
+    upto = min(int(upto), _newest(conversation))
+    field = "a_read_upto" if conversation.user_a_id == user.pk else "b_read_upto"
+    advanced = Conversation.objects.filter(pk=conversation.pk, **{f"{field}__lt": upto}).exists()
+    _mark_read(conversation, user, upto)
+    if advanced:                                   # the sender's ticks can turn "read"
+        transaction.on_commit(lambda: events.conversation_changed(conversation))
+
+
+def mark_delivered(user, conversation, upto=None):
+    """The user's client has fetched messages up to `upto` (default: the newest visible)."""
+    upto = _newest(conversation) if upto is None else min(int(upto), _newest(conversation))
+    field = "a_delivered_upto" if conversation.user_a_id == user.pk else "b_delivered_upto"
+    if Conversation.objects.filter(pk=conversation.pk, **{f"{field}__lt": upto}).update(**{field: upto}):
+        transaction.on_commit(lambda: events.conversation_changed(conversation))
+
+
+# ---------- receipts and presence (reciprocal; nothing at all across a block) ----------
+
+def _prefs(*users):
+    found = {p.user_id: p for p in MessagingPreference.objects.filter(user__in=[u for u in users if u])}
+    return [found.get(u.pk) if u else None for u in users]
+
+
+def _wants(pref, field):
+    return True if pref is None else getattr(pref, field)
+
+
+def receipts(viewer, conversation):
+    """How far the other person got with the viewer's messages: {"delivered_upto", "read_upto"}.
+    Read receipts show only when BOTH people have them on; a block hides both (just "sent")."""
+    other = conversation.other(viewer)
+    if other is None or policy.blocked_between(viewer, other):
+        return {"delivered_upto": 0, "read_upto": 0}
+    fresh = Conversation.objects.filter(pk=conversation.pk).values(
+        "a_read_upto", "b_read_upto", "a_delivered_upto", "b_delivered_upto").first()
+    side = "b" if conversation.user_a_id == viewer.pk else "a"
+    read, delivered = fresh[f"{side}_read_upto"], fresh[f"{side}_delivered_upto"]
+    mine, theirs = _prefs(viewer, other)
+    show_read = _wants(mine, "read_receipts") and _wants(theirs, "read_receipts")
+    return {"delivered_upto": max(read, delivered), "read_upto": read if show_read else 0}
+
+
+def message_status(message_id, seen):
+    if message_id <= seen["read_upto"]:
+        return "read"
+    return "delivered" if message_id <= seen["delivered_upto"] else "sent"
+
+
+def touch_presence(user):
+    """The presence heartbeat, written at most once a minute per user."""
+    if not cache.add(f"msg:seen:{user.pk}", 1, HEARTBEAT_SECONDS):
+        return
+    now = timezone.now()
+    if not MessagingPreference.objects.filter(user=user).update(last_seen_at=now):
+        MessagingPreference.objects.get_or_create(user=user, defaults={"last_seen_at": now})
+
+
+def _is_online(viewer_pref, other_pref, now):
+    if not (_wants(viewer_pref, "show_online") and _wants(other_pref, "show_online")):
+        return False                               # reciprocal, like read receipts
+    seen = other_pref.last_seen_at if other_pref else None
+    return bool(seen and now - seen <= ONLINE_WINDOW)
+
+
+def is_online(viewer, conversation):
+    """Only accepted contacts see each other online, never across a block."""
+    other = conversation.other(viewer)
+    if other is None or conversation.state != Conversation.ACCEPTED or policy.blocked_between(viewer, other):
+        return False
+    return _is_online(*_prefs(viewer, other), timezone.now())
 
 
 def block(user, other):
@@ -177,6 +254,19 @@ def set_preference(user, who):
     MessagingPreference.objects.update_or_create(user=user, defaults={"who_can_message": who})
 
 
+def set_privacy(user, *, read_receipts, show_online, default_timer):
+    if default_timer not in TIMERS:
+        raise Denied("Choose a default for disappearing messages.")
+    MessagingPreference.objects.update_or_create(user=user, defaults={
+        "read_receipts": bool(read_receipts), "show_online": bool(show_online), "default_timer": default_timer})
+
+
+def privacy(user):
+    pref = MessagingPreference.objects.filter(user=user).first()
+    return {"read_receipts": _wants(pref, "read_receipts"), "show_online": _wants(pref, "show_online"),
+            "default_timer": pref.default_timer if pref else OFF}
+
+
 def preference(user):
     pref = MessagingPreference.objects.filter(user=user).first()
     return pref.who_can_message if pref else MessagingPreference.EVERYONE
@@ -190,9 +280,12 @@ def when_label(moment):
     return f"{local:%H:%M}" if local.date() == timezone.localdate() else f"{local.day} {local:%b}"
 
 
-def serialize(message, viewer, reported=frozenset()):
+def serialize(message, viewer, reported=frozenset(), seen=None):
     sender = message.sender
+    ticks = message.sender_id == viewer.pk and message.kind != Message.SYSTEM
     return {
+        # Ticks on your own messages only: "sent", "delivered" or "read" (see receipts()).
+        "status": (message_status(message.pk, seen) if seen else "sent") if ticks else None,
         "id": message.pk,
         "kind": message.kind,
         "timer": message.timer,
@@ -220,7 +313,8 @@ def messages_after(conversation, viewer, after=0, before=None):
     from moderation.models import Report
     reported = set(Report.objects.filter(reporter=viewer, message__in=[m.pk for m in rows])
                    .values_list("message_id", flat=True))
-    return [serialize(m, viewer, reported) for m in rows]
+    seen = receipts(viewer, conversation)
+    return [serialize(m, viewer, reported, seen) for m in rows]
 
 
 def conversation_status(viewer, conversation):
@@ -235,11 +329,13 @@ def conversation_status(viewer, conversation):
 def inbox(user, tab="inbox", query=""):
     """Rows for the conversation list: the other person, last message preview, unread count."""
     my_upto = Case(When(user_a=user, then=F("a_read_upto")), default=F("b_read_upto"))
+    my_delivered = Case(When(user_a=user, then=F("a_delivered_upto")), default=F("b_delivered_upto"))
     unread = Message.objects.filter(conversation=OuterRef("pk"), pk__gt=OuterRef("my_upto")).exclude(sender=user)\
         .order_by().values("conversation").annotate(n=Count("pk")).values("n")[:1]
     last = Message.objects.filter(conversation=OuterRef("pk")).order_by("-pk").values("pk")[:1]
     qs = (Conversation.objects.involving(user).select_related("user_a", "user_b")
-          .annotate(my_upto=my_upto).annotate(unread=Subquery(unread), last_id=Subquery(last)))
+          .annotate(my_upto=my_upto, my_delivered=my_delivered)
+          .annotate(unread=Subquery(unread), last_id=Subquery(last)))
     if tab == "requests":
         qs = qs.filter(state=Conversation.PENDING).exclude(initiator=user)
     else:
@@ -253,13 +349,18 @@ def inbox(user, tab="inbox", query=""):
     last_messages = {m.pk: m for m in Message.objects.filter(pk__in=[c.last_id for c in rows if c.last_id])}
     blocked = set(Block.objects.filter(blocker=user).values_list("blocked_id", flat=True))
     blocked_me = set(Block.objects.filter(blocked=user).values_list("blocker_id", flat=True))
+    others = [c.other(user) for c in rows]
+    prefs = {p.user_id: p for p in MessagingPreference.objects.filter(user__in=[o for o in others if o] + [user])}
+    now = timezone.now()
     out = []
-    for c in rows:
-        other = c.other(user)
+    for c, other in zip(rows, others):
         last_message = last_messages.get(c.last_id)
         preview = ""
         if last_message is not None:
             preview = "Message removed" if last_message.removed else last_message.text[:PREVIEW_LENGTH]
+            if last_message.sender_id != user.pk and c.last_id > (c.my_delivered or 0):
+                mark_delivered(user, c, c.last_id)       # the inbox list fetched it: delivered
+        cut_off = other is None or other.pk in blocked or other.pk in blocked_me
         out.append({
             "id": str(c.public_id),
             "username": other.username if other else None,
@@ -273,6 +374,9 @@ def inbox(user, tab="inbox", query=""):
             "state": c.state,
             "waiting": c.state == Conversation.PENDING and c.initiator_id == user.pk,
             "blocked": bool(other and other.pk in blocked),
+            "timer": c.disappear_after,
+            "online": bool(not cut_off and c.state == Conversation.ACCEPTED
+                           and _is_online(prefs.get(user.pk), prefs.get(other.pk), now)),
         })
     return out
 

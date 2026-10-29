@@ -17,6 +17,9 @@
   var timer = null;
   var lastId = 0, firstId = 0, readUpto = 0;
   var thread = document.getElementById("msg-thread");
+  var seen = cfg.receipts || { delivered_upto: 0, read_upto: 0 };
+  var TICKS = { sent: ["✓", "Sent"], delivered: ["✓✓", "Delivered"], read: ["✓✓", "Read"] };
+  var socket = null, typingSentAt = 0, typingHide = null;
 
   function csrf() {
     var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
@@ -63,6 +66,12 @@
     var t = el("time", "msg-bubble-time", timeLabel(m.at));
     t.setAttribute("datetime", m.at);
     li.appendChild(t);
+    if (m.status) {
+      var tick = el("span", "msg-tick");
+      tick.dataset.mine = "1";
+      li.appendChild(tick);
+      setTick(tick, m.status);
+    }
     if (m.can_report && cfg.urls.report) {
       var report = el("button", "msg-report-btn", m.reported ? "Reported" : "Report");
       report.type = "button";
@@ -95,6 +104,29 @@
     markRead();
   }
 
+  function setTick(tick, status) {
+    tick.textContent = TICKS[status][0];
+    tick.setAttribute("aria-label", TICKS[status][1]);
+    tick.setAttribute("role", "img");
+    tick.classList.toggle("is-read", status === "read");
+  }
+
+  function applyReceipts(r) {
+    if (!r || !thread) return;
+    seen = r;
+    thread.querySelectorAll(".msg-bubble.is-mine").forEach(function (li) {
+      var tick = li.querySelector(".msg-tick");
+      var id = +li.dataset.id;
+      if (!tick) return;
+      setTick(tick, id <= r.read_upto ? "read" : id <= r.delivered_upto ? "delivered" : "sent");
+    });
+  }
+
+  function applyPresence(online) {
+    var p = document.getElementById("msg-presence");
+    if (p) p.hidden = !online;
+  }
+
   function markRead() {
     if (!cfg.conversation || document.hidden || lastId <= readUpto) return;
     readUpto = lastId;
@@ -114,6 +146,10 @@
       if (data._status !== 200) return;
       addMessages(data.messages || []);
       applyStatus(data.status);
+      applyReceipts(data.receipts);
+      applyPresence(data.online);
+      var select = document.getElementById("msg-timer");
+      if (select && data.timer && document.activeElement !== select) select.value = data.timer;
     });
   }
 
@@ -137,7 +173,19 @@
     var error = document.getElementById("msg-error");
     var send = document.getElementById("msg-send");
     if (!form || !box) return;
+    var timerSelect = document.getElementById("msg-timer");
+    if (timerSelect) timerSelect.addEventListener("change", function () {
+      api(cfg.urls.timer, { timer: timerSelect.value }).then(function (data) {
+        if (data._status === 200) { if (data.message) addMessages([data.message]); }
+        else { error.textContent = data.error || "Couldn't change it. Try again."; timerSelect.value = cfg.timer; }
+      });
+    });
     box.addEventListener("input", function () {
+      // Typing indicator: WebSocket only, at most every 3 s (the server throttles too).
+      if (socket && socket.readyState === 1 && Date.now() - typingSentAt > 3000) {
+        typingSentAt = Date.now();
+        socket.send(JSON.stringify({ type: "typing", conversation: cfg.conversation }));
+      }
       counter.textContent = box.value.length + " / " + cfg.max;
       counter.classList.toggle("is-near", box.value.length > cfg.max * 0.9);
     });
@@ -228,6 +276,8 @@
         if (preview) preview.textContent = (row.mine_last ? "You: " : "") + row.preview;
         var side = a.querySelector(".msg-conv-side time");
         if (side) side.textContent = row.when;
+        var dot = a.querySelector("[data-online]");
+        if (dot) dot.hidden = !row.online;
       });
       var badge = document.getElementById("msg-request-count");
       if (badge) badge.textContent = data.requests || "";
@@ -274,14 +324,25 @@
     var url = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + cfg.socket;
     var ws;
     try { ws = new WebSocket(url); } catch (e) { return; }
+    socket = ws;
     ws.onmessage = function (event) {
       var data;
       try { data = JSON.parse(event.data); } catch (e) { return; }
+      if (data.type === "typing" && data.conversation === cfg.conversation) {
+        var note = document.getElementById("msg-typing");
+        if (!note) return;
+        note.textContent = (cfg.other || "They") + " is typing…";
+        note.hidden = false;
+        clearTimeout(typingHide);
+        typingHide = setTimeout(function () { note.hidden = true; }, 5000);
+        return;
+      }
       if (data.type !== "changed") return;
       if (cfg.conversation && data.conversation === cfg.conversation) pollNow();
       else refreshInbox();
     };
     ws.onclose = function () {            // retry with back-off; polling keeps working meanwhile
+      socket = null;
       var next = Math.min((delay || 2000) * 2, 60000);
       setTimeout(function () { connect(next); }, next);
     };
