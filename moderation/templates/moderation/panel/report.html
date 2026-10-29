@@ -37,7 +37,8 @@
 </section>
 
 {% if report.status == "open" %}
-<form class="ops-panel ops-course-form" method="post" action="{% url 'moderation:act' report.pk %}">
+<form class="ops-panel ops-course-form" method="post" action="{% url 'moderation:act' report.pk %}"
+      onsubmit="return this.elements.action.value === 'dismiss' || confirm('Apply this decision? The member is told, and it is logged.');">
   {% csrf_token %}
   <h2>Decision</h2>
   <fieldset class="mod-actions">

@@ -35,10 +35,6 @@ def blocked_between(one, two):
     return Block.objects.filter(Q(blocker=one, blocked=two) | Q(blocker=two, blocked=one)).exists()
 
 
-def has_blocked(blocker, blocked):
-    return Block.objects.filter(blocker=blocker, blocked=blocked).exists()
-
-
 def accepts_new_messages(user):
     pref = MessagingPreference.objects.filter(user=user).first()
     return pref is None or pref.who_can_message == MessagingPreference.EVERYONE

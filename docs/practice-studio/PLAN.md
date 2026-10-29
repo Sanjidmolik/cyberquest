@@ -1,7 +1,8 @@
 # Practice Studio: implementation plan
 
-Status: **phases 1–6 done and tested** (the four features in `docs/features/PLAN.md` are
-finished). Phase 7 (polish and the admin guide) is next, merged into `develop` after an audit.
+Status: **complete.** Phases 1–7 are done, tested and merged into `develop`, and so are the
+four features in `docs/features/PLAN.md`. The admin guide is `docs/practice-studio/ADMIN_GUIDE.md`.
+What's left is listed under **10. Future**.
 
 ---
 
@@ -173,11 +174,12 @@ The **template test** fills every field with its "Insert example" text and asser
 4. Wizard steps 1–2 + all step forms, autosave, reorder.
 5. Preview (real player, draft content, no XP or stats).
 6. Checks, publish, versions, restore, audit.
-7. Blog editor polish: an **Insert image** button that uploads the image and inserts its
-   Markdown line at the cursor (no hand-pasting).
-   `docs/practice-studio/ADMIN_GUIDE.md` (simple English, screenshot placeholders, 5-minute walkthrough), sidebar/dashboard links, polish, a screenshot pass at 1280 px and tablet width.
+7. Blog editor **Insert image** button (uploads, then inserts the Markdown line at the cursor);
+   `docs/practice-studio/ADMIN_GUIDE.md` (simple English, real screenshots of a demo site);
+   polish of the Studio, Moderation and Blog admin pages at 820 and 390 px; dead-code removal.
 
-Tests run after every phase; one commit per phase on `feat/practice-studio`.
+Every phase had its own branch from `develop`, an audit, and a `--no-ff` merge into `develop`,
+with the full suite run before and after the merge.
 
 **Commit notes**
 - The HANDOFF.md "MySQL" correction (D9) landed in the baseline commit `14daaf5`, not in the phase 1 commit `b26ffc3` whose message mentions it.
@@ -287,3 +289,31 @@ Dropped from the studio forms because the player doesn't render them (D2). Each 
   keep the live version until a publisher checks and publishes it.
 - Audit actions added: `unarchive`, `review` (migration 0010, choices only).
 - Tests: 658 with `--parallel` (~93 s); phase 6 in `practice/tests_studio_publish.py` (18).
+
+## 14. Phase 7 notes (guide and polish)
+
+- **Admin guide** (`ADMIN_GUIDE.md`): roles, "your first session in 5 minutes", every step type
+  with when to use it, what students see at each stage, history/restore/archive, the blog and
+  moderation workflows. The 18 screenshots in `img/` were taken with headless Edge from a
+  separate throwaway database holding only seed content and made-up demo accounts, so no real
+  member or student data appears in them. They contain no image metadata.
+- **Blog Insert image**: a dialog asks for the file and alt text (required), uploads through
+  the same form and checks as the Images panel (`blog_panel:image_insert`, JSON), and puts the
+  line at the cursor. Alt text brackets are escaped. The Images panel still works without
+  JavaScript.
+- **Polish, fixed without redesign**:
+  - Below 860 px the Command Center column was a plain `1fr` and grew to fit wide tables or
+    long selects, so pages scrolled sideways. It is now `minmax(0, 1fr)`; hidden table-header
+    text stays inside its scroll box. Every Studio, Moderation and Blog admin page now fits
+    at 820 and 390 px (checked with a probe page).
+  - A phase 6 class (`.st-check`) clashed with the editor's tick boxes; renamed.
+  - Contrast: all theme colours pass AA (lowest 5.6:1); the disabled Topic Kit card no longer
+    fades its text.
+  - Confirmations: moderation decisions other than Dismiss, lifting a restriction, blog
+    publish/unpublish. The blog editor warns before leaving with unsaved text.
+  - Labels and semantics: Studio filter selects labelled, table headers scoped, the current
+    moderation tab marked (`aria-current`) and styled.
+- **Dead code removed**: `practice/domain.html` and `practice/play.html` (no view renders
+  them), `messaging.policy.has_blocked`, and unused imports from these phases. Older unused
+  imports elsewhere (from before this work) were left alone.
+

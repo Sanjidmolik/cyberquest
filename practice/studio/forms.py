@@ -17,9 +17,12 @@ class TopicField(forms.ModelChoiceField):
 
 class ListFilterForm(forms.Form):
     q = forms.CharField(required=False, max_length=100)
-    topic = TopicField(queryset=Course.objects.none(), required=False, empty_label="All topics")
-    kind = forms.ChoiceField(required=False, choices=[("", "All kinds")] + Scenario.KIND)
-    status = forms.ChoiceField(required=False, choices=[("", "All statuses")] + Scenario.STATUS)
+    topic = TopicField(queryset=Course.objects.none(), required=False, empty_label="All topics",
+                       widget=forms.Select(attrs={"aria-label": "Topic"}))
+    kind = forms.ChoiceField(required=False, choices=[("", "All kinds")] + Scenario.KIND,
+                             widget=forms.Select(attrs={"aria-label": "Kind"}))
+    status = forms.ChoiceField(required=False, choices=[("", "All statuses")] + Scenario.STATUS,
+                               widget=forms.Select(attrs={"aria-label": "Status"}))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

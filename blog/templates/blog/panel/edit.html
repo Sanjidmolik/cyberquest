@@ -1,4 +1,5 @@
 {% extends "dashboard/ops/base.html" %}
+{% load static %}
 {% block ops_head %}
 <style>
 .bp-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 14px; align-items: start; }
@@ -8,10 +9,18 @@
 .bp-images li { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 10px; }
 .bp-images img { width: 100%; height: auto; border-radius: 8px; }
 .bp-images code { display: block; padding: 6px 8px; border-radius: 6px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow-wrap: anywhere; user-select: all; }
+.bp-grid aside a { overflow-wrap: anywhere; }
 .bp-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .bp-row form { margin: 0; }
 .bp-help { font-size: 13px; }
 .bp-help code { white-space: nowrap; }
+.bp-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 2px 0 6px; }
+.bp-toolbar small { color: var(--muted); }
+.bp-dialog { border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; max-width: 460px; width: calc(100% - 32px);
+  background: var(--panel); color: var(--text); }
+.bp-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.bp-dialog h2 { margin-top: 0; }
+.bp-dialog .bp-error { color: var(--bad); }
 @media (max-width: 960px) { .bp-grid { grid-template-columns: minmax(0, 1fr); } }
 </style>
 {% endblock %}
@@ -25,6 +34,16 @@
     {{ form.non_field_errors }}
     {% for field in form %}
     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {% if field.name == "body" %}
+    <div class="bp-toolbar">
+      {% if post %}
+      <button type="button" class="ops-btn-quiet" id="bp-insert-open" aria-haspopup="dialog">Insert image</button>
+      <small>Uploads a picture and puts its line where your cursor is.</small>
+      {% else %}
+      <small>Save the draft first; then you can insert images.</small>
+      {% endif %}
+    </div>
+    {% endif %}
     {{ field }}
     {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
     {{ field.errors }}
@@ -46,7 +65,8 @@
       <p class="ops-note">Private preview (only blog editors can open it):<br><a href="{{ preview_url }}">{{ preview_url }}</a></p>
       {% endif %}
       {% if post.slug_locked %}<p class="ops-note">The address is fixed because this post has been published.</p>{% endif %}
-      <form method="post" action="{% url 'blog_panel:publish' post.pk %}">
+      <form method="post" action="{% url 'blog_panel:publish' post.pk %}"
+            onsubmit="return confirm({% if post.status == 'published' %}'Unpublish? The post disappears from /blog/ until you publish it again.'{% else %}'Publish now? Everyone can read it at /blog/{{ post.slug }}/.'{% endif %});">
         {% csrf_token %}
         {% if post.status == "published" %}
         <button type="submit" name="action" value="unpublish" class="ops-btn-quiet">Unpublish</button>
@@ -74,7 +94,7 @@
         <li>
           <img src="{% url 'blog:thumb' picture.public_id %}" alt="{{ picture.alt }}">
           <small>{{ picture.width }}×{{ picture.height }}{% if post.cover_id == picture.pk %} · cover{% endif %}</small>
-          <code>![{{ picture.alt }}]({% url 'blog:image' picture.public_id %})</code>
+          <code>{{ picture.markdown }}</code>
           <div class="bp-row">
             {% if post.cover_id != picture.pk %}
             <form method="post" action="{% url 'blog_panel:image_action' picture.public_id %}">{% csrf_token %}<button type="submit" name="action" value="cover" class="ops-btn-quiet">Use as cover</button></form>
@@ -90,4 +110,25 @@
   </aside>
   {% endif %}
 </div>
+
+{% if post %}
+<dialog class="bp-dialog" id="bp-insert" aria-labelledby="bp-insert-title">
+  <form id="bp-insert-form" method="post" action="{% url 'blog_panel:image_insert' post.pk %}" enctype="multipart/form-data" class="ops-course-form">
+    {% csrf_token %}
+    <h2 id="bp-insert-title">Insert image</h2>
+    <label for="bp-insert-file">Image</label>
+    <input type="file" id="bp-insert-file" name="file" accept="image/jpeg,image/png,image/webp" required>
+    <small>{{ image_form.file.help_text }} Resized to 1600 px wide; location and camera data are removed.</small>
+    <label for="bp-insert-alt">Alt text</label>
+    <input type="text" id="bp-insert-alt" name="alt" maxlength="200" required>
+    <small>{{ image_form.alt.help_text }}</small>
+    <p class="bp-error" id="bp-insert-error" role="alert" hidden></p>
+    <div class="bp-row">
+      <button type="button" class="ops-btn-quiet" id="bp-insert-cancel">Cancel</button>
+      <button type="submit" id="bp-insert-submit">Upload and insert</button>
+    </div>
+  </form>
+</dialog>
+{% endif %}
+<script src="{% static 'blog/js/panel-editor.js' %}?v=1"></script>
 {% endblock %}

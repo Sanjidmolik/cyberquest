@@ -78,3 +78,11 @@ class PostImage(models.Model):
 
     def __str__(self):
         return self.alt
+
+    @property
+    def markdown(self):
+        """The line that shows this image in a post. Brackets and line breaks in the alt text
+        are escaped/flattened so they can't end the image syntax early."""
+        from django.urls import reverse
+        alt = " ".join(self.alt.split()).replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
+        return f"![{alt}]({reverse('blog:image', args=[self.public_id])})"

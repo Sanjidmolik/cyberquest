@@ -10,7 +10,7 @@
   {% if versions %}
   <div class="ops-table-wrap">
     <table class="ops-table st-versions">
-      <thead><tr><th scope="col">Version</th><th scope="col">Published</th><th scope="col">By</th><th scope="col">What changed</th>{% if can_publish %}<th scope="col"><span class="st-sr">Actions</span></th>{% endif %}</tr></thead>
+      <thead><tr><th scope="col">Version</th><th scope="col">Published</th><th scope="col">By</th><th scope="col">What changed</th>{% if can_publish %}<th scope="col"><span class="visually-hidden">Actions</span></th>{% endif %}</tr></thead>
       <tbody>
         {% for v in versions %}
         <tr>

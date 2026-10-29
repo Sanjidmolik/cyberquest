@@ -4,7 +4,7 @@
 {% block ops_content %}
 {% include "practice/studio/_wizard_head.html" %}
 
-<div class="st-check">
+<div class="st-check-layout">
   <section class="ops-panel" aria-labelledby="st-check-title">
     <h2 id="st-check-title">Checklist</h2>
     {% if passed %}
@@ -16,7 +16,7 @@
       {% for rule in rules %}
       <li class="{% if rule.ok %}is-ok{% else %}is-bad{% endif %}">
         <span class="st-check-mark" aria-hidden="true">{% if rule.ok %}✓{% else %}✕{% endif %}</span>
-        <span class="st-sr">{% if rule.ok %}Passed:{% else %}Failed:{% endif %}</span>
+        <span class="visually-hidden">{% if rule.ok %}Passed:{% else %}Failed:{% endif %}</span>
         <span class="st-check-text">{{ rule.text }}</span>
         {% if not rule.ok and rule.fix and can_edit %}<a class="st-check-fix" href="{{ rule.fix }}">Fix</a>{% endif %}
       </li>

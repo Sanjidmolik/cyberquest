@@ -2,6 +2,7 @@
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -82,6 +83,23 @@ def image_upload(request, pk):
     else:
         messages.success(request, "Image added. Copy its Markdown line into the post where it should appear.")
     return redirect("blog_panel:edit", pk=post.pk)
+
+
+@blog_required
+@require_POST
+def image_insert(request, pk):
+    """The editor's "Insert image" button: the same form and validation as image_upload, but
+    answers with JSON so the page can put the Markdown line at the cursor."""
+    post = get_object_or_404(Post, pk=pk)
+    form = ImageForm(request.POST, request.FILES)
+    if not form.is_valid():
+        return JsonResponse({"errors": [e for errors in form.errors.values() for e in errors]}, status=400)
+    try:
+        picture = services.add_image(post, form.cleaned_data["file"], form.cleaned_data["alt"], request.user)
+    except ValidationError as exc:
+        return JsonResponse({"errors": exc.messages}, status=400)
+    return JsonResponse({"markdown": picture.markdown, "alt": picture.alt,
+                         "thumb": reverse("blog:thumb", args=[picture.public_id])}, status=201)
 
 
 @blog_required
