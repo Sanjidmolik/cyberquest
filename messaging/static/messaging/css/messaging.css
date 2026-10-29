@@ -127,3 +127,4 @@
 .msg-report fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
 .msg-report legend, .msg-report label[for] { font-weight: 600; }
 .msg-report textarea { font: inherit; color: var(--cq-text); background: var(--cq-raised); border: 1px solid var(--cq-line); border-radius: 12px; padding: 8px 10px; }
+.msg-system { list-style: none; align-self: center; text-align: center; font-size: 0.85rem; padding: 4px 10px; }

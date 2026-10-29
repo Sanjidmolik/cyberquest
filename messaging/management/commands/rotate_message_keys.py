@@ -15,9 +15,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         done = 0
-        for message in Message.objects.exclude(body="").only("pk", "body").iterator(chunk_size=500):
+        for message in Message.all_objects.exclude(body="").only("pk", "body").iterator(chunk_size=500):
             fresh = rotate(message.body)
             if fresh != message.body:
-                Message.objects.filter(pk=message.pk).update(body=fresh)
+                Message.all_objects.filter(pk=message.pk).update(body=fresh)
                 done += 1
         self.stdout.write(self.style.SUCCESS(f"Re-encrypted {done} messages."))

@@ -10,4 +10,5 @@ from .models import Message
 
 @receiver(pre_delete, sender=settings.AUTH_USER_MODEL)
 def remove_message_text(sender, instance, **kwargs):
-    Message.objects.filter(sender=instance).update(body="", removed=True)
+    # all_objects: expired rows the cleanup hasn't reached yet lose their text too.
+    Message.all_objects.filter(sender=instance).update(body="", removed=True)

@@ -181,6 +181,13 @@ def _moderation_purge(dry_run) -> dict:
             "message_warnings_older_than_90_days": counts["flags"]}
 
 
+def _expired_messages_purge(dry_run) -> dict:
+    """Backstop for disappearing messages (normally cleaned every minute)."""
+    from messaging.expiry import purge
+    counts = purge(dry_run=dry_run)
+    return {"expired_disappearing_messages": counts["messages"], "expired_message_photo_files": counts["photo_files"]}
+
+
 def run_all(dry_run=False) -> dict:
     return {
         "verification_codes": purge_verification_codes(dry_run=dry_run),
@@ -190,4 +197,5 @@ def run_all(dry_run=False) -> dict:
         "expired_mission_attempts_closed": close_expired_attempts(dry_run=dry_run),
         "old_practice_preview_runs": purge_preview_attempts(dry_run=dry_run),
         **_moderation_purge(dry_run),
+        **_expired_messages_purge(dry_run),
     }

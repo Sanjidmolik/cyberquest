@@ -9,7 +9,7 @@ from django.utils import timezone
 from accounts.public import avatar_url, default_avatar_url
 
 from . import events, policy
-from .models import Block, Conversation, Message, MessagingPreference
+from .models import AFTER_VIEW, OFF, TIMERS, VIEW_GRACE, Block, Conversation, Message, MessagingPreference, expiry_for
 from .policy import Denied, NeedsConfirmation
 
 PREVIEW_LENGTH = 80
@@ -37,8 +37,14 @@ def between(one, two):
     return Conversation.objects.filter(user_a=a, user_b=b).first()
 
 
-def _post(conversation, sender, text):
-    message = Message(conversation=conversation, sender=sender)
+def _post(conversation, sender, text, kind=Message.TEXT):
+    """Store a message. It takes the conversation's CURRENT timer (read fresh, so a change
+    made a moment ago applies); system notices never disappear."""
+    timer = OFF if kind == Message.SYSTEM else (
+        Conversation.objects.filter(pk=conversation.pk).values_list("disappear_after", flat=True).first() or OFF)
+    now = timezone.now()
+    message = Message(conversation=conversation, sender=sender, kind=kind, timer=timer, created_at=now,
+                      expires_at=expiry_for(timer, now))
     message.set_text(text)
     message.save()
     Conversation.objects.filter(pk=conversation.pk).update(last_message_at=message.created_at)
@@ -74,7 +80,10 @@ def start(sender, username, text, confirmed=False):
             policy.check_start(sender, recipient)
             policy.check_new_conversation_rate(sender)
             a, b = Conversation.pair(sender, recipient)
-            conversation = Conversation.objects.create(user_a=a, user_b=b, initiator=sender)
+            timer = default_timer(sender)
+            conversation = Conversation.objects.create(user_a=a, user_b=b, initiator=sender, disappear_after=timer)
+            if timer != OFF:
+                _post(conversation, sender, timer_notice(sender, timer), kind=Message.SYSTEM)
         elif conversation.state == Conversation.DECLINED and conversation.initiator_id != sender.pk:
             # The person who declined is now writing first: that accepts the conversation.
             policy.check_start(sender, recipient)
@@ -97,6 +106,32 @@ def send(sender, conversation, text, checked_text=False, confirmed=False, flagge
     return message
 
 
+def timer_notice(user, timer):
+    if timer == OFF:
+        return f"{user.username} turned off disappearing messages"
+    return f"{user.username} set disappearing messages to {TIMERS[timer][0].lower()}"
+
+
+def set_timer(user, conversation, timer):
+    """Either participant who may send here can change the timer. It applies to messages sent
+    after the change, and leaves a notice in the chat. Returns the notice (or None if unchanged)."""
+    if timer not in TIMERS:
+        raise Denied("Choose a disappearing-messages setting.")
+    policy.check_send(user, conversation)
+    policy.check_timer_rate(user)
+    with transaction.atomic():
+        changed = Conversation.objects.filter(pk=conversation.pk).exclude(disappear_after=timer)            .update(disappear_after=timer)
+        if not changed:
+            return None
+        conversation.disappear_after = timer
+        return _post(conversation, user, timer_notice(user, timer), kind=Message.SYSTEM)
+
+
+def default_timer(user):
+    pref = MessagingPreference.objects.filter(user=user).first()
+    return pref.default_timer if pref else OFF
+
+
 def accept(user, conversation):
     if not conversation.is_request_for(user):
         raise Denied("There's no request to accept here.")
@@ -116,6 +151,9 @@ def decline(user, conversation):
 def _mark_read(conversation, user, upto):
     field = "a_read_upto" if conversation.user_a_id == user.pk else "b_read_upto"
     Conversation.objects.filter(pk=conversation.pk, **{f"{field}__lt": upto}).update(**{field: upto})
+    # "After viewing": the other person's messages start their 30-second countdown once read.
+    Message.objects.filter(conversation=conversation, pk__lte=upto, timer=AFTER_VIEW, kind=Message.TEXT,
+                           expires_at__isnull=True).exclude(sender=user)        .update(expires_at=timezone.now() + VIEW_GRACE)
 
 
 def mark_read(user, conversation, upto):
@@ -156,11 +194,15 @@ def serialize(message, viewer, reported=frozenset()):
     sender = message.sender
     return {
         "id": message.pk,
+        "kind": message.kind,
+        "timer": message.timer,
+        "expires_at": timezone.localtime(message.expires_at).isoformat() if message.expires_at else None,
         "mine": message.sender_id == viewer.pk,
         "sender": sender.username if sender else None,      # None: "Deleted user"
         "text": message.text,
         "removed": message.removed,
-        "can_report": message.sender_id not in (None, viewer.pk) and not message.removed,
+        "can_report": (message.sender_id not in (None, viewer.pk) and not message.removed
+                       and message.kind != Message.SYSTEM),
         "reported": message.pk in reported,
         "at": timezone.localtime(message.created_at).isoformat(),
     }

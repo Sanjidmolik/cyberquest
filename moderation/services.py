@@ -116,6 +116,8 @@ def report(reporter, message_id, reason, note="", also_block=False):
         raise Denied("You can't report your own message.")
     if message.sender is None or message.removed:
         raise Denied("This message was removed and can't be reported.")
+    if message.kind == Message.SYSTEM:
+        raise Denied("Notices like this can't be reported.")
     existing = Report.objects.filter(message=message, reporter=reporter).first()
     if existing is not None:
         return existing, False

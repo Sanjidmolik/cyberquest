@@ -76,3 +76,6 @@ media/certificate_templates/*
 # Local scratch output (rendered pages may hold personal data)
 _out.html
 courses_backup.json
+
+# Encrypted view-once message photos (messaging v2)
+private_media/

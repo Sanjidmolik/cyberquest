@@ -305,6 +305,10 @@ MESSAGE_ENCRYPTION_KEYS = [
     k.strip() for k in (os.environ.get("MESSAGE_ENCRYPTION_KEYS") or "").split(",") if k.strip()
 ]
 MESSAGING_MAX_LENGTH = 2000
+# Encrypted view-once photos (messaging v2). Local disk only, outside MEDIA_ROOT and never
+# served by a URL; with MEDIA_STORAGE=r2 they go to the private bucket instead.
+_private_media_root = (os.environ.get("PRIVATE_MEDIA_ROOT") or "").strip()
+PRIVATE_MEDIA_ROOT = Path(_private_media_root) if _private_media_root else BASE_DIR / "private_media"
 
 # ---- Email (development: prints to terminal instead of really sending) ----
 # To send REAL emails later (e.g. via Gmail SMTP), change EMAIL_BACKEND to
@@ -429,8 +433,15 @@ MESSAGING_NEW_CONVERSATIONS_PER_DAY = _env_bounded_int(
     "MESSAGING_NEW_CONVERSATIONS_PER_DAY", default=10, minimum=1, maximum=500,
 )
 MODERATION_REPORTS_PER_DAY = _env_bounded_int("MODERATION_REPORTS_PER_DAY", default=10, minimum=1, maximum=200)
+MESSAGING_PHOTOS_PER_DAY = _env_bounded_int("MESSAGING_PHOTOS_PER_DAY", default=20, minimum=1, maximum=500)
+MESSAGING_TIMER_CHANGES_PER_HOUR = _env_bounded_int(
+    "MESSAGING_TIMER_CHANGES_PER_HOUR", default=10, minimum=1, maximum=200,
+)
 
 if sys.argv[1:2] == ["test"]:
     # Tests use their own throwaway message key, never one from .env.
     from cryptography.fernet import Fernet as _Fernet
     MESSAGE_ENCRYPTION_KEYS = [_Fernet.generate_key().decode()]
+    # ...and a throwaway folder for view-once photos.
+    import tempfile as _tempfile
+    PRIVATE_MEDIA_ROOT = Path(_tempfile.mkdtemp(prefix="cq-private-media-"))

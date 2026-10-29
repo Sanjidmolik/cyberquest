@@ -51,6 +51,11 @@
   // ---------- conversation ----------
 
   function bubble(m) {
+    if (m.kind === "system") {                          // "X set disappearing messages to 1 hour"
+      var note = el("li", "msg-system", m.text);
+      note.setAttribute("data-id", m.id);
+      return note;
+    }
     var li = el("li", "msg-bubble " + (m.mine ? "is-mine" : "is-theirs"));
     li.dataset.id = m.id;
     if (!m.mine) li.appendChild(el("span", "msg-bubble-who", m.sender || "Deleted user"));

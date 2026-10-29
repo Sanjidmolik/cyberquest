@@ -81,6 +81,11 @@ def check_message_rate(sender):
         raise RateLimited("You're sending messages too quickly. Wait a minute and try again.")
 
 
+def check_timer_rate(user):
+    if is_rate_limited(f"msg:timer:{user.pk}", limit=settings.MESSAGING_TIMER_CHANGES_PER_HOUR, window_seconds=3600):
+        raise RateLimited("You've changed disappearing messages too often. Try again in an hour.")
+
+
 def check_new_conversation_rate(sender):
     if is_rate_limited(f"msg:newconv:{sender.pk}", limit=settings.MESSAGING_NEW_CONVERSATIONS_PER_DAY,
                        window_seconds=86_400):

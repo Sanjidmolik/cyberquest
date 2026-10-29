@@ -20,7 +20,7 @@ from accounts.public import public_card
 from moderation.models import Report
 from moderation.services import recent_warning, restriction_reason
 
-from . import services
+from . import expiry, services
 from .models import Block, Conversation, MessagingPreference
 from .policy import Denied, NeedsConfirmation, RateLimited
 
@@ -61,6 +61,7 @@ def _int(raw):
 @login_required(login_url=LOGIN_URL)
 @require_GET
 def inbox(request, public_id=None):
+    expiry.maybe_sweep()
     tab = "requests" if request.GET.get("tab") == "requests" else "inbox"
     conversation = _conversation(request, public_id) if public_id else None
     if conversation is not None and conversation.is_request_for(request.user):
@@ -94,6 +95,7 @@ def inbox(request, public_id=None):
                     "send": reverse("messaging:api_send", args=[conversation.public_id]),
                     "poll": reverse("messaging:api_poll", args=[conversation.public_id]),
                     "read": reverse("messaging:api_read", args=[conversation.public_id]),
+                    "timer": reverse("messaging:api_timer", args=[conversation.public_id]),
                     "inbox": reverse("messaging:api_inbox"),
                     "report": reverse("moderation_public:report"),
                 },
@@ -148,9 +150,25 @@ def api_send(request, public_id):
 
 
 @login_required(login_url=LOGIN_URL)
+@require_POST
+def api_timer(request, public_id):
+    """Change the disappearing-messages timer: {"timer": "off"|"view"|"1h"|"24h"|"7d"}."""
+    conversation = _conversation(request, public_id)
+    timer = _body(request).get("timer")
+    try:
+        notice = services.set_timer(request.user, conversation, timer if isinstance(timer, str) else "")
+    except RateLimited as exc:
+        return JsonResponse({"error": str(exc)}, status=429)
+    except Denied as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    return JsonResponse({"timer": timer, "message": services.serialize(notice, request.user) if notice else None})
+
+
+@login_required(login_url=LOGIN_URL)
 @require_GET
 def api_poll(request, public_id):
     """Only messages newer than ?after=<id> (or older than ?before=<id>): cheap to call often."""
+    expiry.maybe_sweep()
     conversation = _conversation(request, public_id)
     rows = services.messages_after(conversation, request.user, after=_int(request.GET.get("after")),
                                    before=_int(request.GET.get("before")) or None)
@@ -169,6 +187,7 @@ def api_read(request, public_id):
 @login_required(login_url=LOGIN_URL)
 @require_GET
 def api_inbox(request):
+    expiry.maybe_sweep()
     tab = "requests" if request.GET.get("tab") == "requests" else "inbox"
     return JsonResponse({"rows": services.inbox(request.user, tab, request.GET.get("q", "")[:50]),
                          "requests": services.request_count(request.user)})
