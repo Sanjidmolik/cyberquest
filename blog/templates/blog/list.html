@@ -1,0 +1,46 @@
+{% extends "shared/base.html" %}
+{% load static %}
+
+{% block title %}Blog — CyberQuest{% endblock %}
+{% block head_meta %}
+<meta name="description" content="Security tips, course news and stories from the CyberQuest team.">
+<meta property="og:title" content="CyberQuest blog">
+<meta property="og:description" content="Security tips, course news and stories from the CyberQuest team.">
+<meta property="og:type" content="website">
+{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'blog/css/blog.css' %}?v=1">{% endblock %}
+
+{% block content %}
+<div class="cq-container bl">
+  <header class="bl-head">
+    <h1 class="cq-heading">Blog</h1>
+    <p class="cq-body">Security tips, course news and stories from the CyberQuest team.</p>
+  </header>
+
+  {% if page.object_list %}
+  <ul class="bl-grid">
+    {% for post in page.object_list %}
+    <li class="bl-card">
+      <a href="{% url 'blog:detail' post.slug %}" class="bl-card-link">
+        {% if post.cover %}<img class="bl-card-img" src="{% url 'blog:thumb' post.cover.public_id %}" alt="{{ post.cover.alt }}" loading="lazy" width="640" height="{% widthratio post.cover.height post.cover.width 640 %}">{% else %}<span class="bl-card-img bl-card-img--empty" aria-hidden="true"></span>{% endif %}
+        <span class="bl-card-body">
+          <span class="bl-meta">{{ post.published_at|date:"j M Y" }} · {{ post.reading_minutes }} min read</span>
+          <span class="bl-card-title">{{ post.title }}</span>
+          <span class="bl-card-excerpt">{{ post.excerpt }}</span>
+        </span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if page.has_other_pages %}
+  <nav class="bl-pager" aria-label="Blog pages">
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}" rel="prev">Newer posts</a>{% endif %}
+    <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}" rel="next">Older posts</a>{% endif %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <div class="cq-page-card"><p class="cq-body">No posts yet. Check back soon.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

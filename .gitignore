@@ -60,6 +60,8 @@ media/signatures/
 media/profile_pictures/*
 !media/profile_pictures/dragon.png
 media/course_thumbnails/
+# Blog images uploaded in the Command Center (re-encoded copies, random names).
+media/blog/
 media/course_ebooks/*
 !media/course_ebooks/The_Phishing_Detectives_Handbook.pdf
 !media/course_ebooks/course1.pdf

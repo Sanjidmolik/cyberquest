@@ -79,8 +79,10 @@ Licences below are read from each installed package's metadata.
 | idna | 3.19 | BSD-3-Clause | |
 | Incremental | 24.11.0 | MIT | Twisted dependency. |
 | jmespath | 1.1.0 | MIT | boto3 dependency. |
+| Markdown | 3.11.2 | BSD-3-Clause | Added for the blog: Markdown to HTML (raw HTML switched off, `blog/rendering.py`). |
 | msgpack | 1.2.4 | Apache-2.0 | autobahn dependency. |
 | mysqlclient | 2.2.8 | GPL-2.0-or-later | The MySQL driver for local development (`DATABASE_URL=mysql://…`). GPL-2 obligations attach to distribution, not network use, so running it as a web service creates no obligation; keep this notice if you ever distribute the app with it. |
+| nh3 | 0.3.7 | MIT | Added for the blog: allow-list HTML sanitiser (Rust ammonia). Chosen over bleach, which is deprecated. |
 | packaging | 26.3 | Apache-2.0 OR BSD-2-Clause | Twisted dependency. |
 | pillow | 12.1.1 | MIT-CMU | |
 | psycopg2-binary | 2.9.13 | LGPL-3.0 with exceptions | PostgreSQL driver for the production database at launch. Wheels bundle libpq (PostgreSQL Licence) and OpenSSL. No obligation for network use; keep notices if you ever distribute the wheel. |

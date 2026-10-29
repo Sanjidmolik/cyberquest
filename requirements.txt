@@ -21,8 +21,10 @@ hyperlink==21.0.0
 idna==3.19
 Incremental==24.11.0
 jmespath==1.1.0
+Markdown==3.11.2
 msgpack==1.2.4
 mysqlclient==2.2.8
+nh3==0.3.7
 packaging==26.3
 pillow==12.1.1
 psycopg2-binary==2.9.13

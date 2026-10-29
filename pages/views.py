@@ -77,15 +77,17 @@ def contact_view(request):
 @login_required(login_url="/accounts/login/")
 def search_view(request):
     """
-    Searches both admin-managed Courses and the static games registry
-    by keyword. Two different data sources, one combined results page.
+    Searches admin-managed Courses, the static games registry and published blog posts
+    (never drafts) by keyword, on one combined results page.
     """
+    from blog.models import Post
     from courses.models import Course
     from games.registry import active_games
 
     query = request.GET.get("q", "").strip()
     course_results = []
     game_results = []
+    post_results = []
 
     if query:
         course_results = Course.objects.active().filter(
@@ -95,10 +97,14 @@ def search_view(request):
             g for g in active_games()
             if query.lower() in g["name"].lower() or query.lower() in g["description"].lower()
         ]
+        post_results = Post.objects.published().filter(
+            Q(title__icontains=query) | Q(excerpt__icontains=query),
+        ).order_by("-published_at")[:10]
 
     return render(request, "pages/search.html", {
         "query": query,
         "course_results": course_results,
         "game_results": game_results,
-        "has_results": bool(course_results or game_results),
+        "post_results": post_results,
+        "has_results": bool(course_results or game_results or post_results),
     })

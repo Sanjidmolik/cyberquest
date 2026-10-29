@@ -248,6 +248,9 @@ def _admin_target_allowed(user, target: str) -> bool:
         return True
     if can_moderate(user) and target.startswith(reverse("moderation:queue")):
         return True
+    from blog.access import can_manage_blog
+    if can_manage_blog(user) and target.startswith(reverse("blog_panel:list")):
+        return True
     return bool(user.is_staff) and target.startswith(reverse("admin:index"))
 
 

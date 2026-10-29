@@ -32,10 +32,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('dashboard/', include('dashboard.urls')),
-    # The Practice Studio and moderation live in the Command Center but have their own gates
-    # (practice/studio/access.py, moderation/access.py).
+    # The Practice Studio, moderation and the blog editor live in the Command Center but have
+    # their own gates (practice/studio/access.py, moderation/access.py, blog/access.py).
     path('admin-dashboard/studio/', include('practice.studio.urls')),
     path('admin-dashboard/moderation/', include('moderation.panel_urls')),
+    path('admin-dashboard/blog/', include('blog.panel_urls')),
     path('admin-dashboard/', include('dashboard.ops_urls')),
     path('courses/', include('courses.urls')),
     path('learning/', include('courses.learning_urls')),
@@ -46,6 +47,7 @@ urlpatterns = [
     path('leaderboard/', include('leaderboard.urls')),
     path('messages/', include('messaging.urls')),
     path('moderation/', include('moderation.urls')),
+    path('blog/', include('blog.urls')),
     path('certificate/', include('certificates.urls')),
     # Public QR verification URL (canonical for certificate QR codes)
     path('verify/<str:certificate_id>/', verify_certificate, name='certificate_verify'),

@@ -33,6 +33,13 @@
         Practice Studio
       </a>
       {% endif %}
+      {% if perms.blog.publish_post %}
+      {% if not perms.practice.use_studio %}<p class="ops-group">Content</p>{% endif %}
+      <a class="ops-link{% if active == 'blog' %} is-active{% endif %}" href="{% url 'blog_panel:list' %}" {% if active == 'blog' %}aria-current="page"{% endif %}>
+        <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        Blog
+      </a>
+      {% endif %}
       {% if perms.moderation.moderate %}
       <p class="ops-group">Safety</p>
       <a class="ops-link{% if active == 'moderation' %} is-active{% endif %}" href="{% url 'moderation:queue' %}" {% if active == 'moderation' %}aria-current="page"{% endif %}>
@@ -80,6 +87,10 @@
         Moderation
       </a>
       <p class="ops-group">Content</p>
+      <a class="ops-link{% if active == 'blog' %} is-active{% endif %}" href="{% url 'blog_panel:list' %}" {% if active == 'blog' %}aria-current="page"{% endif %}>
+        <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        Blog
+      </a>
       <a class="ops-link{% if active == 'questions' %} is-active{% endif %}" href="{% url 'ops:questions' %}" {% if active == 'questions' %}aria-current="page"{% endif %}>
         <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
         Question bank
@@ -137,7 +148,7 @@
         <svg class="ops-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
       <div class="ops-heading">
-        <p class="ops-crumb">{% if active == "studio" %}Practice Studio{% elif active == "moderation" %}Moderation{% else %}Command Center{% endif %} <span aria-hidden="true">/</span> {{ page_title }}</p>
+        <p class="ops-crumb">{% if active == "studio" %}Practice Studio{% elif active == "moderation" %}Moderation{% elif active == "blog" %}Blog{% else %}Command Center{% endif %} <span aria-hidden="true">/</span> {{ page_title }}</p>
         <h1>{{ page_title }}</h1>
       </div>
       {% if request.user.is_superuser %}
