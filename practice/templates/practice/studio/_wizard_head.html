@@ -1,0 +1,15 @@
+<p class="ops-note"><a href="{% url 'studio:list' %}">Back to all sessions</a></p>
+<header class="st-wizard-head">
+  <div>
+    <h2 class="st-wizard-title">{{ scenario.title }}</h2>
+    <p class="st-meta">{{ scenario.get_kind_display }} · {{ scenario.get_status_display }}{% if scenario.status == "published" %} (students see the published version until you publish again){% endif %}</p>
+  </div>
+  <ol class="st-progress" aria-label="Wizard steps">
+    <li class="{% if wizard_step == 1 %}is-current{% endif %}"><a href="{% url 'studio:basics' scenario.slug %}"{% if wizard_step == 1 %} aria-current="step"{% endif %}><span>1</span> Basics</a></li>
+    <li class="{% if wizard_step == 2 %}is-current{% endif %}"><a href="{% url 'studio:steps' scenario.slug %}"{% if wizard_step == 2 %} aria-current="step"{% endif %}><span>2</span> Steps</a></li>
+    <li class="is-later" aria-disabled="true"><span>3</span> Preview</li>
+    <li class="is-later" aria-disabled="true"><span>4</span> Check &amp; publish</li>
+  </ol>
+</header>
+<p class="st-save-status" id="st-save-status" role="status" aria-live="polite">{% if scenario.draft_saved_at %}Last saved {{ scenario.draft_saved_at|date:"j M, H:i" }}{% if scenario.draft_saved_by %} by {{ scenario.draft_saved_by.username }}{% endif %}{% endif %}</p>
+<div class="st-alert" id="st-alert" role="alert" hidden></div>

@@ -11,6 +11,7 @@ import json
 from django.db import transaction
 from django.utils.text import slugify
 
+from ..conversion import XP_REWARD as STUDIO_XP   # every Studio session is worth the practice rule: 50 XP
 from ..graders import FLOWS, validate_content
 from ..models import Scenario, StudioAuditLog
 from .starter_templates import load_template
@@ -48,11 +49,11 @@ def session_content(content):
     return out
 
 
-def _create(*, user, action, summary, topic, kind, title, difficulty, est_minutes, xp_reward, content):
+def _create(*, user, action, summary, topic, kind, title, difficulty, est_minutes, content):
     with transaction.atomic():
         scenario = Scenario.objects.create(
             slug=unique_slug(title), topic=topic, kind=kind, title=title[:160], difficulty=difficulty,
-            est_minutes=est_minutes, time_limit_sec=None, xp_reward=xp_reward, content=content,
+            est_minutes=est_minutes, time_limit_sec=None, xp_reward=STUDIO_XP, content=content,
             status=Scenario.DRAFT, source=Scenario.STUDIO, created_by=user, updated_by=user,
         )
         StudioAuditLog.objects.create(user=user, scenario=scenario, slug=scenario.slug, action=action,
@@ -70,7 +71,7 @@ def duplicate(source, user):
     return _create(
         user=user, action="duplicate", summary=f"Copy of {source.slug} v{source.version}",
         topic=source.topic, kind=source.kind, title=f"{source.title} (copy)", difficulty=source.difficulty,
-        est_minutes=source.est_minutes, xp_reward=source.xp_reward, content=session_content(working_content(source)),
+        est_minutes=source.est_minutes, content=session_content(working_content(source)),
     )
 
 
@@ -79,7 +80,7 @@ def from_template(kind, topic, user):
     return _create(
         user=user, action="create", summary=f"From the {kind} template v{template['template_version']}",
         topic=topic, kind=kind, title=template["title"], difficulty=template["difficulty"],
-        est_minutes=template["est_minutes"], xp_reward=template["xp_reward"], content=copy.deepcopy(template["content"]),
+        est_minutes=template["est_minutes"], content=copy.deepcopy(template["content"]),
     )
 
 
@@ -136,7 +137,6 @@ def parse_import(raw, topic=None):
     if difficulty not in DIFFICULTIES:
         errors.append("Difficulty must be beginner, intermediate or advanced.")
     minutes = _whole_number(data, "est_minutes", 1, 120, errors, "Estimated minutes")
-    xp = _whole_number(data, "xp_reward", 0, 500, errors, "XP reward")
     if topic is None:
         topic = Course.objects.filter(code=data.get("topic")).first() if isinstance(data.get("topic"), str) else None
         if topic is None:
@@ -152,7 +152,7 @@ def parse_import(raw, topic=None):
     if errors:
         raise SessionFileError(errors)
     return {"topic": topic, "kind": kind, "title": title.strip(), "difficulty": difficulty, "est_minutes": minutes,
-            "xp_reward": xp, "content": session_content(content), "file_slug": data.get("slug")}
+            "content": session_content(content), "file_slug": data.get("slug")}
 
 
 def import_session(raw, user, topic=None, filename=""):

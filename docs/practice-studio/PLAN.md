@@ -1,7 +1,7 @@
 # Practice Studio: implementation plan
 
-Status: **phases 1–3 done and tested. Phases 4–7 are paused** until the four features in
-`docs/features/PLAN.md` (leaderboard, messaging, moderation, blog) are finished.
+Status: **phases 1–4 done and tested** (the four features in `docs/features/PLAN.md` are
+finished). Phases 5–7 continue one at a time, each merged into `develop` after an audit.
 
 ---
 
@@ -173,7 +173,9 @@ The **template test** fills every field with its "Insert example" text and asser
 4. Wizard steps 1–2 + all step forms, autosave, reorder.
 5. Preview (real player, draft content, no XP or stats).
 6. Checks, publish, versions, restore, audit.
-7. `docs/practice-studio/ADMIN_GUIDE.md` (simple English, screenshot placeholders, 5-minute walkthrough), sidebar/dashboard links, polish, a screenshot pass at 1280 px and tablet width.
+7. Blog editor polish: an **Insert image** button that uploads the image and inserts its
+   Markdown line at the cursor (no hand-pasting).
+   `docs/practice-studio/ADMIN_GUIDE.md` (simple English, screenshot placeholders, 5-minute walkthrough), sidebar/dashboard links, polish, a screenshot pass at 1280 px and tablet width.
 
 Tests run after every phase; one commit per phase on `feat/practice-studio`.
 
@@ -206,7 +208,30 @@ Dropped from the studio forms because the player doesn't render them (D2). Each 
 
 ## 10. Future
 
+- **Blog**: sitemap and feed (must use `Post.objects.published()`), and scheduled publishing.
+
 - **Docker + PostgreSQL for local development and tests**, to run the full suite against
   the production database before launch (deferred).
 - **Topic Kit generation**: the start-screen card stays disabled ("Coming soon"). The Gemini
   integration will be written by the project owner; the studio must not include it.
+
+## 11. Phase 4 notes (wizard: Basics and Steps)
+
+- **Basics**: title, topic, kind (read-only), difficulty, minutes, **XP read-only 50** (every
+  Studio session stores 50, including duplicates and imports), badge and short description
+  (in `content.meta`). Works as a plain form without JavaScript.
+- **Steps**: one card per step, generated from `practice/studio/editor.py` SCHEMA (labels, help,
+  recommended lengths with counters, "Insert example"). Up/Down buttons and drag-and-drop for
+  steps and rows; the briefing (and a choice session's branch) are locked. Add a step from the
+  kind's allowed types; remove optional steps.
+- **Saving**: JSON endpoint `<slug>/save/` with the draft revision (optimistic locking: a stale
+  revision gets 409 with who saved and when; the page keeps the typed text and stops
+  autosaving). Autosave every 30 s writes the draft only, no audit; a manual Save is audited
+  ("edit"). Sign-out or CSRF failures show a message and keep the data.
+- **Lenient drafts**: structure, types, sizes, step kinds and required steps are checked; empty
+  fields, missing answers and unusual orders are allowed. `validate_content()` runs at publish.
+- **Students** keep the published content and title until publish; never-published drafts update
+  the row's title and topic directly (only Studio lists show them).
+- **Escaping**: the player's `h()` helper no longer has an `html` option; admin text reaches the
+  player through text nodes and template autoescaping (tested with `<script>alert(1)</script>`).
+- Tests: `practice/tests_studio_wizard.py` (15). Full suite 631 with `--parallel` (~96 s).

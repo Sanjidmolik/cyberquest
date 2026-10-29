@@ -1,0 +1,18 @@
+{% extends "dashboard/ops/base.html" %}
+{% load static %}
+{% block ops_head %}{% include "practice/studio/_head.html" %}{% endblock %}
+{% block ops_content %}
+{% include "practice/studio/_wizard_head.html" %}
+
+<noscript><p class="st-alert">The step editor needs JavaScript. Basics can be edited without it.</p></noscript>
+<p class="ops-note">One card per step, in the order students see them. Drafts can be incomplete: everything is checked properly when you publish. Changes save automatically every 30 seconds.</p>
+
+<div id="st-editor" data-save-url="{% url 'studio:save' scenario.slug %}"></div>
+
+<div class="st-wizard-nav st-wizard-nav--sticky">
+  <a class="ops-btn-link" href="{% url 'studio:basics' scenario.slug %}">← Basics</a>
+  <button type="button" id="st-save" class="ops-btn-quiet">Save</button>
+</div>
+{{ editor_config|json_script:"st-editor-config" }}
+<script src="{% static 'practice/studio/studio-editor.js' %}?v=1"></script>
+{% endblock %}

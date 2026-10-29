@@ -22,6 +22,13 @@ from practice.testing import convert_all
 User = get_user_model()
 
 
+def created_slug(url):
+    """New sessions open in the wizard: /admin-dashboard/studio/<slug>/basics/."""
+    parts = url.strip("/").split("/")
+    assert parts[-1] == "basics", url
+    return parts[-2]
+
+
 def _studio_urls():
     dummy = {"int": 1, "string": "x", "slug": "simulation", "path": "x"}
     for pattern in studio_urls.urlpatterns:
@@ -158,7 +165,7 @@ class StartScreenTests(StudioTestCase):
             before = canonical_json(source.content)
             res = self.client.post(reverse("studio:duplicate"), {"source": source.slug})
             self.assertEqual(res.status_code, 302, source.slug)
-            copy_row = Scenario.objects.get(slug=res.url.split("created=")[1])
+            copy_row = Scenario.objects.get(slug=created_slug(res.url))
             self.assertNotEqual(copy_row.slug, source.slug)
             self.assertEqual((copy_row.status, copy_row.source, copy_row.version), ("draft", "studio", 1))
             self.assertEqual((copy_row.topic_id, copy_row.kind, copy_row.difficulty, copy_row.xp_reward),
@@ -179,13 +186,13 @@ class StartScreenTests(StudioTestCase):
         source.draft_content = {**copy.deepcopy(source.content), "debrief": {"sub": "Draft text", "learned": []}}
         source.save()
         res = self.client.post(reverse("studio:duplicate"), {"source": source.slug})
-        self.assertEqual(Scenario.objects.get(slug=res.url.split("created=")[1]).content["debrief"]["sub"], "Draft text")
+        self.assertEqual(Scenario.objects.get(slug=created_slug(res.url)).content["debrief"]["sub"], "Draft text")
 
     def test_each_template_creates_a_draft_in_the_chosen_topic(self):
         topic = Course.objects.get(code="CQ-PRIVACY")
         for kind in KINDS:
             res = self.client.post(reverse("studio:template", args=[kind]), {"topic": topic.pk})
-            row = Scenario.objects.get(slug=res.url.split("created=")[1])
+            row = Scenario.objects.get(slug=created_slug(res.url))
             self.assertEqual((row.kind, row.topic, row.status, row.source), (kind, topic, "draft", "studio"))
             self.assertEqual(canonical_json(row.content), canonical_json(load_template(kind)["content"]))
             validate_content(kind, row.content)
@@ -215,7 +222,7 @@ class ImportTests(StudioTestCase):
         source = Scenario.objects.get(slug="crypto-message-audit")
         res = self._upload(export_payload(source))
         self.assertEqual(res.status_code, 302)
-        row = Scenario.objects.get(slug=res.url.split("created=")[1])
+        row = Scenario.objects.get(slug=created_slug(res.url))
         self.assertNotEqual(row.slug, source.slug)                      # never overwrites
         self.assertEqual((row.status, row.source, row.topic, row.kind), ("draft", "studio", source.topic, source.kind))
         self.assertEqual(canonical_json(row.content), canonical_json(session_content(source.content)))
@@ -226,7 +233,7 @@ class ImportTests(StudioTestCase):
         template = load_template("incident")
         topic = Course.objects.get(code="CQ-RESPONSE")
         res = self._upload(template, "incident.json", topic=topic.pk)
-        self.assertEqual(Scenario.objects.get(slug=res.url.split("created=")[1]).topic, topic)
+        self.assertEqual(Scenario.objects.get(slug=created_slug(res.url)).topic, topic)
 
     def test_bad_files_are_refused_with_reasons_and_nothing_is_saved(self):
         good = export_payload(Scenario.objects.get(slug="phish-01-choice"))
