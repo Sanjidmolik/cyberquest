@@ -102,6 +102,11 @@ about 6–8 minutes without `--parallel`). Each worker gets its own copy of the 
 and cache, and the tests never use live keys from `.env` or the network. Add an app name
 (`python manage.py test messaging`) to run one part.
 
+`practice/tests_player_browser.py` runs the real practice player in headless Edge or Chrome.
+It is skipped only when no such browser is installed, or when `CQ_SKIP_BROWSER_TESTS=1` is
+set (for CI images without a browser). If a browser is installed but can't start, the test
+fails with a message saying so.
+
 ## Deployment notes
 
 - See **[DEPLOYMENT.md](DEPLOYMENT.md)** for Render configuration, the upgrade order, backups, and rollback.

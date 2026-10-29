@@ -1,8 +1,11 @@
 """The real student player in a real browser (headless Microsoft Edge or Chrome).
 
 Deferred from Studio phase 1: content with keys the player doesn't know (`meta`, future
-top-level, step and row keys) must play without JavaScript errors. Skipped when no
-Chromium-based browser is installed (e.g. a minimal CI image).
+top-level, step and row keys) must play without JavaScript errors.
+
+Skipped ONLY when no Edge/Chrome is installed, or when CQ_SKIP_BROWSER_TESTS=1 is set (e.g. a
+CI image without a browser). If a browser is installed but can't start, the test FAILS with a
+message saying so: a broken browser must not look like a passing suite.
 
 How it works: a test-only URL signs a student in and serves the real session page with a
 small script added at the top that records any JavaScript error, then ticks the agreement
@@ -85,11 +88,33 @@ urlpatterns = [path("__probe/<slug:slug>/", probe_session), path("__probe_result
 @override_settings(ROOT_URLCONF=__name__, ALLOWED_HOSTS=["*"])
 class PlayerIgnoresUnknownKeysTests(StaticLiveServerTestCase):
     def setUp(self):
+        if os.environ.get("CQ_SKIP_BROWSER_TESTS") == "1":
+            self.skipTest("CQ_SKIP_BROWSER_TESTS=1")
         self.browser = _browser()
         if not self.browser:
             self.skipTest("No headless Edge/Chrome installed")
+        if not self._browser_starts():
+            self.fail(f"A browser is installed at {self.browser} but it didn't start in headless mode "
+                      "(no screenshot of a blank page). Fix the browser or its sandboxing, or set "
+                      "CQ_SKIP_BROWSER_TESTS=1 to skip this test on purpose.")
         convert_all()
         get_user_model().objects.create_user(email="probe@example.com", password="x-probe-123", username="browserprobe")
+
+    def _browser_starts(self):
+        for _ in range(3):
+            profile = tempfile.mkdtemp()
+            shot = os.path.join(profile, "blank.png")
+            try:
+                subprocess.run([self.browser, "--headless=new", "--disable-gpu", "--no-first-run",
+                                f"--user-data-dir={profile}", f"--screenshot={shot}", "data:text/html,<p>ok</p>"],
+                               capture_output=True, timeout=60)
+                if os.path.exists(shot):
+                    return True
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+            finally:
+                shutil.rmtree(profile, ignore_errors=True)
+        return False
 
     def _play(self, slug):
         """Open the probe page in the headless browser; return what the page reported."""
