@@ -7,6 +7,7 @@
     {% endif %}
     <li><a class="cq-nav-link" href="{% url 'courses:intro' %}">Courses</a></li>
     <li><a class="cq-nav-link" href="{% url 'practice:center' %}">Practice</a></li>
+    <li><a class="cq-nav-link" href="{% url 'blog:list' %}">Blog</a></li>
     {% if user.is_authenticated %}
     <li><a class="cq-nav-link" href="{% url 'practice:cyber_dna' %}">Cyber DNA</a></li>
     <li><a class="cq-nav-link" href="{% url 'practice:history' %}">History</a></li>

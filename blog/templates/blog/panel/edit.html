@@ -1,0 +1,93 @@
+{% extends "dashboard/ops/base.html" %}
+{% block ops_head %}
+<style>
+.bp-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 14px; align-items: start; }
+.bp-form textarea, .bp-form input[type="text"], .bp-form input:not([type]) { width: 100%; }
+.bp-form .errorlist { color: var(--bad); margin: 4px 0 0; padding-left: 18px; }
+.bp-images { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.bp-images li { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 10px; }
+.bp-images img { width: 100%; height: auto; border-radius: 8px; }
+.bp-images code { display: block; padding: 6px 8px; border-radius: 6px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow-wrap: anywhere; user-select: all; }
+.bp-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.bp-row form { margin: 0; }
+.bp-help { font-size: 13px; }
+.bp-help code { white-space: nowrap; }
+@media (max-width: 960px) { .bp-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+{% endblock %}
+{% block ops_content %}
+<p class="ops-note"><a href="{% url 'blog_panel:list' %}">Back to all posts</a></p>
+
+<div class="bp-grid">
+  <form class="ops-panel ops-course-form bp-form" method="post"{% if post %} action="{% url 'blog_panel:edit' post.pk %}"{% endif %}>
+    {% csrf_token %}
+    <h2>{% if post %}Edit post{% else %}New post{% endif %}</h2>
+    {{ form.non_field_errors }}
+    {% for field in form %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+    {{ field.errors }}
+    {% endfor %}
+    <details class="bp-help">
+      <summary>Markdown cheat sheet</summary>
+      <p><code>## Heading</code> · <code>**bold**</code> · <code>*italic*</code> · <code>[link text](https://example.com)</code> · <code>- list item</code> · <code>&gt; quote</code> · <code>`code`</code>. HTML typed into the post is shown as text. Images: upload them on the right, then paste their line.</p>
+    </details>
+    <button type="submit">Save {% if post and post.status == "published" %}changes{% else %}draft{% endif %}</button>
+  </form>
+
+  {% if post %}
+  <aside>
+    <section class="ops-panel">
+      <h2>Status: {{ post.get_status_display }}</h2>
+      {% if post.status == "published" %}
+      <p>Live at <a href="{% url 'blog:detail' post.slug %}">/blog/{{ post.slug }}/</a>.</p>
+      {% else %}
+      <p class="ops-note">Private preview (only blog editors can open it):<br><a href="{{ preview_url }}">{{ preview_url }}</a></p>
+      {% endif %}
+      {% if post.slug_locked %}<p class="ops-note">The address is fixed because this post has been published.</p>{% endif %}
+      <form method="post" action="{% url 'blog_panel:publish' post.pk %}">
+        {% csrf_token %}
+        {% if post.status == "published" %}
+        <button type="submit" name="action" value="unpublish" class="ops-btn-quiet">Unpublish</button>
+        {% else %}
+        <button type="submit" name="action" value="publish">Publish</button>
+        {% endif %}
+      </form>
+    </section>
+
+    <section class="ops-panel">
+      <h2>Images</h2>
+      <form method="post" action="{% url 'blog_panel:image_upload' post.pk %}" enctype="multipart/form-data" class="ops-course-form">
+        {% csrf_token %}
+        <label for="{{ image_form.file.id_for_label }}">Image</label>
+        {{ image_form.file }}
+        <small>{{ image_form.file.help_text }} Resized to 1600 px wide; location and camera data are removed.</small>
+        <label for="{{ image_form.alt.id_for_label }}">{{ image_form.alt.label }}</label>
+        {{ image_form.alt }}
+        <small>{{ image_form.alt.help_text }}</small>
+        <label class="bp-row">{{ image_form.make_cover }} {{ image_form.make_cover.label }}</label>
+        <button type="submit">Upload</button>
+      </form>
+      <ul class="bp-images">
+        {% for picture in post.images.all %}
+        <li>
+          <img src="{% url 'blog:thumb' picture.public_id %}" alt="{{ picture.alt }}">
+          <small>{{ picture.width }}×{{ picture.height }}{% if post.cover_id == picture.pk %} · cover{% endif %}</small>
+          <code>![{{ picture.alt }}]({% url 'blog:image' picture.public_id %})</code>
+          <div class="bp-row">
+            {% if post.cover_id != picture.pk %}
+            <form method="post" action="{% url 'blog_panel:image_action' picture.public_id %}">{% csrf_token %}<button type="submit" name="action" value="cover" class="ops-btn-quiet">Use as cover</button></form>
+            {% endif %}
+            <form method="post" action="{% url 'blog_panel:image_action' picture.public_id %}" onsubmit="return confirm('Delete this image?');">{% csrf_token %}<button type="submit" name="action" value="delete" class="ops-btn-danger">Delete</button></form>
+          </div>
+        </li>
+        {% empty %}
+        <li class="ops-note">No images yet.</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}

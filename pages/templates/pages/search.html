@@ -29,6 +29,16 @@
         {% endfor %}
       {% endif %}
 
+      {% if post_results %}
+        <h2 class="cq-section-title" style="margin-top:1.5rem;">Blog</h2>
+        {% for post in post_results %}
+          <a href="{% url 'blog:detail' post.slug %}" class="cq-search-result" style="margin-bottom:0.65rem;">
+            <strong>{{ post.title }}</strong>
+            <p class="cq-body small" style="margin:0.35rem 0 0;">{{ post.excerpt }}</p>
+          </a>
+        {% endfor %}
+      {% endif %}
+
       {% if game_results %}
         <h2 class="cq-section-title" style="margin-top:1.5rem;">Games</h2>
         {% for g in game_results %}

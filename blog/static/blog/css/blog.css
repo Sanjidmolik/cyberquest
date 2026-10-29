@@ -1,0 +1,42 @@
+/* Blog list and article. Uses the public site tokens from shared/css/theme.css. */
+
+.bl { display: grid; gap: 22px; padding-bottom: 40px; }
+.bl-head .cq-body { margin: 6px 0 0; color: var(--muted); }
+
+.bl-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.bl-card { min-width: 0; }
+.bl-card-link {
+  display: flex; flex-direction: column; height: 100%; overflow: hidden; color: var(--text); text-decoration: none;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+  transition: transform .2s var(--ease), border-color .2s var(--ease);
+}
+.bl-card-link:hover { transform: translateY(-3px); border-color: var(--border-strong); }
+.bl-card-link:focus-visible { outline: 3px solid var(--lilac); outline-offset: 3px; }
+.bl-card-img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; background: var(--panel-bg); }
+.bl-card-img--empty { background: var(--grad); }
+.bl-card-body { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px 20px; }
+.bl-card-title { font-size: 1.2rem; font-weight: 700; line-height: 1.25; }
+.bl-card-excerpt { color: var(--muted); line-height: 1.45; }
+.bl-meta { margin: 0; font-size: .85rem; color: var(--muted); }
+
+.bl-pager { display: flex; justify-content: center; align-items: center; gap: 16px; }
+.bl-pager a { color: var(--lilac); font-weight: 700; }
+
+.bl-preview { margin: 0; padding: 10px 14px; border-radius: 14px; border: 1px dashed var(--border-strong); background: var(--card-solid); }
+.bl-article { max-width: 760px; margin: 0 auto; width: 100%; }
+.bl-back { margin: 0 0 8px; }
+.bl-back a { color: var(--lilac); }
+.bl-cover { display: block; width: 100%; height: auto; border-radius: 16px; margin: 18px 0; }
+
+.bl-body { line-height: 1.7; font-size: 1.05rem; overflow-wrap: anywhere; }
+.bl-body h2, .bl-body h3, .bl-body h4 { margin: 1.6em 0 .5em; line-height: 1.25; }
+.bl-body img { display: block; max-width: 100%; height: auto; border-radius: 12px; margin: 1em 0; }
+.bl-body a { color: var(--lilac); }
+.bl-body pre { overflow-x: auto; padding: 12px 14px; border-radius: 12px; background: rgba(0, 0, 0, .3); }
+.bl-body code { font-size: .92em; }
+.bl-body blockquote { margin: 1em 0; padding: 4px 16px; border-left: 4px solid var(--lavender); color: var(--muted); }
+.bl-body table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
+.bl-body th, .bl-body td { border: 1px solid var(--border); padding: 6px 10px; }
+
+@media (max-width: 960px) { .bl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .bl-grid { grid-template-columns: minmax(0, 1fr); } }

@@ -104,6 +104,7 @@ INSTALLED_APPS = [
     'channels',
     'messaging',
     'moderation',
+    'blog',
 ]
 
 MIDDLEWARE = [
