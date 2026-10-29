@@ -1,0 +1,95 @@
+{% extends "dashboard/ops/base.html" %}
+{% load static %}
+{% block ops_head %}{% include "practice/studio/_head.html" %}{% endblock %}
+{% block ops_content %}
+{% include "practice/studio/_wizard_head.html" %}
+
+<div class="st-check">
+  <section class="ops-panel" aria-labelledby="st-check-title">
+    <h2 id="st-check-title">Checklist</h2>
+    {% if passed %}
+    <p class="st-check-summary is-ok">Every check passes.</p>
+    {% else %}
+    <p class="st-check-summary is-bad">{{ failed_count }} check{{ failed_count|pluralize }} to fix before this can be published.</p>
+    {% endif %}
+    <ul class="st-checklist">
+      {% for rule in rules %}
+      <li class="{% if rule.ok %}is-ok{% else %}is-bad{% endif %}">
+        <span class="st-check-mark" aria-hidden="true">{% if rule.ok %}✓{% else %}✕{% endif %}</span>
+        <span class="st-sr">{% if rule.ok %}Passed:{% else %}Failed:{% endif %}</span>
+        <span class="st-check-text">{{ rule.text }}</span>
+        {% if not rule.ok and rule.fix and can_edit %}<a class="st-check-fix" href="{{ rule.fix }}">Fix</a>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <aside class="st-check-side">
+    <section class="ops-panel" aria-labelledby="st-publish-title">
+      <h2 id="st-publish-title">{% if can_publish %}Publish{% else %}Review{% endif %}</h2>
+      <p class="ops-note">
+        Status: <strong>{{ scenario.get_status_display }}</strong>{% if scenario.status != "draft" %} · live version {{ scenario.version }}{% endif %}.
+        {% if scenario.status == "published" and not has_changes %}Students already see this version; there is no draft to publish.{% endif %}
+      </p>
+
+      {% if can_publish %}
+        {% if has_changes %}
+        <button type="button" id="st-publish-open" {% if not passed %}disabled aria-describedby="st-publish-why"{% endif %}>Publish…</button>
+        {% if not passed %}<p class="ops-note" id="st-publish-why">Publish is enabled when every check passes.</p>{% endif %}
+        <dialog id="st-publish-dialog" class="st-dialog" aria-labelledby="st-dialog-title">
+          <form method="post" action="{% url 'studio:publish' scenario.slug %}">
+            {% csrf_token %}
+            <input type="hidden" name="revision" value="{{ scenario.draft_revision }}">
+            <h2 id="st-dialog-title">Publish “{{ draft_title }}”?</h2>
+            <p>Students will see this version immediately.</p>
+            <p class="ops-note">Students in the middle of this session keep the version they started.</p>
+            <div class="st-wizard-nav">
+              <button type="button" class="ops-btn-quiet" id="st-publish-cancel">Cancel</button>
+              <button type="submit">Publish now</button>
+            </div>
+          </form>
+        </dialog>
+        {% endif %}
+
+        {% if scenario.status == "archived" %}
+        <form method="post" action="{% url 'studio:unarchive' scenario.slug %}" class="st-inline-form">
+          {% csrf_token %}
+          <button type="submit" class="ops-btn-quiet">Un-archive</button>
+        </form>
+        {% else %}
+        <form method="post" action="{% url 'studio:archive' scenario.slug %}" class="st-inline-form" data-confirm="Archive this session? Students won’t see it in the Practice Center; their history and XP are kept, and you can un-archive it.">
+          {% csrf_token %}
+          <button type="submit" class="ops-btn-quiet">{% if scenario.status == "published" %}Unpublish (archive){% else %}Archive{% endif %}</button>
+        </form>
+        {% endif %}
+      {% endif %}
+
+      {% if can_edit and not can_publish %}
+      <p class="ops-note">Only Content Publishers can publish. When the draft is ready, ask them to review it.</p>
+      <form method="post" action="{% url 'studio:review' scenario.slug %}" class="st-inline-form">
+        {% csrf_token %}
+        <button type="submit">Request review</button>
+      </form>
+      {% endif %}
+    </section>
+
+    <section class="ops-panel" aria-labelledby="st-versions-title">
+      <h2 id="st-versions-title">Published versions</h2>
+      {% if versions %}
+      <ul class="st-version-mini">
+        {% for v in versions %}<li><strong>v{{ v.version }}</strong> · {{ v.published_at|date:"j M Y, H:i" }}{% if v.published_by %} · {{ v.published_by.username }}{% endif %}</li>{% endfor %}
+      </ul>
+      {% else %}
+      <p class="ops-note">Not published yet.</p>
+      {% endif %}
+      <p><a href="{% url 'studio:versions' scenario.slug %}">Full version history</a></p>
+    </section>
+  </aside>
+</div>
+
+<div class="st-wizard-nav">
+  <a class="ops-btn-link" href="{% url 'studio:preview' scenario.slug %}">← Preview</a>
+  <a class="ops-btn-link" href="{% url 'studio:steps' scenario.slug %}">Edit steps</a>
+</div>
+<script src="{% static 'practice/studio/studio-check.js' %}?v=1"></script>
+{% endblock %}

@@ -169,3 +169,29 @@ a.st-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; 
 .st-key-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .st-key-list ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; font-size: 13px; white-space: pre-wrap; }
 @media (max-width: 1100px) { .st-preview { grid-template-columns: minmax(0, 1fr); } .st-key { position: static; max-height: none; } }
+
+/* ---- Check & publish, version history (phase 6) ---- */
+.st-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.st-check { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: 14px; align-items: start; }
+.st-check-side { display: grid; gap: 14px; }
+.st-check-summary { font-weight: 600; margin: 0 0 10px; }
+.st-check-summary.is-ok { color: var(--good); }
+.st-check-summary.is-bad { color: var(--warn); }
+.st-checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.st-checklist li { display: flex; gap: 10px; align-items: baseline; padding: 6px 8px; border-radius: 8px; }
+.st-checklist li.is-bad { background: var(--warn-bg); }
+.st-check-mark { font-weight: 700; width: 1.2em; flex: none; text-align: center; }
+.st-checklist .is-ok .st-check-mark { color: var(--good); }
+.st-checklist .is-bad .st-check-mark { color: var(--warn); }
+.st-check-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.st-check-fix { flex: none; font-weight: 600; }
+.st-inline-form { margin: 10px 0 0; }
+.st-dialog { border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; max-width: 440px; width: calc(100% - 32px);
+  background: var(--panel); color: var(--text); }
+.st-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.st-dialog h2 { margin-top: 0; }
+.st-version-mini, .st-changes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.st-versions td { vertical-align: top; }
+.is-flagged { outline: 2px solid var(--warn); outline-offset: 4px; border-radius: 6px; }
+@media (max-width: 1000px) { .st-check { grid-template-columns: minmax(0, 1fr); } }
+.st-check-side button:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }

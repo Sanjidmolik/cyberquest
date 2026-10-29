@@ -1,0 +1,41 @@
+{% extends "dashboard/ops/base.html" %}
+{% load static %}
+{% block ops_head %}{% include "practice/studio/_head.html" %}{% endblock %}
+{% block ops_content %}
+{% include "practice/studio/_wizard_head.html" %}
+
+<section class="ops-panel" aria-labelledby="st-history-title">
+  <h2 id="st-history-title">Version history</h2>
+  <p class="ops-note">Every version students could play, newest first. Restoring a version copies it into the draft: students keep seeing version {{ scenario.version }} until a publisher checks and publishes the draft.</p>
+  {% if versions %}
+  <div class="ops-table-wrap">
+    <table class="ops-table st-versions">
+      <thead><tr><th scope="col">Version</th><th scope="col">Published</th><th scope="col">By</th><th scope="col">What changed</th>{% if can_publish %}<th scope="col"><span class="st-sr">Actions</span></th>{% endif %}</tr></thead>
+      <tbody>
+        {% for v in versions %}
+        <tr>
+          <td><strong>v{{ v.version }}</strong>{% if v.version == scenario.version and scenario.status != "draft" %} <span class="st-lock">Live</span>{% endif %}</td>
+          <td>{{ v.published_at|date:"j M Y, H:i" }}</td>
+          <td>{% if v.published_by %}{{ v.published_by.username }}{% elif v.origin == "seed" %}Seed command{% else %}—{% endif %}</td>
+          <td><ul class="st-changes">{% for line in v.changes %}<li>{{ line }}</li>{% endfor %}</ul></td>
+          {% if can_publish %}
+          <td>
+            <form method="post" action="{% url 'studio:restore' scenario.slug v.version %}" class="st-inline-form" data-confirm="Copy version {{ v.version }} into the draft? Any unpublished changes in the current draft are replaced. Students keep seeing the live version.">
+              {% csrf_token %}
+              <input type="hidden" name="revision" value="{{ scenario.draft_revision }}">
+              <button type="submit" class="ops-btn-quiet">Restore as draft</button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="ops-note">This session hasn’t been published yet.</p>
+  {% endif %}
+</section>
+<p><a class="ops-btn-link" href="{% url 'studio:check' scenario.slug %}">← Check &amp; publish</a></p>
+<script src="{% static 'practice/studio/studio-check.js' %}?v=1"></script>
+{% endblock %}
