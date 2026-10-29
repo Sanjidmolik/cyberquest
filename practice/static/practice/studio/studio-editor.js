@@ -136,6 +136,25 @@
     input.focus();
   }
 
+  // A "Fix" link from Check & publish lands on #step-3:title, #results:sub or #b-title:
+  // scroll to that step and field, mark it and put the cursor in it.
+  function focusFromHash() {
+    var hash = decodeURIComponent(window.location.hash.slice(1));
+    if (!hash) return;
+    var parts = hash.split(":");
+    var target = document.getElementById(parts[0]);
+    if (!target) return;
+    if (parts[1]) {
+      var field = target.querySelector(":scope > [data-key=\"" + CSS.escape(parts[1]) + "\"]");
+      if (field) target = field;
+    }
+    if (target.tagName === "DETAILS") target.open = true;
+    target.classList.add("is-flagged");
+    target.scrollIntoView({ block: "center" });
+    var input = target.matches("input, select, textarea") ? target : target.querySelector("input, select, textarea");
+    if (input) input.focus({ preventScroll: true });
+  }
+
   // ---------- Basics page ----------
 
   var basics = document.getElementById("st-basics");
@@ -162,6 +181,7 @@
       });
       return { basics: data };
     };
+    focusFromHash();
     return;
   }
 
@@ -389,14 +409,18 @@
   function fields(schema, obj) {
     var frag = document.createDocumentFragment();
     schema.forEach(function (def) {
-      if (def.kind === "text" || def.kind === "textarea") frag.appendChild(textField(def, obj));
-      else if (def.kind === "select") frag.appendChild(selectField(def, obj, def.options));
-      else if (def.kind === "level") frag.appendChild(selectField(def, obj, levelOptions(obj, def)));
-      else if (def.kind === "bool") frag.appendChild(boolField(def, obj));
-      else if (def.kind === "group") frag.appendChild(groupField(def, obj));
-      else if (def.kind === "rows") frag.appendChild(rowsField(def, obj));
-      else if (def.kind === "choice") frag.appendChild(choiceField(def, obj));
-      else if (def.kind === "strings") frag.appendChild(stringsField(def, obj));
+      var node = null;
+      if (def.kind === "text" || def.kind === "textarea") node = textField(def, obj);
+      else if (def.kind === "select") node = selectField(def, obj, def.options);
+      else if (def.kind === "level") node = selectField(def, obj, levelOptions(obj, def));
+      else if (def.kind === "bool") node = boolField(def, obj);
+      else if (def.kind === "group") node = groupField(def, obj);
+      else if (def.kind === "rows") node = rowsField(def, obj);
+      else if (def.kind === "choice") node = choiceField(def, obj);
+      else if (def.kind === "strings") node = stringsField(def, obj);
+      if (!node) return;
+      node.setAttribute("data-key", def.key);       // the target of a "Fix" link
+      frag.appendChild(node);
     });
     return frag;
   }
@@ -410,6 +434,7 @@
     var steps = data.steps;
     var locked = isRequired(step);
     var card = el("section", "ops-panel st-step" + (locked ? " is-locked" : ""));
+    card.id = "step-" + (index + 1);
     card.setAttribute("aria-labelledby", "st-step-" + index);
     var head = el("div", "st-step-head");
     var title = el("h2", null, "Step " + (index + 1) + " · " + (cfg.names[step.type] || step.type));
@@ -482,6 +507,7 @@
 
   function debriefCard() {
     var card = el("section", "ops-panel st-step is-locked");
+    card.id = "results";
     var head = el("div", "st-step-head");
     head.appendChild(el("h2", null, "Results screen"));
     head.appendChild(el("span", "st-lock", "Always last"));
@@ -501,4 +527,5 @@
   }
 
   renderAll();
+  focusFromHash();
 })();
