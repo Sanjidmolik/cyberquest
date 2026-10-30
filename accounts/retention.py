@@ -42,15 +42,33 @@ RETENTION = [
     ("Mission attempts left unfinished",
      "Closed automatically when the mission timer ends",
      "Kept as part of your attempt history"),
-    ("Messages you send and receive (text encrypted when stored; not end-to-end)",
-     "While your account exists",
+    ("Messages you send and receive (encrypted in transit and at rest; not end-to-end)",
+     "While your account exists, unless the chat's disappearing-messages timer is on",
      "When you delete your account, your messages stay in the other person's conversation as "
      "\"Deleted user\" with the text removed"),
+    ("Disappearing messages (sent while a chat's timer is on)",
+     "1 hour, 24 hours or 7 days after sending, or 30 seconds after the other person reads it",
+     "Hidden everywhere the moment they expire; deleted from the database within minutes by automatic "
+     "cleanup (daily at the latest)"),
+    ("View-once photos (encrypted, location and camera data removed)",
+     "Until opened once, or until the chat's timer runs out if that comes first",
+     "The copy that was shown is deleted the moment it is opened; otherwise by automatic cleanup. "
+     "Unopened photos are deleted when the sender deletes their account"),
+    ("Report copy of an opened view-once photo (encrypted; never shown again, only usable by the "
+     "recipient's report)",
+     "1 hour after the photo is opened",
+     "Automatic cleanup; if reported, it moves into the report (see reports below)"),
+    ("When you were last active in Messages (for \"online\"), and how far each person has "
+     "received and read a conversation",
+     "While your account exists",
+     "Deleted when you delete your account"),
     ("Message settings and the members you blocked",
      "While your account exists",
      "Deleted when you delete your account"),
     ("Reports you file about a message, with a copy of that message and up to three messages "
-     "before and after it",
+     "before and after it (and of a reported view-once photo, if reported before it was opened "
+     "or within 1 hour after), "
+     "kept even if the messages disappear",
      "Until a moderator resolves it, then 180 days",
      "Automatic cleanup"),
     ("Moderation log (who took which action, and who opened reported content, and when)",
@@ -181,6 +199,13 @@ def _moderation_purge(dry_run) -> dict:
             "message_warnings_older_than_90_days": counts["flags"]}
 
 
+def _expired_messages_purge(dry_run) -> dict:
+    """Backstop for disappearing messages (normally cleaned every minute)."""
+    from messaging.expiry import purge
+    counts = purge(dry_run=dry_run)
+    return {"expired_disappearing_messages": counts["messages"], "expired_message_photo_files": counts["photo_files"]}
+
+
 def run_all(dry_run=False) -> dict:
     return {
         "verification_codes": purge_verification_codes(dry_run=dry_run),
@@ -190,4 +215,5 @@ def run_all(dry_run=False) -> dict:
         "expired_mission_attempts_closed": close_expired_attempts(dry_run=dry_run),
         "old_practice_preview_runs": purge_preview_attempts(dry_run=dry_run),
         **_moderation_purge(dry_run),
+        **_expired_messages_purge(dry_run),
     }

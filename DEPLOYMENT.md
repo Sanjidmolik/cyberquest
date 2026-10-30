@@ -66,7 +66,31 @@ polling (every 4 s in an open, active conversation; 15 s when idle; paused in hi
 For instant updates later, run an ASGI server instead (`daphne cyberquest.asgi:application`
 behind the host's HTTPS proxy, so sockets use `wss://`) and, with more than one process,
 set `REDIS_URL` and install `channels-redis`. Message text is encrypted at rest and travels
-over HTTPS/WSS; it is not end-to-end encrypted.
+over HTTPS/WSS; it is not end-to-end encrypted. **Typing indicators exist only over the
+WebSocket**, so they appear once ASGI (and Redis, with more than one process) is in place;
+delivered/read ticks and "online" work over polling too.
+
+**View-once photos** are encrypted with `MESSAGE_ENCRYPTION_KEYS` and stored outside the
+public media space: in the private R2 bucket under `msg-photos/` (and `report-photos/` for
+reported copies) when `MEDIA_STORAGE=r2`, otherwise in `PRIVATE_MEDIA_ROOT` on local disk.
+`rotate_message_keys` re-encrypts them too. The bucket must stay private.
+
+**Disappearing messages cleanup.** Expired messages are hidden from every page and API the
+moment they expire; the cleanup only frees storage. Three layers, so no paid scheduler is
+needed:
+
+1. **In-app sweep (always on):** the messaging and polling endpoints delete up to 200 expired
+   rows at most once a minute, one request at a time (cache lock). Nothing to configure.
+2. **Host scheduler (optional, recommended where free):** run
+   `python manage.py purge_expired_messages` every minute. It is idempotent and logs counts only.
+   - Linux cron: `* * * * * cd /path/to/cyberquest && venv/bin/python manage.py purge_expired_messages >> /var/log/cq-purge.log 2>&1`
+   - Windows (local), Task Scheduler, from the project folder in an admin prompt:
+     `schtasks /Create /TN "CyberQuest purge expired messages" /SC MINUTE /MO 1 /TR "cmd /c cd /d E:\repo\cyber\cyberquest && venv\Scripts\python.exe manage.py purge_expired_messages"`
+     (the task needs `MESSAGE_ENCRYPTION_KEYS` in `.env`, which `manage.py` reads).
+3. **Daily backstop:** `purge_expired_data` (already scheduled daily) also runs it.
+
+Backups: deleted messages and photos can remain in database and storage backups until those
+backups rotate; the Privacy Policy says so.
 
 ## 2a. Media storage on Render Free: Cloudflare R2
 
@@ -113,6 +137,7 @@ and whether a payment method is required before relying on it.
 | Start | `gunicorn cyberquest.wsgi:application -c deploy/gunicorn.conf.py` | Render start command |
 | Health check | `/healthz/` | Render → Settings → Health Check Path |
 | Retention cleanup | `python manage.py purge_expired_data` (daily) | Render cron job, or the service shell |
+| Disappearing messages | `python manage.py purge_expired_messages` (every minute, optional: the app also sweeps) | Host scheduler / cron, or Windows Task Scheduler locally |
 | Key rotation | `python manage.py rotate_field_encryption` | Service shell, after changing `FIELD_ENCRYPTION_KEYS` |
 | Message key rotation | `python manage.py rotate_message_keys` | Service shell, after putting a new key first in `MESSAGE_ENCRYPTION_KEYS` |
 

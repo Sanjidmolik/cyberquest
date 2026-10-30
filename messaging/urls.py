@@ -17,4 +17,7 @@ urlpatterns = [
     path("api/c/<uuid:public_id>/send/", views.api_send, name="api_send"),
     path("api/c/<uuid:public_id>/poll/", views.api_poll, name="api_poll"),
     path("api/c/<uuid:public_id>/read/", views.api_read, name="api_read"),
+    path("api/c/<uuid:public_id>/timer/", views.api_timer, name="api_timer"),
+    path("api/c/<uuid:public_id>/photo/", views.api_photo, name="api_photo"),
+    path("api/c/<uuid:public_id>/photo/<int:message_id>/open/", views.api_photo_open, name="api_photo_open"),
 ]

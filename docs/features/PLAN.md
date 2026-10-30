@@ -141,6 +141,17 @@ pinned and listed in the third-party notices.
 
 The polling fallback is always on, so a socket failure never stops messaging.
 
+## Launch checklist
+
+- **ASGI + Redis** (`daphne cyberquest.asgi:application`, `REDIS_URL` + `channels-redis`):
+  needed for instant updates and for **typing indicators**, which are WebSocket-only by design
+  (messaging v2). Until then: polling, no typing indicator. Accepted for launch.
+- **Disappearing messages cleanup:** nothing required (in-app sweep + daily backstop); add a
+  per-minute `purge_expired_messages` host job if the host offers one for free (DEPLOYMENT.md).
+- **Private storage:** `MEDIA_STORAGE=r2` with a private bucket holds view-once photos and
+  reported copies (encrypted); never make the bucket public.
+- **PostgreSQL:** run the full suite against PostgreSQL before the first deploy.
+
 ## Files likely to change
 
 - **Shared (minimal, only in the feature that needs them):**

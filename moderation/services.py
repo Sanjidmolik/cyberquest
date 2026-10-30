@@ -84,17 +84,25 @@ def notices(user):
 
 # ---------- reporting ----------
 
-def _snapshot(message):
+def _snapshot(message, photo_attached=False):
     """The reported message and up to CONTEXT messages either side, encrypted as one JSON blob."""
     conversation = message.conversation
     before = list(conversation.messages.filter(pk__lt=message.pk).order_by("-pk")[:CONTEXT])[::-1]
     after = list(conversation.messages.filter(pk__gt=message.pk).order_by("pk")[:CONTEXT])
     rows = []
     for m in before + [message] + after:
+        if m.kind == Message.PHOTO:
+            if m.pk == message.pk:
+                text = ("[View-once photo: copy attached]" if photo_attached
+                        else "[View-once photo: opened more than an hour ago, so no copy exists]")
+            else:
+                text = "[View-once photo]"
+        else:
+            text = "" if m.removed else m.text
         rows.append({
             "reported": m.pk == message.pk,
             "sender": m.sender.username if m.sender else "Deleted user",
-            "text": "" if m.removed else m.text,
+            "text": text,
             "at": timezone.localtime(m.created_at).isoformat(),
         })
     return crypto.encrypt(json.dumps(rows, ensure_ascii=False))
@@ -116,19 +124,30 @@ def report(reporter, message_id, reason, note="", also_block=False):
         raise Denied("You can't report your own message.")
     if message.sender is None or message.removed:
         raise Denied("This message was removed and can't be reported.")
+    if message.kind == Message.SYSTEM:
+        raise Denied("Notices like this can't be reported.")
     existing = Report.objects.filter(message=message, reporter=reporter).first()
     if existing is not None:
         return existing, False
     if is_rate_limited(f"report:day:{reporter.pk}", limit=settings.MODERATION_REPORTS_PER_DAY, window_seconds=86_400):
         raise RateLimited("You've sent the maximum number of reports for today. Try again tomorrow.")
+    from messaging.photos import copy_for_report, release_report_copy
+    # A view-once photo: the unopened file, or the 1-hour copy kept after opening.
+    photo, held = copy_for_report(message)
     try:
         with transaction.atomic():
-            created = Report.objects.create(
+            created = Report(
                 message=message, reporter=reporter, reported_user=message.sender, reason=reason,
-                note=crypto.encrypt(note) if note else "", snapshot=_snapshot(message),
+                note=crypto.encrypt(note) if note else "", snapshot=_snapshot(message, photo is not None),
             )
+            if photo is not None:
+                created.photo.save(photo.name, photo, save=False)
+            created.save()
     except IntegrityError:            # a double click raced the first request
+        if photo is not None and created.photo:
+            created.photo.delete(save=False)
         return Report.objects.get(message=message, reporter=reporter), False
+    release_report_copy(message, held)          # moved into the report: the held copy goes
     if also_block:
         from messaging.services import block
         block(reporter, message.sender)
@@ -156,6 +175,19 @@ def reveal(moderator, report_obj):
     rows = json.loads(crypto.decrypt(report_obj.snapshot)) if report_obj.snapshot else []
     note = crypto.decrypt(report_obj.note) if report_obj.note else ""
     return rows, note
+
+
+def reported_photo(report_obj):
+    """(bytes, content type) of a report's photo copy, or None. Only call right after reveal()
+    (which checks the moderator and logs the view)."""
+    if not report_obj.photo:
+        return None
+    from messaging.photos import content_type
+    try:
+        with report_obj.photo.storage.open(report_obj.photo.name, "rb") as handle:
+            return crypto.decrypt_bytes(handle.read()), content_type(report_obj.photo.name)
+    except Exception:  # noqa: BLE001 - shown as "couldn't be loaded"
+        return None
 
 
 def act(moderator, report_obj, action, reason):
@@ -210,10 +242,17 @@ def purge_old(now=None, dry_run=False):
     flags = FlagEvent.objects.filter(created_at__lt=now - timedelta(days=FLAG_RETENTION_DAYS))
     counts = {"reports": old.count(), "flags": flags.count()}
     if not dry_run:
+        files = list(old.exclude(photo="").values_list("photo", flat=True))
         with transaction.atomic():
             ModerationLog.objects.filter(report__in=old).update(reason="", report=None)
             old.delete()
             flags.delete()
+        storage = Report._meta.get_field("photo").storage
+        for name in files:                   # reported photo copies go with their report
+            try:
+                storage.delete(name)
+            except Exception:  # noqa: BLE001
+                pass
     return counts
 
 

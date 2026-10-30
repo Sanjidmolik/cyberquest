@@ -337,7 +337,9 @@ class PrivacyExportTests(MessagingTestCase):
         services.set_preference(self.ana, "nobody")
         data = build_export(self.ana)
         self.assertEqual([(m["with"], m["from"], m["text"]) for m in data["messages"]], [("bo", "you", "for the export")])
-        self.assertEqual(data["message_settings"], {"who_can_message": "nobody"})
+        self.assertEqual(data["message_settings"], {"who_can_message": "nobody", "read_receipts": True,
+                                                    "show_online": True, "default_timer": "off",
+                                                    "last_active_in_messages": None})
         self.assertEqual([b["username"] for b in data["blocked_members"]], ["cy"])
         import zipfile
         names = zipfile.ZipFile(BytesIO(export_zip_bytes(self.ana))).namelist()
@@ -357,8 +359,9 @@ class ProtectionNoteTests(MessagingTestCase):
         self.client.force_login(self.ana)
         page = self.client.get(reverse("messaging:inbox")).content.decode()
         self.assertIn("How your messages are protected", page)
-        self.assertIn("Not end-to-end", page)
-        self.assertNotRegex(page.replace("Not end-to-end", ""), re.compile("end-to-end", re.I))
+        # v2 wording (D5): the app states what is true; the "not end-to-end" sentence is in the Privacy Policy.
+        self.assertIn("Encrypted in transit and at rest. Moderators can review messages only if they’re reported.", page)
+        self.assertNotRegex(page, re.compile("end-to-end", re.I))
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp())

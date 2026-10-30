@@ -14,6 +14,8 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
+from messaging.storage import private_storage
+
 
 class FlagEvent(models.Model):
     """The sender saw "this message may be offensive" (no text, no matched words)."""
@@ -45,6 +47,9 @@ class Report(models.Model):
     # Encrypted JSON: the reported message and up to 3 messages before and after it, taken when
     # the report was made (so it survives the sender deleting their account).
     snapshot = models.TextField()
+    # A reported view-once photo that hadn't been opened yet: an encrypted copy (same Fernet
+    # keys), so moderators can review it after the message disappears. Deleted with the report.
+    photo = models.FileField(storage=private_storage, upload_to="report-photos/", blank=True, max_length=200)
     status = models.CharField(max_length=10, choices=STATUSES, default=OPEN, db_index=True)
     resolution = models.CharField(max_length=12, blank=True)
     resolved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,

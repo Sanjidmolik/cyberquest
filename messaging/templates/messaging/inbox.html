@@ -4,152 +4,220 @@
 {% block title %}Messages — CyberQuest{% endblock %}
 {% block context_name %}Messages{% endblock %}
 {% block extra_css %}
-<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/cq-dashboard.css' %}?v=3">
-<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}?v=10">
 {% endblock %}
 
 {% block content %}
-<div class="cq-dash msg{% if conversation %} has-conversation{% endif %}">
-  <header class="msg-head">
-    <h1 class="cq-title cq-title--lg">MESSAGES</h1>
-    <div class="msg-head-actions">
-      <a class="msg-btn" href="{% url 'messaging:new' %}">New message</a>
-      <a class="msg-btn msg-btn--quiet" href="{% url 'messaging:settings' %}">Settings</a>
-    </div>
-  </header>
+<div class="cq-dash msg mx{% if conversation %} has-conversation{% endif %}">
+  <form class="mx-user-search" method="get" action="{% url 'messaging:new' %}" role="search">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" name="q" placeholder="Search users…" aria-label="Search users to message" maxlength="50">
+  </form>
 
   {% if messages %}<ul class="msg-flash">{% for m in messages %}<li class="msg-flash-{{ m.tags }}" role="status">{{ m }}</li>{% endfor %}</ul>{% endif %}
-
   {% if restriction %}
   <p class="msg-notice msg-notice--stop" role="status">{{ restriction }} <a href="{% url 'moderation_public:notices' %}">Details</a> · <a href="{% url 'pages:contact' %}">Contact support</a> if you think this is a mistake.</p>
   {% elif warning %}
   <p class="msg-notice" role="status">A moderator warned you: {{ warning.reason }} <a href="{% url 'moderation_public:notices' %}">Details</a> · <a href="{% url 'pages:contact' %}">Contact support</a></p>
   {% endif %}
 
-  <details class="msg-protect">
-    <summary>How your messages are protected</summary>
-    <ul>
-      <li><strong>On the way:</strong> messages travel over an encrypted connection (HTTPS, and WSS for live updates).</li>
-      <li><strong>When stored:</strong> message text is encrypted in our database, with keys kept outside it.</li>
-      <li><strong>Not end-to-end:</strong> CyberQuest’s servers can decrypt messages. Moderators read a message only when someone in the conversation reports it, and then only that message and up to three before and after it. Every time they open it, it is logged.</li>
-      <li><strong>Automatic checks:</strong> before sending, we may ask “This message may be offensive. Edit or send anyway?”. That check never shows your message to anyone; we only count how often it appeared.</li>
-      <li>Don’t share passwords or other secrets in messages.</li>
-    </ul>
-  </details>
-
-  <div class="msg-panes">
-    <section class="cq-panel msg-list-pane" aria-label="Conversations">
-      <nav class="msg-tabs" aria-label="Inbox">
-        <a href="{% url 'messaging:inbox' %}" class="msg-tab{% if tab == 'inbox' %} is-active{% endif %}"{% if tab == 'inbox' %} aria-current="page"{% endif %}>Inbox</a>
-        <a href="{% url 'messaging:inbox' %}?tab=requests" class="msg-tab{% if tab == 'requests' %} is-active{% endif %}"{% if tab == 'requests' %} aria-current="page"{% endif %}>Requests{% if requests %} <span class="msg-count" id="msg-request-count">{{ requests }}</span>{% endif %}</a>
+  <div class="mx-panes">
+    <section class="mx-list" aria-label="Conversations">
+      <div class="mx-list-head">
+        <span class="mx-list-icon" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H9l-4 3v-3a3 3 0 0 1-1-2V7a3 3 0 0 1 1-3z"/></svg></span>
+        <div class="mx-list-title"><h1>Messages</h1><span>Chat securely with your fellow learners.</span></div>
+        <a class="mx-icon-btn" href="{% url 'messaging:settings' %}" aria-label="Privacy settings" title="Privacy settings">
+          <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </a>
+      </div>
+      <a class="mx-new" href="{% url 'messaging:new' %}">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>New message
+      </a>
+      <nav class="mx-tabs" aria-label="Inbox">
+        <a href="{% url 'messaging:inbox' %}" class="mx-tab{% if tab == 'inbox' %} is-active{% endif %}"{% if tab == 'inbox' %} aria-current="page"{% endif %}>Conversations</a>
+        <a href="{% url 'messaging:inbox' %}?tab=requests" class="mx-tab{% if tab == 'requests' %} is-active{% endif %}"{% if tab == 'requests' %} aria-current="page"{% endif %}>Requests{% if requests %} <span class="mx-count" id="msg-request-count" aria-label="{{ requests }} waiting">{{ requests }}</span>{% endif %}</a>
       </nav>
-      <form class="msg-search" method="get" action="{% url 'messaging:inbox' %}" role="search">
+      <form class="mx-search" method="get" action="{% url 'messaging:inbox' %}" role="search">
         {% if tab == 'requests' %}<input type="hidden" name="tab" value="requests">{% endif %}
-        <input type="search" name="q" value="{{ query }}" placeholder="Search by username" aria-label="Search conversations by username" maxlength="50">
+        <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" name="q" value="{{ query }}" placeholder="Search by username…" aria-label="Search conversations by username" maxlength="50">
       </form>
-      <ul class="msg-convs" id="msg-convs">
+
+      {% if tab == 'requests' %}<p class="mx-note">People you haven’t chatted with yet. They can’t see if you’ve read their message until you accept.</p>{% endif %}
+      <ul class="mx-convs" id="msg-convs">
         {% for row in rows %}
         <li>
-          <a class="msg-conv{% if conversation and row.id == conversation.public_id|stringformat:'s' %} is-open{% endif %}{% if row.unread %} is-unread{% endif %}" href="{% url 'messaging:conversation' row.id %}" data-id="{{ row.id }}">
-            <img class="msg-av" src="{{ row.avatar_url|default:'' }}" alt="">
-            <span class="msg-conv-main">
-              <span class="msg-conv-name">{{ row.username|default:"Deleted user" }}</span>
-              <span class="msg-conv-preview">{% if row.mine_last %}You: {% endif %}{{ row.preview }}</span>
+          <a class="msg-conv mx-row{% if conversation and row.id == conversation.public_id|stringformat:'s' %} is-open{% endif %}{% if row.unread %} is-unread{% endif %}" href="{% url 'messaging:conversation' row.id %}" data-id="{{ row.id }}"{% if conversation and row.id == conversation.public_id|stringformat:'s' %} aria-current="true"{% endif %}>
+            <span class="mx-av-wrap">
+              <img class="mx-av" src="{{ row.avatar_url|default:'' }}" alt="" width="52" height="52">
+              <span class="mx-dot" data-online{% if not row.online %} hidden{% endif %} role="img" aria-label="Online"></span>
             </span>
-            <span class="msg-conv-side">
-              <time datetime="{{ row.at }}">{{ row.when }}</time>
-              {% if row.unread %}<span class="msg-count" aria-label="{{ row.unread }} unread">{{ row.unread }}</span>{% endif %}
-              {% if row.waiting %}<span class="msg-tag">Waiting</span>{% elif row.blocked %}<span class="msg-tag">Blocked</span>{% elif row.state == 'declined' %}<span class="msg-tag">Not accepted</span>{% endif %}
+            <span class="mx-row-main">
+              <span class="mx-row-top"><span class="mx-row-name">{{ row.username|default:"Deleted user" }}</span><time class="mx-row-time" datetime="{{ row.at }}">{{ row.when }}</time></span>
+              <span class="mx-row-mid"><span class="msg-conv-preview mx-row-preview">{% if row.mine_last %}You: {% endif %}{{ row.preview }}</span>{% if row.unread %}<span class="mx-count" aria-label="{{ row.unread }} unread">{{ row.unread }}</span>{% endif %}</span>
+              {% if row.timer_label %}<span class="mx-row-timer"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>Disappearing: {{ row.timer_label }}</span>{% endif %}
+              {% if row.waiting %}<span class="mx-tag">Waiting for them to accept</span>{% elif row.blocked %}<span class="mx-tag">Blocked</span>{% elif row.state == 'declined' %}<span class="mx-tag">Not accepted</span>{% endif %}
             </span>
           </a>
+          {% if tab == 'requests' and row.username %}
+          <div class="mx-req-actions">
+            <form method="post" action="{% url 'messaging:accept' row.id %}">{% csrf_token %}<button type="submit" class="mx-btn">Accept</button></form>
+            <form method="post" action="{% url 'messaging:decline' row.id %}">{% csrf_token %}<button type="submit" class="mx-btn mx-btn--quiet">Decline</button></form>
+            <form method="post" action="{% url 'messaging:block' %}" data-confirm="Block {{ row.username }}? They won’t be able to message you or find you in search.">{% csrf_token %}<input type="hidden" name="username" value="{{ row.username }}"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit" class="mx-btn mx-btn--danger">Block</button></form>
+          </div>
+          {% endif %}
         </li>
         {% empty %}
-        <li class="msg-empty">{% if query %}No conversations with that username.{% elif tab == 'requests' %}No message requests.{% else %}No conversations yet. <a href="{% url 'messaging:new' %}">Start one</a>.{% endif %}</li>
+        <li class="mx-empty">{% if query %}No conversations with that username.{% elif tab == 'requests' %}No requests. You’re all caught up.{% else %}No conversations yet. <a href="{% url 'messaging:new' %}">Start one</a>.{% endif %}</li>
         {% endfor %}
       </ul>
+
+      <details class="mx-protect">
+        <summary>How your messages are protected</summary>
+        <ul>
+          <li><strong>Encrypted in transit and at rest. Moderators can review messages only if they’re reported.</strong></li>
+          <li>Messages travel over an encrypted connection (HTTPS, and WSS for live updates). Text and photos are encrypted in our database and storage, with keys kept outside it.</li>
+          <li>A moderator sees a message only when someone in the conversation reports it, and then only that message and up to three before and after it. Every time they open it, it is logged.</li>
+          <li>Disappearing messages and view-once photos are deleted from our servers when they expire. The other person may already have seen, copied or photographed them, and copies can stay in our backups until those backups expire.</li>
+          <li>Screenshots can’t be blocked in a web browser. Turning off copying, watermarks and blurring only discourage it.</li>
+          <li>Before sending, we may ask “This message may be offensive. Edit or send anyway?”. That check never shows your message to anyone; we only count how often it appeared.</li>
+        </ul>
+      </details>
     </section>
 
-    <section class="cq-panel msg-thread-pane" aria-label="Conversation">
+    <section class="mx-chat" aria-label="Chat">
       {% if conversation %}
-      <header class="msg-thread-head">
-        <a class="msg-back" href="{% url 'messaging:inbox' %}{% if tab == 'requests' %}?tab=requests{% endif %}">← All conversations</a>
-        {% if card %}
-        <div class="msg-card">
-          <img class="msg-av msg-av--lg" src="{{ card.avatar_url }}" alt="">
-          <div>
-            <strong class="msg-card-name">{{ card.username }}</strong>
-            <span class="msg-card-meta">{{ card.courses }} course{{ card.courses|pluralize }} completed · {{ card.xp }} XP</span>
+      <div class="mx-chat-box">
+        <header class="mx-chat-head">
+          <a class="mx-back msg-back" href="{% url 'messaging:inbox' %}{% if tab == 'requests' %}?tab=requests{% endif %}" aria-label="Back to all chats"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+          <img class="mx-av mx-av--md" src="{% if card %}{{ card.avatar_url }}{% endif %}" alt="" width="44" height="44">
+          <div class="mx-chat-who">
+            <span class="mx-chat-name">{% if other %}{{ other.username }}{% else %}Deleted user{% endif %}</span>
+            <span class="mx-chat-status">
+              <span class="msg-presence mx-online" id="msg-presence"{% if not config.online %} hidden{% endif %}><span class="mx-dot mx-dot--inline" aria-hidden="true"></span>Online</span>
+              {% if card %}<span class="mx-chat-meta">{{ card.courses }} course{{ card.courses|pluralize }} completed · {{ card.xp }} XP</span>{% endif %}
+            </span>
+          </div>
+          {% if status.can_send %}
+          <label class="mx-timer">
+            <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>
+            <span>Disappearing</span>
+            <select id="msg-timer" aria-label="Disappearing messages">
+              {% for value, label in config.timers %}<option value="{{ value }}"{% if value == config.timer %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </label>
+          {% endif %}
+          {% if other %}
+          <button type="button" class="mx-btn mx-btn--quiet" id="msg-report-chat" hidden>Report</button>
+          <form method="post" action="{% if i_blocked %}{% url 'messaging:unblock' %}{% else %}{% url 'messaging:block' %}{% endif %}" class="msg-block-form"
+                {% if not i_blocked %}data-confirm="Block {{ other.username }}? They won’t be able to message you or find you in search."{% endif %}>
+            {% csrf_token %}
+            <input type="hidden" name="username" value="{{ other.username }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="mx-btn mx-btn--danger">{% if i_blocked %}Unblock{% else %}Block{% endif %}</button>
+          </form>
+          {% endif %}
+        </header>
+
+        {% if is_request %}
+        <div class="mx-request" role="region" aria-label="Message request">
+          <p><strong>{{ other.username|default:"Someone" }}</strong> wants to message you. They won’t know you’ve read this until you reply.</p>
+          <div class="mx-req-actions">
+            <form method="post" action="{% url 'messaging:accept' conversation.public_id %}">{% csrf_token %}<button type="submit" class="mx-btn">Accept</button></form>
+            <form method="post" action="{% url 'messaging:decline' conversation.public_id %}">{% csrf_token %}<button type="submit" class="mx-btn mx-btn--quiet">Decline</button></form>
           </div>
         </div>
-        {% else %}
-        <div class="msg-card"><span class="msg-av msg-av--lg" aria-hidden="true"></span><strong class="msg-card-name">{% if other %}{{ other.username }}{% else %}Deleted user{% endif %}</strong></div>
         {% endif %}
-        {% if other %}
-        <form method="post" action="{% if i_blocked %}{% url 'messaging:unblock' %}{% else %}{% url 'messaging:block' %}{% endif %}" class="msg-block-form"
-              {% if not i_blocked %}data-confirm="Block {{ other.username }}? They won’t be able to message you or find you in search."{% endif %}>
-          {% csrf_token %}
-          <input type="hidden" name="username" value="{{ other.username }}">
-          <input type="hidden" name="next" value="{{ request.path }}">
-          <button type="submit" class="msg-btn msg-btn--quiet">{% if i_blocked %}Unblock{% else %}Block{% endif %}</button>
+
+        <div class="mx-scroll" id="msg-scroll">
+          <p class="mx-banner">Encrypted in transit and at rest. Moderators can review messages only if they’re reported.</p>
+          <button type="button" class="mx-older" id="msg-older" hidden>Show earlier messages</button>
+          <ol class="msg-thread mx-thread{% if config.timer != 'off' %} is-nocopy{% endif %}" id="msg-thread" aria-live="polite" aria-label="Messages"></ol>
+          <div class="mx-typing" id="msg-typing" hidden>
+            <span class="mx-typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="mx-typing-text" id="msg-typing-text" aria-live="polite"></span>
+          </div>
+        </div>
+
+        {% if i_blocked %}<p class="mx-blocked">You blocked {{ other.username }}. They can’t message you or see your profile.</p>{% endif %}
+
+        <div class="msg-warn mx-warn" id="msg-warn" role="alertdialog" aria-labelledby="msg-warn-text" hidden>
+          <p id="msg-warn-text">This message may be offensive. Edit it, or send it anyway?</p>
+          <div class="mx-req-actions">
+            <button type="button" class="mx-btn mx-btn--quiet" id="msg-warn-edit">Edit</button>
+            <button type="button" class="mx-btn" id="msg-warn-send">Send anyway</button>
+          </div>
+        </div>
+        <form class="msg-compose mx-compose" id="msg-compose"{% if not status.can_send %} hidden{% endif %}>
+          <div class="mx-compose-row">
+            {% if config.urls.photo %}
+            <label class="mx-icon-btn mx-photo-btn" title="Send a view-once photo">
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="m21 17-5-5-8 8"/></svg>
+              <input type="file" id="msg-photo" accept="image/jpeg,image/png,image/webp" class="visually-hidden" aria-label="Send a view-once photo">
+            </label>
+            {% endif %}
+            <label for="msg-text" class="visually-hidden">Message</label>
+            <textarea id="msg-text" name="text" rows="1" maxlength="{{ config.max }}" placeholder="Write a message…" required aria-describedby="msg-nocopy msg-counter"></textarea>
+            <button type="submit" class="mx-send" id="msg-send" aria-label="Send">
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 11.5 21 3l-7.5 18-2.6-7.4z"/></svg>
+            </button>
+          </div>
+          <div class="mx-compose-foot">
+            <span><span class="msg-nocopy" id="msg-nocopy"{% if config.timer == 'off' %} hidden{% endif %}>Copying is turned off in this chat because disappearing messages are on. </span><span class="mx-keys">Enter to send · Shift+Enter for a new line</span></span>
+            <span class="msg-counter" id="msg-counter" aria-live="polite">0 / {{ config.max }}</span>
+          </div>
+          <p class="msg-error mx-error" id="msg-error" role="alert"></p>
         </form>
-        {% endif %}
-      </header>
-
-      {% if is_request %}
-      <div class="msg-request" role="region" aria-label="Message request">
-        <p><strong>{{ other.username|default:"Someone" }}</strong> wants to message you. They won’t know you’ve read this until you reply.</p>
-        <div class="msg-request-actions">
-          <form method="post" action="{% url 'messaging:accept' conversation.public_id %}">{% csrf_token %}<button type="submit" class="msg-btn">Accept</button></form>
-          <form method="post" action="{% url 'messaging:decline' conversation.public_id %}">{% csrf_token %}<button type="submit" class="msg-btn msg-btn--quiet">Decline</button></form>
-        </div>
+        <p class="msg-cannot mx-cannot" id="msg-cannot"{% if status.can_send %} hidden{% endif %}>{{ status.reason }}</p>
       </div>
-      {% endif %}
 
-      <button type="button" class="msg-older" id="msg-older" hidden>Show earlier messages</button>
-      <ol class="msg-thread" id="msg-thread" aria-live="polite" aria-label="Messages"></ol>
+      <dialog class="mx-viewer" id="msg-viewer" aria-labelledby="msg-viewer-title">
+        <h2 class="visually-hidden" id="msg-viewer-title">View-once photo</h2>
+        <div class="mx-viewer-stage" id="msg-viewer-stage">
+          <img id="msg-viewer-img" alt="View-once photo" draggable="false">
+          <div class="mx-viewer-marks" id="msg-viewer-mark" aria-hidden="true"></div>
+          <svg class="mx-ring" aria-hidden="true" width="54" height="54" viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" class="mx-ring-track"/><circle cx="27" cy="27" r="22" class="mx-ring-bar" id="msg-viewer-ring" transform="rotate(-90 27 27)"/><text x="27" y="32" text-anchor="middle" id="msg-viewer-secs"></text></svg>
+        </div>
+        <p class="mx-viewer-note"><span id="msg-viewer-count" aria-live="polite"></span> · watermarked with your username. Switching tabs blurs it. Browsers can’t block screenshots, so only share what you’re comfortable with.</p>
+        <p class="mx-viewer-note">After viewing, this photo is kept encrypted for 1 hour so you can report it, then deleted.</p>
+        <button type="button" class="mx-btn" id="msg-viewer-close">Close</button>
+      </dialog>
 
-      <div class="msg-warn" id="msg-warn" role="alertdialog" aria-labelledby="msg-warn-text" hidden>
-        <p id="msg-warn-text">This message may be offensive. Edit it, or send it anyway?</p>
-        <div class="msg-request-actions">
-          <button type="button" class="msg-btn msg-btn--quiet" id="msg-warn-edit">Edit</button>
-          <button type="button" class="msg-btn" id="msg-warn-send">Send anyway</button>
-        </div>
-      </div>
-      <form class="msg-compose" id="msg-compose"{% if not status.can_send %} hidden{% endif %}>
-        <label for="msg-text" class="visually-hidden">Message</label>
-        <textarea id="msg-text" name="text" rows="2" maxlength="{{ config.max }}" placeholder="Write a message" required></textarea>
-        <div class="msg-compose-foot">
-          <span class="msg-counter" id="msg-counter" aria-live="polite">0 / {{ config.max }}</span>
-          <span class="msg-error" id="msg-error" role="alert"></span>
-          <button type="submit" class="msg-btn" id="msg-send">Send</button>
-        </div>
-      </form>
-      <p class="msg-cannot" id="msg-cannot"{% if status.can_send %} hidden{% endif %}>{{ status.reason }}</p>
-      <dialog class="msg-report" id="msg-report" aria-labelledby="msg-report-title">
+      <dialog class="mx-modal msg-report" id="msg-report" aria-labelledby="msg-report-title">
         <form method="dialog" id="msg-report-form">
-          <h2 class="cq-title" id="msg-report-title">Report message</h2>
-          <p class="msg-hint">A moderator will see this message and up to three messages before and after it. {{ other.username|default:"The sender" }} isn’t told who reported it.</p>
-          <fieldset>
+          <h2 id="msg-report-title">Report {{ other.username|default:"message" }}</h2>
+          <p class="mx-modal-text">A moderator will see this message and up to three messages before and after it. {{ other.username|default:"The sender" }} isn’t told who reported it. A copy is kept for the moderators even if the message disappears, until 180 days after the report is resolved. A view-once photo can be reported up to 1 hour after you open it.</p>
+          <fieldset class="mx-reasons">
             <legend>Why are you reporting it?</legend>
             {% for value, label in report_reasons %}
-            <label class="msg-radio"><input type="radio" name="reason" value="{{ value }}" required> {{ label }}</label>
+            <label class="mx-reason"><input type="radio" name="reason" value="{{ value }}" required> <span>{{ label }}</span></label>
             {% endfor %}
           </fieldset>
-          <label for="msg-report-note">Anything else? (optional)</label>
+          <label for="msg-report-note" class="mx-label">Anything else? (optional)</label>
           <textarea id="msg-report-note" name="note" rows="3" maxlength="500"></textarea>
-          <label class="msg-radio"><input type="checkbox" name="block" value="1"> Also block {{ other.username|default:"this person" }}</label>
+          <label class="mx-check"><input type="checkbox" name="block" value="1"> Also block {{ other.username|default:"this person" }}</label>
           <p class="msg-error" id="msg-report-error" role="alert"></p>
-          <div class="msg-request-actions">
-            <button type="submit" class="msg-btn" value="send">Send report</button>
-            <button type="button" class="msg-btn msg-btn--quiet" id="msg-report-cancel">Cancel</button>
+          <div class="mx-req-actions mx-modal-actions">
+            <button type="button" class="mx-btn mx-btn--quiet" id="msg-report-cancel">Cancel</button>
+            <button type="submit" class="mx-btn" value="send">Send report</button>
           </div>
         </form>
       </dialog>
       {% else %}
-      <div class="msg-placeholder">
-        <h2 class="cq-title">Pick a conversation</h2>
-        <p>Choose someone on the left, or start a new message.</p>
+      <div class="mx-empty-state">
+        <img class="mx-hero" src="{% static 'messaging/img/hero.png' %}" alt="" width="866" height="418">
+        <div class="mx-empty-title">
+          <h2>Pick a <span>conversation</span></h2>
+          <p>Choose someone on the left, or start a new message.</p>
+        </div>
+        <ul class="mx-cards">
+          <li class="mx-card"><span class="mx-card-mark mx-card-mark--blue" aria-hidden="true">1:1</span><strong>One-to-one chat</strong><span>Only you and the other person are in the chat. Moderators see messages only if they’re reported.</span></li>
+          <li class="mx-card"><span class="mx-card-mark mx-card-mark--green" aria-hidden="true">TLS</span><strong>Encrypted &amp; stored safely</strong><span>Encrypted in transit and at rest. Moderators can review messages only if they’re reported.</span></li>
+          <li class="mx-card"><span class="mx-card-mark mx-card-mark--violet" aria-hidden="true">24h</span><strong>Disappearing messages</strong><span>Set chats to vanish after viewing or after a time you choose.</span></li>
+          <li class="mx-card"><span class="mx-card-mark mx-card-mark--red" aria-hidden="true">SOS</span><strong>Report &amp; block</strong><span>Report anything harmful. Moderators review reported messages, never auto-punish.</span></li>
+        </ul>
       </div>
       {% endif %}
     </section>
@@ -159,5 +227,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'messaging/js/messaging.js' %}?v=3"></script>
+<script src="{% static 'messaging/js/messaging.js' %}?v=8"></script>
 {% endblock %}
