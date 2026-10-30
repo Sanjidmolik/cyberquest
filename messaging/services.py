@@ -386,6 +386,7 @@ def inbox(user, tab="inbox", query=""):
             "waiting": c.state == Conversation.PENDING and c.initiator_id == user.pk,
             "blocked": bool(other and other.pk in blocked),
             "timer": c.disappear_after,
+            "timer_label": "" if c.disappear_after == OFF else TIMERS[c.disappear_after][0].lower(),
             "online": bool(not cut_off and c.state == Conversation.ACCEPTED
                            and _is_online(prefs.get(user.pk), prefs.get(other.pk), now)),
         })

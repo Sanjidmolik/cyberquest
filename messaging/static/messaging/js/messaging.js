@@ -18,7 +18,33 @@
   var lastId = 0, firstId = 0, readUpto = 0;
   var thread = document.getElementById("msg-thread");
   var seen = cfg.receipts || { delivered_upto: 0, read_upto: 0 };
-  var TICKS = { sent: ["✓", "Sent"], delivered: ["✓✓", "Delivered"], read: ["✓✓", "Read"] };
+  var scroller = document.getElementById("msg-scroll") || thread;
+  var TICKS = { sent: "Sent", delivered: "Delivered", read: "Read" };
+  var TIMER_BADGE = { view: "After viewing", "1h": "1h", "24h": "24h", "7d": "7d" };
+  var SVG = "http://www.w3.org/2000/svg";
+
+  // Icons are built with DOM methods, never from HTML strings.
+  function svg(width, height, viewBox, paths, filled) {
+    var s = document.createElementNS(SVG, "svg");
+    s.setAttribute("width", width); s.setAttribute("height", height); s.setAttribute("viewBox", viewBox);
+    s.setAttribute("aria-hidden", "true"); s.setAttribute("focusable", "false");
+    s.setAttribute("fill", filled ? "currentColor" : "none");
+    if (!filled) {
+      s.setAttribute("stroke", "currentColor"); s.setAttribute("stroke-width", "2.6");
+      s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round");
+    }
+    paths.forEach(function (spec) {
+      var node = document.createElementNS(SVG, spec[0]);
+      Object.keys(spec[1]).forEach(function (k) { node.setAttribute(k, spec[1][k]); });
+      s.appendChild(node);
+    });
+    return s;
+  }
+  function clockIcon(size) { return svg(size, size, "0 0 24 24", [["circle", { cx: 12, cy: 13, r: 8 }], ["path", { d: "M12 9v4" }]]); }
+  function photoIcon() {
+    return svg(18, 18, "0 0 24 24", [["rect", { x: 3, y: 5, width: 18, height: 14, rx: 3 }], ["circle", { cx: 9, cy: 11, r: 2 }],
+      ["path", { d: "m21 17-5-5-8 8" }]]);
+  }
   var socket = null, typingSentAt = 0, typingHide = null;
 
   function csrf() {
@@ -64,15 +90,24 @@
     if (!m.mine) li.appendChild(el("span", "msg-bubble-who", m.sender || "Deleted user"));
     if (m.photo) li.appendChild(photoBody(m));
     else li.appendChild(el("p", "msg-bubble-text" + (m.removed ? " is-removed" : ""), m.removed ? "Message removed" : m.text));
+    var meta = el("span", "mx-meta");
+    if (m.timer && m.timer !== "off" && TIMER_BADGE[m.timer]) {
+      var badge = el("span", "mx-badge");
+      badge.appendChild(clockIcon(11));
+      badge.appendChild(document.createTextNode(TIMER_BADGE[m.timer]));
+      badge.setAttribute("title", "Disappearing message");
+      meta.appendChild(badge);
+    }
     var t = el("time", "msg-bubble-time", timeLabel(m.at));
     t.setAttribute("datetime", m.at);
-    li.appendChild(t);
+    meta.appendChild(t);
     if (m.status) {
       var tick = el("span", "msg-tick");
       tick.dataset.mine = "1";
-      li.appendChild(tick);
+      meta.appendChild(tick);
       setTick(tick, m.status);
     }
+    li.appendChild(meta);
     if (m.can_report && cfg.urls.report) {
       var report = el("button", "msg-report-btn", m.reported ? "Reported" : "Report");
       report.type = "button";
@@ -80,13 +115,18 @@
       report.setAttribute("aria-label", "Report this message");
       report.addEventListener("click", function () { openReport(m.id, report); });
       li.appendChild(report);
+      latestReportable = { id: m.id, button: report };
+      var headerReport = document.getElementById("msg-report-chat");
+      if (headerReport && !m.reported) headerReport.hidden = false;
     }
     return li;
   }
 
+  var latestReportable = null;
+
   function addMessages(list, atTop) {
     if (!thread || !list.length) return;
-    var nearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 80;
+    var nearBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80;
     var frag = document.createDocumentFragment();
     list.forEach(function (m) {
       if (thread.querySelector('[data-id="' + m.id + '"]')) return;
@@ -95,12 +135,12 @@
       firstId = firstId ? Math.min(firstId, m.id) : m.id;
     });
     if (atTop) {
-      var before = thread.scrollHeight;
+      var before = scroller.scrollHeight;
       thread.insertBefore(frag, thread.firstChild);
-      thread.scrollTop += thread.scrollHeight - before;
+      scroller.scrollTop += scroller.scrollHeight - before;
     } else {
       thread.appendChild(frag);
-      if (nearBottom || list.some(function (m) { return m.mine; })) thread.scrollTop = thread.scrollHeight;
+      if (nearBottom || list.some(function (m) { return m.mine; })) scroller.scrollTop = scroller.scrollHeight;
     }
     markRead();
   }
@@ -113,11 +153,18 @@
   }
 
   function photoBody(m) {
-    if (!m.photo.can_open) return el("p", "msg-bubble-text msg-photo-note", photoLabel(m));
-    var open = el("button", "msg-btn msg-photo-open", "Open photo · view once");
-    open.type = "button";
-    open.addEventListener("click", function () { openPhoto(m, open); });
-    return open;
+    var b = el("button", "mx-photo msg-photo-open");
+    b.type = "button";
+    b.appendChild(photoIcon());
+    b.appendChild(el("span", null, m.photo.can_open ? "Photo · view once · tap to open" : photoLabel(m)));
+    if (m.photo.can_open) b.addEventListener("click", function () { openPhoto(m, b); });
+    else b.disabled = true;
+    return b;
+  }
+
+  function photoDone(button, text) {
+    button.disabled = true;
+    button.lastChild.textContent = text;
   }
 
   var viewer = document.getElementById("msg-viewer");
@@ -140,21 +187,31 @@
       if (!res.ok) return res.json().catch(function () { return {}; }).then(function (d) { throw new Error(d.error || "This photo isn't available."); });
       return res.blob();
     }).then(function (blob) {
-      button.replaceWith(el("p", "msg-bubble-text msg-photo-note", "Photo · opened"));
+      photoDone(button, "Photo · opened");
       viewerUrl = URL.createObjectURL(blob);
       document.getElementById("msg-viewer-img").src = viewerUrl;
-      // Deterrent only: who is looking, and when.
-      document.getElementById("msg-viewer-mark").textContent = cfg.me + " · " + new Date().toLocaleString();
-      var left = cfg.view_seconds || 10, count = document.getElementById("msg-viewer-count");
-      count.textContent = left + " s left";
+      // Deterrent only: who is looking, and when, tiled across the photo.
+      var marks = document.getElementById("msg-viewer-mark"), label = cfg.me + " · " + new Date().toLocaleString();
+      marks.textContent = "";
+      for (var i = 0; i < 9; i++) marks.appendChild(el("span", null, label));
+      var total = cfg.view_seconds || 10, left = total;
+      var count = document.getElementById("msg-viewer-count"), ring = document.getElementById("msg-viewer-ring");
+      var secs = document.getElementById("msg-viewer-secs");
+      function show() {
+        count.textContent = "View once · closes in " + left + " s";
+        secs.textContent = left;
+        ring.setAttribute("stroke-dashoffset", String(138.2 * (1 - left / total)));
+      }
+      show();
       viewer.showModal();
+      document.getElementById("msg-viewer-close").focus();
       viewerTimer = setInterval(function () {
         left -= 1;
-        count.textContent = left + " s left";
+        show();
         if (left <= 0) closeViewer();
       }, 1000);
     }).catch(function (err) {
-      button.replaceWith(el("p", "msg-bubble-text msg-photo-note", err.message));
+      photoDone(button, err.message);
     });
   }
 
@@ -171,9 +228,15 @@
   }
 
   function setTick(tick, status) {
-    tick.textContent = TICKS[status][0];
-    tick.setAttribute("aria-label", TICKS[status][1]);
+    if (tick.dataset.status === status) return;
+    tick.dataset.status = status;
+    tick.textContent = "";
+    tick.appendChild(status === "sent"
+      ? svg(15, 15, "0 0 24 24", [["path", { d: "M5 12.5l4.5 4.5L19 7.5" }]])
+      : svg(20, 15, "0 0 30 24", [["path", { d: "M2 12.5l4.5 4.5L16 7.5" }], ["path", { d: "M11 15l2 2L22.5 7.5" }]]));
+    tick.setAttribute("aria-label", TICKS[status]);
     tick.setAttribute("role", "img");
+    tick.setAttribute("title", TICKS[status]);
     tick.classList.toggle("is-read", status === "read");
   }
 
@@ -231,7 +294,7 @@
 
   function setupConversation() {
     addMessages(cfg.messages || []);
-    if (thread) thread.scrollTop = thread.scrollHeight;
+    if (scroller) scroller.scrollTop = scroller.scrollHeight;
     var older = document.getElementById("msg-older");
     if (older && (cfg.messages || []).length >= 50) {
       older.hidden = false;
@@ -328,6 +391,17 @@
     reportDialog.showModal();
   }
 
+  var headerReport = document.getElementById("msg-report-chat");
+  if (headerReport) headerReport.addEventListener("click", function () {
+    if (latestReportable) openReport(latestReportable.id, latestReportable.button);
+  });
+
+  var grow = document.getElementById("msg-text");
+  if (grow) grow.addEventListener("input", function () {
+    grow.style.height = "auto";
+    grow.style.height = Math.min(grow.scrollHeight, 120) + "px";
+  });
+
   if (reportDialog) {
     document.getElementById("msg-report-cancel").addEventListener("click", function () { reportDialog.close(); });
     document.getElementById("msg-report-form").addEventListener("submit", function (e) {
@@ -344,6 +418,7 @@
           reportDialog.close();
           reportTarget.button.textContent = "Reported";
           reportTarget.button.disabled = true;
+          if (headerReport && latestReportable && reportTarget.id === latestReportable.id) headerReport.hidden = true;
           if (form.block.checked) window.location.reload();
         } else {
           errorBox.textContent = data.error || "Couldn't send the report. Try again.";
@@ -365,7 +440,7 @@
         a.classList.toggle("is-unread", row.unread > 0 && a.dataset.id !== cfg.conversation);
         var preview = a.querySelector(".msg-conv-preview");
         if (preview) preview.textContent = (row.mine_last ? "You: " : "") + row.preview;
-        var side = a.querySelector(".msg-conv-side time");
+        var side = a.querySelector("time");
         if (side) side.textContent = row.when;
         var dot = a.querySelector("[data-online]");
         if (dot) dot.hidden = !row.online;
@@ -422,8 +497,9 @@
       if (data.type === "typing" && data.conversation === cfg.conversation) {
         var note = document.getElementById("msg-typing");
         if (!note) return;
-        note.textContent = (cfg.other || "They") + " is typing…";
+        document.getElementById("msg-typing-text").textContent = (cfg.other || "They") + " is typing…";
         note.hidden = false;
+        scroller.scrollTop = scroller.scrollHeight;
         clearTimeout(typingHide);
         typingHide = setTimeout(function () { note.hidden = true; }, 5000);
         return;

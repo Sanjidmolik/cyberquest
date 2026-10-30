@@ -83,18 +83,19 @@ class DeterrentTests(TestCase):
 
     def test_copying_is_off_only_while_a_timer_is_on(self):
         page = self.page()
-        self.assertNotContains(page, "msg-thread is-nocopy")
+        self.assertNotContains(page, "mx-thread is-nocopy")
         self.assertContains(page, 'id="msg-nocopy" hidden')
         services.set_timer(self.ana, self.conversation, "24h")
         page = self.page()
-        self.assertContains(page, "msg-thread is-nocopy")
+        self.assertContains(page, "mx-thread is-nocopy")
         self.assertContains(page, "Copying is turned off in this chat")
-        self.assertContains(page, 'aria-describedby="msg-nocopy"')         # announced to screen readers
+        self.assertContains(page, 'aria-describedby="msg-nocopy msg-counter"')         # announced to screen readers
         css = Path(settings.BASE_DIR, "messaging/static/messaging/css/messaging.css").read_text(encoding="utf-8")
-        rule = re.search(r"\.msg-thread\.is-nocopy[^{]*\{([^}]*)\}", css).group(1)
+        rule = re.search(r"\.mx-thread\.is-nocopy[^{]*\{([^}]*)\}", css).group(1)
         self.assertIn("user-select: none", rule)
         self.assertNotIn("display: none", rule)
-        self.assertNotIn("aria-hidden", page.content.decode().split('id="msg-thread"')[1][:200])
+        thread_tag = page.content.decode().split('id="msg-thread"')[1].split(">")[0]
+        self.assertNotIn("aria-hidden", thread_tag)                         # the messages stay readable
 
     def test_report_dialog_says_the_copy_outlives_the_message(self):
         self.assertContains(self.page(), "A copy is kept for the moderators even if the message disappears")

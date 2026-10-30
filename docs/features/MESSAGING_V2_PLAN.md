@@ -347,3 +347,21 @@ in the Privacy Policy; D6 reciprocal "online". Each step: full suite, `makemigra
 Open point for sign-off: an opened view-once photo can't be copied into a later report (it is
 deleted when opened, per D3), so only photos reported before opening reach moderators.
 Next: step 5, the UI port to `docs/messaging-design/messages-prototype.dc.html`.
+
+## 10. Report copy and UI port
+
+- **Report copy (approved rule):** an opened view-once photo stays reportable for 1 hour as an
+  encrypted copy in `report_copy` (migration `messaging/0003`). No view, URL or admin page reads
+  it; the recipient's report moves it into the report; the sweep and daily purge delete it
+  after the hour. Disclosed in the viewer, report dialog, Privacy Policy and retention table.
+- **Step 5, UI port** to `docs/messaging-design/messages-prototype.dc.html` (hero image as
+  provided, served from `messaging/static/messaging/img/hero.png`): inbox list with online dot,
+  preview, time, unread badge and timer label; Conversations/Requests tabs with count and
+  inline Accept/Decline/Block; empty state with the 4 cards; chat header with presence, timer
+  menu, Report and Block; system pills; bubbles with timer badge and SVG ticks (aria-labels);
+  typing dots; composer with photo button, counter, Enter/Shift+Enter; full-screen viewer with
+  tiled watermark and countdown ring. Night and day token sets, all text pairs AA. Phones:
+  list, then a full-screen chat with Back. Reduced motion respected.
+- **Copy deviation from the prototype (by D5):** the "Encrypted & stored safely" card and the
+  in-chat banner use "Encrypted in transit and at rest. Moderators can review messages only if
+  they're reported." instead of the prototype's "Not end-to-end…" wording.
