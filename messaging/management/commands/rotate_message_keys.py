@@ -24,9 +24,10 @@ class Command(BaseCommand):
                 done += 1
         files = 0
         from moderation.models import Report
-        for model, manager in ((Message, Message.all_objects), (Report, Report.objects)):
-            field = model._meta.get_field("photo")
-            for pk, name in manager.exclude(photo="").values_list("pk", "photo").iterator(chunk_size=200):
+        for model, manager, column in ((Message, Message.all_objects, "photo"), (Message, Message.all_objects, "report_copy"),
+                                       (Report, Report.objects, "photo")):
+            field = model._meta.get_field(column)
+            for pk, name in manager.exclude(**{column: ""}).values_list("pk", column).iterator(chunk_size=200):
                 with field.storage.open(name, "rb") as handle:
                     token = handle.read()
                 fresh = rotate_bytes(token)

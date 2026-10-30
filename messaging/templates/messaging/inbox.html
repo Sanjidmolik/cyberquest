@@ -156,12 +156,13 @@
         </div>
         <p class="msg-viewer-foot"><span id="msg-viewer-count" aria-live="polite"></span>
           <button type="button" class="msg-btn msg-btn--quiet" id="msg-viewer-close">Close</button></p>
-        <p class="msg-hint">This photo can be opened once. Screenshots can't be blocked on the web, so only share what you'd be fine with someone keeping.</p>
+        <p class="msg-hint">After viewing, this photo is kept encrypted for 1 hour so you can report it, then deleted.</p>
+        <p class="msg-hint">Screenshots can’t be blocked on the web, so only share what you’d be fine with someone keeping.</p>
       </dialog>
       <dialog class="msg-report" id="msg-report" aria-labelledby="msg-report-title">
         <form method="dialog" id="msg-report-form">
           <h2 class="cq-title" id="msg-report-title">Report message</h2>
-          <p class="msg-hint">A moderator will see this message and up to three messages before and after it. {{ other.username|default:"The sender" }} isn’t told who reported it. A copy is kept for the moderators even if the message disappears, until 180 days after the report is resolved. A view-once photo can only be copied if you report it before opening it.</p>
+          <p class="msg-hint">A moderator will see this message and up to three messages before and after it. {{ other.username|default:"The sender" }} isn’t told who reported it. A copy is kept for the moderators even if the message disappears, until 180 days after the report is resolved. A view-once photo can be reported up to 1 hour after you open it.</p>
           <fieldset>
             <legend>Why are you reporting it?</legend>
             {% for value, label in report_reasons %}

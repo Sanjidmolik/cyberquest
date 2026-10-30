@@ -7,6 +7,9 @@
 - Open: the recipient only, once. A single conditional UPDATE (photo_opened_at IS NULL) picks
   the one request that wins; only that request reads the file, deletes it and gets the bytes.
   Every other request gets "already opened". The sender can't open it at all.
+- Report copy: the winner also re-saves the (still encrypted) bytes under a separate name in
+  `report_copy`, kept for REPORT_HOLD (1 hour). Nothing serves that field: only the recipient's
+  report moves it into the report. Cleanup deletes it when the hour is up.
 - Nothing is ever served from a URL of its own: the bytes go back in the opening response,
   with Cache-Control: no-store.
 """
@@ -25,7 +28,7 @@ from cyberquest.images import FORMATS, clean_image, encode, resized
 from cyberquest.ratelimit import is_rate_limited
 
 from . import crypto, events, policy
-from .models import Conversation, Message, expiry_for
+from .models import REPORT_HOLD, Conversation, Message, expiry_for
 from .policy import Denied, RateLimited
 
 logger = logging.getLogger("messaging.photos")
@@ -99,18 +102,27 @@ def open_photo(viewer, conversation, message_id):
     if not won:
         raise AlreadyOpened("This photo was already opened.")
     name = message.photo.name
+    token = data = None
     try:
         with _storage().open(name, "rb") as handle:
-            data = crypto.decrypt_bytes(handle.read())
+            token = handle.read()
+        data = crypto.decrypt_bytes(token)
     except Exception:  # noqa: BLE001 - a missing or unreadable file is "already gone"
         logger.warning("a view-once photo could not be read")
-        data = None
     finally:
+        hold, until = "", None
+        if data is not None:                 # the reportable copy: same ciphertext, new private name
+            try:
+                hold = _storage().save(f"msg-report-hold/{uuid.uuid4().hex}.{name.split('.')[-2]}.bin",
+                                       ContentFile(token))
+                until = timezone.now() + REPORT_HOLD
+            except Exception:  # noqa: BLE001 - no copy is better than a failed open
+                logger.warning("a report copy could not be kept")
         try:
             _storage().delete(name)
         except Exception:  # noqa: BLE001 - the cleanup job retries
             logger.warning("a view-once photo file could not be deleted yet")
-        Message.all_objects.filter(pk=message.pk).update(photo="")
+        Message.all_objects.filter(pk=message.pk).update(photo="", report_copy=hold, report_copy_until=until)
     transaction.on_commit(lambda: events.conversation_changed(conversation))
     if data is None:
         raise AlreadyOpened("This photo isn't available any more.")
@@ -127,29 +139,62 @@ def preview(message, viewer):
     return "Photo · sent" if message.sender_id == viewer.pk else "Photo · view once"
 
 
-def copy_for_report(message):
-    """An encrypted copy of a reported photo for the report, or None if it was already opened."""
-    if message.kind != Message.PHOTO or message.photo_opened_at or not message.photo:
-        return None
+def copy_for_report(message, now=None):
+    """(encrypted copy for the report, held file to remove afterwards or "") for a reported photo:
+    the unopened photo itself, or the 1-hour report copy of an opened one. (None, "") if neither."""
+    if message.kind != Message.PHOTO:
+        return None, ""
+    now = now or timezone.now()
+    if message.photo and not message.photo_opened_at:
+        source, held = message.photo.name, ""
+    elif message.report_copy and message.report_copy_until and message.report_copy_until > now:
+        source = held = message.report_copy.name
+    else:
+        return None, ""
     try:
-        with _storage().open(message.photo.name, "rb") as handle:
-            return ContentFile(handle.read(), name=f"{uuid.uuid4().hex}.{message.photo.name.split('.')[-2]}.bin")
+        with _storage().open(source, "rb") as handle:
+            return ContentFile(handle.read(), name=f"{uuid.uuid4().hex}.{source.split('.')[-2]}.bin"), held
     except Exception:  # noqa: BLE001
         logger.warning("a reported photo could not be copied")
-        return None
+        return None, ""
+
+
+def release_report_copy(message, held):
+    """The report now has its own copy: delete the held one (it is never needed again)."""
+    if not held:
+        return
+    try:
+        _storage().delete(held)
+    except Exception:  # noqa: BLE001 - the cleanup job deletes it when the hour is up
+        logger.warning("a report copy could not be deleted yet")
+        return
+    Message.all_objects.filter(pk=message.pk, report_copy=held).update(report_copy="", report_copy_until=None)
 
 
 def purge_opened_files(now=None, limit=200):
-    """Safety net: files of photos opened more than VIEW_SECONDS ago that are still stored."""
+    """Report copies whose hour is up, and (a safety net) files of photos opened more than
+    VIEW_SECONDS ago that are still stored. Returns how many files were deleted."""
     now = now or timezone.now()
     cutoff = now - timedelta(seconds=VIEW_SECONDS)
-    rows = list(Message.all_objects.filter(photo_opened_at__lt=cutoff).exclude(photo="")
-                .values_list("pk", "photo")[:limit])
-    for pk, name in rows:
+    deleted = 0
+    leftovers = list(Message.all_objects.filter(photo_opened_at__lt=cutoff).exclude(photo="")
+                     .values_list("pk", "photo")[:limit])
+    for pk, name in leftovers:
         try:
             _storage().delete(name)
         except Exception:  # noqa: BLE001
             logger.warning("an opened photo file could not be deleted yet")
             continue
         Message.all_objects.filter(pk=pk).update(photo="")
-    return len(rows)
+        deleted += 1
+    held = list(Message.all_objects.filter(report_copy_until__lte=now).exclude(report_copy="")
+                .values_list("pk", "report_copy")[:limit])
+    for pk, name in held:
+        try:
+            _storage().delete(name)
+        except Exception:  # noqa: BLE001
+            logger.warning("a report copy could not be deleted yet")
+            continue
+        Message.all_objects.filter(pk=pk).update(report_copy="", report_copy_until=None)
+        deleted += 1
+    return deleted

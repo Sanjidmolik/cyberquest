@@ -250,12 +250,69 @@ class ReportedPhotoTests(PhotoTestCase):
         self.assertContains(shown, "[View-once photo: copy attached]")
         self.assertIn("no-store", shown["Cache-Control"])
 
-    def test_an_opened_photo_says_so_in_the_report(self):
-        self.open(self.bo, self.message.pk)
+    def test_a_report_within_the_hour_after_opening_includes_the_photo(self):
+        self.assertEqual(self.open(self.bo, self.message.pk).status_code, 200)
+        held = Message.all_objects.get(pk=self.message.pk)
+        self.assertTrue(held.report_copy)
+        self.assertAlmostEqual((held.report_copy_until - timezone.now()).total_seconds(), 3600, delta=5)
+        held_name = held.report_copy.name
+        raw = Path(self.storage.path(held_name)).read_bytes()
+        self.assertFalse(raw.startswith(b"\xff\xd8"))                      # still encrypted
         report, _ = moderation.report(self.bo, self.message.pk, "sexual")
+        self.assertTrue(report.photo)
+        self.assertFalse(self.storage.exists(held_name))                  # moved into the report
+        self.assertEqual(Message.all_objects.get(pk=self.message.pk).report_copy.name, "")
+        rows, _ = moderation.reveal(self.mod, report)
+        self.assertIn("[View-once photo: copy attached]", [r["text"] for r in rows])
+
+    def test_after_the_hour_the_copy_is_gone_and_a_report_has_no_photo(self):
+        self.open(self.bo, self.message.pk)
+        held_name = Message.all_objects.get(pk=self.message.pk).report_copy.name
+        Message.all_objects.filter(pk=self.message.pk).update(report_copy_until=timezone.now() - timezone.timedelta(seconds=1))
+        report, _ = moderation.report(self.bo, self.message.pk, "sexual")  # before the sweep: still refused
         self.assertFalse(report.photo)
         rows, _ = moderation.reveal(self.mod, report)
-        self.assertIn("[View-once photo: already opened, so no copy exists]", [r["text"] for r in rows])
+        self.assertIn("[View-once photo: opened more than an hour ago, so no copy exists]", [r["text"] for r in rows])
+        self.assertTrue(self.storage.exists(held_name))
+        self.assertGreaterEqual(expiry.purge()["photo_files"], 1)          # the sweep removes it
+        self.assertFalse(self.storage.exists(held_name))
+        self.assertEqual(Message.all_objects.get(pk=self.message.pk).report_copy.name, "")
+        cache.clear()
+        self.assertGreaterEqual(expiry.maybe_sweep()["photo_files"], 0)    # idempotent
+
+    def test_the_in_request_sweep_also_removes_expired_copies(self):
+        self.open(self.bo, self.message.pk)
+        held_name = Message.all_objects.get(pk=self.message.pk).report_copy.name
+        Message.all_objects.filter(pk=self.message.pk).update(report_copy_until=timezone.now())
+        cache.clear()
+        expiry.maybe_sweep()
+        self.assertFalse(self.storage.exists(held_name))
+
+    def test_the_copy_can_never_be_fetched(self):
+        res = self.open(self.bo, self.message.pk)
+        self.assertEqual(res.status_code, 200)
+        held = Message.all_objects.get(pk=self.message.pk)
+        for user in (self.bo, self.ana, self.mod):                          # recipient, sender, staff
+            self.assertIn(self.open(user, self.message.pk).status_code, (403, 404, 410))
+        with self.assertRaises(ValueError):
+            self.storage.url(held.report_copy.name)                        # no URL can exist
+        self.assertFalse(Path(self.storage.path(held.report_copy.name)).is_relative_to(Path(settings.MEDIA_ROOT)))
+        # No view reads the field: only the photo service (move into a report) and cleanup do.
+        root = Path(settings.BASE_DIR)
+        for path in list(root.glob("*/views.py")) + list(root.glob("*/panel_views.py")) + list(root.glob("*/urls.py")):
+            self.assertNotIn("report_copy", path.read_text(encoding="utf-8"), path)
+        api = self.client.get(reverse("messaging:api_poll", args=[self.conversation.public_id]))
+        self.assertNotIn("msg-report-hold", api.content.decode())
+        self.assertNotIn("report_copy", api.content.decode())
+        self.client.force_login(self.mod)
+        self.assertEqual(self.client.get("/admin/messaging/message/").status_code, 404)  # not in the admin
+
+    def test_the_sender_cannot_report_and_take_the_copy(self):
+        self.open(self.bo, self.message.pk)
+        from messaging.policy import Denied as D
+        with self.assertRaises(D):
+            moderation.report(self.ana, self.message.pk, "spam")
+        self.assertTrue(Message.all_objects.get(pk=self.message.pk).report_copy)
 
     def test_report_photos_are_deleted_with_the_report(self):
         report, _ = moderation.report(self.bo, self.message.pk, "spam")

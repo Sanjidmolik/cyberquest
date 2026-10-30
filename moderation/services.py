@@ -84,7 +84,7 @@ def notices(user):
 
 # ---------- reporting ----------
 
-def _snapshot(message):
+def _snapshot(message, photo_attached=False):
     """The reported message and up to CONTEXT messages either side, encrypted as one JSON blob."""
     conversation = message.conversation
     before = list(conversation.messages.filter(pk__lt=message.pk).order_by("-pk")[:CONTEXT])[::-1]
@@ -92,8 +92,11 @@ def _snapshot(message):
     rows = []
     for m in before + [message] + after:
         if m.kind == Message.PHOTO:
-            text = "[View-once photo: already opened, so no copy exists]" if m.photo_opened_at else (
-                "[View-once photo: copy attached]" if m.pk == message.pk else "[View-once photo]")
+            if m.pk == message.pk:
+                text = ("[View-once photo: copy attached]" if photo_attached
+                        else "[View-once photo: opened more than an hour ago, so no copy exists]")
+            else:
+                text = "[View-once photo]"
         else:
             text = "" if m.removed else m.text
         rows.append({
@@ -128,13 +131,14 @@ def report(reporter, message_id, reason, note="", also_block=False):
         return existing, False
     if is_rate_limited(f"report:day:{reporter.pk}", limit=settings.MODERATION_REPORTS_PER_DAY, window_seconds=86_400):
         raise RateLimited("You've sent the maximum number of reports for today. Try again tomorrow.")
-    from messaging.photos import copy_for_report
-    photo = copy_for_report(message)            # an unopened view-once photo: keep an encrypted copy
+    from messaging.photos import copy_for_report, release_report_copy
+    # A view-once photo: the unopened file, or the 1-hour copy kept after opening.
+    photo, held = copy_for_report(message)
     try:
         with transaction.atomic():
             created = Report(
                 message=message, reporter=reporter, reported_user=message.sender, reason=reason,
-                note=crypto.encrypt(note) if note else "", snapshot=_snapshot(message),
+                note=crypto.encrypt(note) if note else "", snapshot=_snapshot(message, photo is not None),
             )
             if photo is not None:
                 created.photo.save(photo.name, photo, save=False)
@@ -143,6 +147,7 @@ def report(reporter, message_id, reason, note="", also_block=False):
         if photo is not None and created.photo:
             created.photo.delete(save=False)
         return Report.objects.get(message=message, reporter=reporter), False
+    release_report_copy(message, held)          # moved into the report: the held copy goes
     if also_block:
         from messaging.services import block
         block(reporter, message.sender)

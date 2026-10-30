@@ -30,6 +30,7 @@ TIMERS = {
 }
 TIMER_CHOICES = [(key, label) for key, (label, _) in TIMERS.items()]
 VIEW_GRACE = timedelta(seconds=30)   # "after viewing": gone 30 s after the recipient reads it
+REPORT_HOLD = timedelta(hours=1)     # an opened view-once photo stays reportable this long
 
 
 def expiry_for(timer, sent_at):
@@ -118,6 +119,10 @@ class Message(models.Model):
     # View-once photo: Fernet-encrypted bytes in private storage; deleted when opened.
     photo = models.FileField(storage=private_storage, upload_to="msg-photos/", blank=True, max_length=200)
     photo_opened_at = models.DateTimeField(null=True, blank=True)
+    # After opening: an encrypted copy kept REPORT_HOLD so the recipient can still report it.
+    # No view ever reads this field; only the report action moves it into the report.
+    report_copy = models.FileField(storage=private_storage, upload_to="msg-report-hold/", blank=True, max_length=200)
+    report_copy_until = models.DateTimeField(null=True, blank=True, db_index=True)
 
     objects = VisibleMessageManager()
     all_objects = models.Manager()               # cleanup job and admin only

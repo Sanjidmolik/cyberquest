@@ -52,8 +52,12 @@ RETENTION = [
      "cleanup (daily at the latest)"),
     ("View-once photos (encrypted, location and camera data removed)",
      "Until opened once, or until the chat's timer runs out if that comes first",
-     "Deleted from storage the moment they are opened; otherwise by automatic cleanup. "
+     "The copy that was shown is deleted the moment it is opened; otherwise by automatic cleanup. "
      "Unopened photos are deleted when the sender deletes their account"),
+    ("Report copy of an opened view-once photo (encrypted; never shown again, only usable by the "
+     "recipient's report)",
+     "1 hour after the photo is opened",
+     "Automatic cleanup; if reported, it moves into the report (see reports below)"),
     ("When you were last active in Messages (for \"online\"), and how far each person has "
      "received and read a conversation",
      "While your account exists",
@@ -62,7 +66,8 @@ RETENTION = [
      "While your account exists",
      "Deleted when you delete your account"),
     ("Reports you file about a message, with a copy of that message and up to three messages "
-     "before and after it (and of a reported view-once photo, if reported before it was opened), "
+     "before and after it (and of a reported view-once photo, if reported before it was opened "
+     "or within 1 hour after), "
      "kept even if the messages disappear",
      "Until a moderator resolves it, then 180 days",
      "Automatic cleanup"),
